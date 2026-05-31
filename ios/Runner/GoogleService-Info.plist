@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>836907422627-c830fgd82fsokiuv4l5bpn8tuuavofa4.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.836907422627-c830fgd82fsokiuv4l5bpn8tuuavofa4</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>836907422627-d1g0k7n7i9lubbe1pudh4bo82m58iv2f.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAON3J-UjCqLP7w8kTrcB6k9DkNQZunNNA</string>
+	<key>GCM_SENDER_ID</key>
+	<string>836907422627</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.finflow.finflow</string>
+	<key>PROJECT_ID</key>
+	<string>finflow-3ae88</string>
+	<key>STORAGE_BUCKET</key>
+	<string>finflow-3ae88.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:836907422627:ios:c2b754e879cd3d42280016</string>
+</dict>
+</plist>
