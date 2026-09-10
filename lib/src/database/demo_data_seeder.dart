@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
+import '../utils/month_key.dart';
 import 'app_database.dart';
 
 class DemoDataSeeder {
@@ -71,28 +72,31 @@ class DemoDataSeeder {
             ),
           );
 
-      // 2. Seed Budgets for current month
-      const currentMonth = '2026-05';
+      // 2. Seed Budget limits for the current month. Spent amounts are never
+      // stored -- they're derived live from the transactions seeded below,
+      // which is why monthYear must be the *actual* current month (not a
+      // fixed date) and the seeded transaction amounts below were chosen to
+      // sum to the same figures this used to hardcode as spentAmount.
+      final currentMonth = monthKeyOf(DateTime.now());
       final categoriesToSeed = [
-        ('Rent', 18000.0, 18000.0),
-        ('Groceries', 8000.0, 5400.0),
-        ('Utilities', 4000.0, 3200.0),
-        ('EMI', 15000.0, 14780.0),
-        ('Dining Out', 6000.0, 5850.0),
-        ('Shopping', 10000.0, 7200.0),
-        ('Subscriptions', 2000.0, 1490.0),
-        ('SIP', 12000.0, 10000.0),
-        ('Stocks', 6000.0, 5000.0),
+        ('Rent', 18000.0),
+        ('Groceries', 8000.0),
+        ('Utilities', 4000.0),
+        ('EMI', 15000.0),
+        ('Dining Out', 6000.0),
+        ('Shopping', 10000.0),
+        ('Subscriptions', 2000.0),
+        ('SIP', 12000.0),
+        ('Stocks', 6000.0),
       ];
 
-      for (final (category, limit, spent) in categoriesToSeed) {
+      for (final (category, limit) in categoriesToSeed) {
         await db
             .into(db.budgets)
             .insert(
               BudgetsCompanion.insert(
                 category: category,
                 limitAmount: limit,
-                spentAmount: spent,
                 monthYear: currentMonth,
               ),
             );

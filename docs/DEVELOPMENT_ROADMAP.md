@@ -13,7 +13,7 @@
 | 1 — Foundation & Auth | ✅ Done | Git/CI, Drift migration, real Firebase (Auth: Google + Email/Password, Firestore), migration data-loss bug fixed, app branding |
 | 2 — Core Transactions | ✅ Done | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
 | 3 — SMS Parsing | ✅ Done | Real device SMS scan+listen, review sheet, SRS-composite duplicate detection, free-tier cap |
-| 4 — Budgeting | ⬜ Not started | |
+| 4 — Budgeting | 🟡 Client-side done | Derived spend, monthly history, create/edit/delete UI, cross-bucket warning. Scheduled reset + push alerts on hold pending Cloud Functions/Blaze decision |
 | 5 — Accounts & Cards | ⬜ Not started | |
 | 6 — Loans & EMI | ⬜ Not started | |
 | 7 — Savings Goals | ⬜ Not started | |
@@ -231,23 +231,46 @@ trusting the insert's return value.
 
 ## Phase 4 — Budgeting
 
-**Fix:** budgets are upsert-only (no edit UI); the entire SRS §6 "Budget
-Reset & Period Logic" is unbuilt (no monthly auto-reset, archiving,
-rollover, envelope enforcement, or 80%/100% alerts).
+**Done (client-side, this phase):**
+- Redesigned the `budgets` schema: primary key moved from `category` alone
+  to `(category, monthYear)`, and the stored `spentAmount` column was
+  dropped entirely — every month now gets its own row (enabling real
+  history), and spend is always derived live from the `transactions` table
+  instead of a manually maintained running total that nothing kept in sync.
+  Schema version 5, migration drops and recreates `budgets` (no installed
+  base pre-launch, so no data to preserve).
+- `BudgetRepository.getBudgets()` computes `spentAmount` per category by
+  summing that month's non-income transactions on every read, and lazily
+  carries the previous month's *limits* forward into a new month on first
+  read (the client-side half of "budgets reset on the 1st" — spend starts
+  at zero automatically since a new month has no transactions yet).
+- Budget create/edit/delete UI: an "Add Budget" dialog (category picker
+  restricted to spending categories not already budgeted this month +
+  limit), tapping an envelope card opens an edit/delete dialog.
+- Envelope Transfer dialog now shows an explicit warning when the source
+  and destination categories are in different 50/30/20 buckets (SRS:
+  "Cross-bucket transfer allowed but flagged with a warning").
+- Progress-bar color thresholds (amber ≥80%, red ≥100%) — already correct,
+  verified.
+- Basic "Monthly History" view: a month picker sheet (via
+  `getAvailableMonths()`) drilling into a read-only per-category breakdown
+  for that month.
 
-**Net-new — Cloud Functions infrastructure stood up for the whole project:**
-1. Scaffold `functions/` (Node 20 + TypeScript) — reused by Phase 6 (EMI
-   posting), Phase 8 (price feeds), Phase 10 (AI tips).
-2. Scheduled `resetMonthlyBudgets` function (per-user configured reset day,
-   archives into `budgetHistory`, resets `spent_amount`, Pro-tier rollover).
-   Also consolidates Phase 2/3's client-side "reset on the 1st" counters.
-3. FCM wiring for 80%/100% budget-threshold pushes and month-end summaries.
-4. Envelope enforcement (client-side: no auto-borrow across categories).
-5. Progress-bar color thresholds (amber ≥80%, red ≥100%).
-6. Basic "Monthly History" list view.
+**Deferred — needs an explicit user decision before starting (Cloud
+Functions require the paid Blaze plan):**
+1. Scaffold `functions/` (Node 20 + TypeScript) — would also be reused by
+   Phase 6 (EMI posting), Phase 8 (price feeds), Phase 10 (AI tips).
+2. Scheduled `resetMonthlyBudgets` function — not required for the core
+   reset behavior (handled client-side above), but would still be the
+   correct home for archiving/rollover enforcement that must run even if
+   the user never opens the app on the 1st, plus consolidating Phase 2/3's
+   client-side "reset on the 1st" counters (recurring transactions,
+   SMS-parse quota) into one place.
+3. FCM wiring for 80%/100% budget-threshold push notifications.
 
-**New dependencies:** `firebase_messaging`, `flutter_local_notifications`;
-Node-side `firebase-functions`/`firebase-admin`.
+**New dependencies (client-side work only):** none — Firebase Messaging /
+Cloud Functions dependencies are on hold pending the Blaze-plan decision
+above.
 
 ---
 

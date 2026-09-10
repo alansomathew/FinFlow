@@ -43,6 +43,10 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            final crossBucket =
+                TransactionCategory.getByName(source.category).bucket !=
+                TransactionCategory.getByName(destination.category).bucket;
+
             return AlertDialog(
               backgroundColor: AppColors.surface,
               shape: RoundedRectangleBorder(
@@ -89,6 +93,12 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                       if (val != null) {
                         setStateDialog(() {
                           source = val;
+                          if (destination.category == source.category) {
+                            destination = budgets.firstWhere(
+                              (b) => b.category != source.category,
+                              orElse: () => destination,
+                            );
+                          }
                         });
                       }
                     },
@@ -141,6 +151,42 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                       ),
                     ),
                   ),
+
+                  if (crossBucket) ...[
+                    AppSizes.h12,
+                    Container(
+                      padding: const EdgeInsets.all(AppSizes.sm),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                        border: Border.all(
+                          color: AppColors.warning.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppColors.warning,
+                            size: 18,
+                          ),
+                          AppSizes.w8,
+                          Expanded(
+                            child: Text(
+                              'Cross-bucket transfer: moving money from '
+                              '${TransactionCategory.getByName(source.category).bucket.displayName} '
+                              'into ${TransactionCategory.getByName(destination.category).bucket.displayName} '
+                              'shifts your 50/30/20 split.',
+                              style: const TextStyle(
+                                color: AppColors.warning,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
               actions: [
@@ -177,14 +223,14 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     await notifier.setLimit(
                       source.category,
                       source.limitAmount - transferAmount,
-                      source.spentAmount,
                       source.monthYear,
+                      rolloverEnabled: source.rolloverEnabled,
                     );
                     await notifier.setLimit(
                       destination.category,
                       destination.limitAmount + transferAmount,
-                      destination.spentAmount,
                       destination.monthYear,
+                      rolloverEnabled: destination.rolloverEnabled,
                     );
 
                     if (context.mounted) {
@@ -215,6 +261,360 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
     );
   }
 
+  // Create a new category envelope for the current month
+  void _showAddBudgetDialog(BuildContext context, List<BudgetModel> budgets) {
+    final budgetedCategories = budgets.map((b) => b.category).toSet();
+    final available = TransactionCategory.presets
+        .where(
+          (c) =>
+              c.bucket != BudgetBucket.income &&
+              !budgetedCategories.contains(c.name),
+        )
+        .toList();
+
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Every spending category already has a budget'),
+        ),
+      );
+      return;
+    }
+
+    TransactionCategory selected = available.first;
+    final limitController = TextEditingController();
+    final monthYear = budgets.isNotEmpty
+        ? budgets.first.monthYear
+        : DateTime.now().toIso8601String().substring(0, 7);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+              title: const Text(
+                'New Budget Envelope',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DropdownButtonFormField<TransactionCategory>(
+                    value: selected,
+                    dropdownColor: AppColors.surface,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      labelStyle: TextStyle(color: AppColors.textSecondary),
+                    ),
+                    items: available.map((c) {
+                      return DropdownMenuItem<TransactionCategory>(
+                        value: c,
+                        child: Text('${c.icon}  ${c.name}'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setStateDialog(() => selected = val);
+                      }
+                    },
+                  ),
+                  AppSizes.h12,
+                  TextField(
+                    controller: limitController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Monthly Limit',
+                      labelStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                      ),
+                      fillColor: AppColors.cardBg,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final limit = double.tryParse(limitController.text) ?? 0.0;
+                    if (limit <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Enter a valid limit')),
+                      );
+                      return;
+                    }
+                    await ref
+                        .read(budgetListProvider.notifier)
+                        .setLimit(selected.name, limit, monthYear);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: const Text(
+                    'Create',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Edit or delete an existing envelope
+  void _showEditBudgetDialog(BuildContext context, BudgetModel budget) {
+    final limitController = TextEditingController(
+      text: budget.limitAmount.toStringAsFixed(0),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          ),
+          title: Text(
+            'Edit ${budget.category}',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: TextField(
+            controller: limitController,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Monthly Limit',
+              labelStyle: const TextStyle(color: AppColors.textSecondary),
+              fillColor: AppColors.cardBg,
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await ref
+                    .read(budgetListProvider.notifier)
+                    .remove(budget.category, budget.monthYear);
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: AppColors.error),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final limit = double.tryParse(limitController.text) ?? 0.0;
+                if (limit <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Enter a valid limit')),
+                  );
+                  return;
+                }
+                await ref
+                    .read(budgetListProvider.notifier)
+                    .setLimit(
+                      budget.category,
+                      limit,
+                      budget.monthYear,
+                      rolloverEnabled: budget.rolloverEnabled,
+                    );
+                if (context.mounted) Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Monthly History: pick a past month, view its (read-only) envelopes
+  void _showHistorySheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusMd)),
+      ),
+      builder: (context) {
+        return FutureBuilder<List<String>>(
+          future: ref.read(budgetRepositoryProvider).getAvailableMonths(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final months = snapshot.data!;
+            if (months.isEmpty) {
+              return const SizedBox(
+                height: 120,
+                child: Center(
+                  child: Text(
+                    'No budget history yet.',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              );
+            }
+            return SafeArea(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(AppSizes.md),
+                itemCount: months.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return const Padding(
+                      padding: EdgeInsets.only(bottom: AppSizes.sm),
+                      child: Text(
+                        'Monthly History',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }
+                  final month = months[index - 1];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      month,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    trailing: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textSecondary,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showMonthDetailSheet(context, month);
+                    },
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showMonthDetailSheet(BuildContext context, String monthYear) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusMd)),
+      ),
+      builder: (context) {
+        return FutureBuilder<List<BudgetModel>>(
+          future: ref
+              .read(budgetRepositoryProvider)
+              .getBudgets(monthYear: monthYear),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox(
+                height: 200,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            final budgets = snapshot.data!;
+            return SafeArea(
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(AppSizes.md),
+                itemCount: budgets.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSizes.sm),
+                      child: Text(
+                        monthYear,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }
+                  final b = budgets[index - 1];
+                  final cat = TransactionCategory.getByName(b.category);
+                  final ratio = b.limitAmount > 0
+                      ? (b.spentAmount / b.limitAmount)
+                      : 0.0;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Text(cat.icon, style: const TextStyle(fontSize: 18)),
+                    title: Text(
+                      b.category,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    trailing: Text(
+                      '${_formatCurrency(b.spentAmount)} / ${_formatCurrency(b.limitAmount)}',
+                      style: TextStyle(
+                        color: _getProgressColor(ratio),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final budgetsAsync = ref.watch(budgetListProvider);
@@ -224,10 +624,27 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
       body: budgetsAsync.when(
         data: (budgets) {
           if (budgets.isEmpty) {
-            return const Center(
-              child: Text(
-                'No budgets defined.',
-                style: TextStyle(color: AppColors.textSecondary),
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'No budgets defined.',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  AppSizes.h12,
+                  ElevatedButton.icon(
+                    onPressed: () => _showAddBudgetDialog(context, budgets),
+                    icon: const Icon(Icons.add_rounded, color: Colors.white),
+                    label: const Text(
+                      'Add Budget',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -282,25 +699,45 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                         ),
                       ],
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () => _showTransferDialog(context, budgets),
-                      icon: const Icon(
-                        Icons.compare_arrows_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      label: const Text(
-                        'Transfer',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppSizes.radiusSm,
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () => _showHistorySheet(context),
+                          tooltip: 'Monthly History',
+                          icon: const Icon(
+                            Icons.history_rounded,
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                      ),
+                        IconButton(
+                          onPressed: () => _showAddBudgetDialog(context, budgets),
+                          tooltip: 'Add Budget',
+                          icon: const Icon(
+                            Icons.add_circle_outline_rounded,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => _showTransferDialog(context, budgets),
+                          icon: const Icon(
+                            Icons.compare_arrows_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          label: const Text(
+                            'Transfer',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusSm,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -381,77 +818,81 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                       return Card(
                         color: AppColors.cardBg,
                         margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSizes.md),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    cat.icon,
-                                    style: const TextStyle(fontSize: 20),
-                                  ),
-                                  AppSizes.w8,
-                                  Text(
-                                    b.category,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          onTap: () => _showEditBudgetDialog(context, b),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSizes.md),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      cat.icon,
+                                      style: const TextStyle(fontSize: 20),
                                     ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    '${_formatCurrency(b.spentAmount)} / ${_formatCurrency(b.limitAmount)}',
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                    AppSizes.w8,
+                                    Text(
+                                      b.category,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              AppSizes.h8,
-                              // Progress Bar
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(2),
-                                child: LinearProgressIndicator(
-                                  value: ratio.clamp(0.0, 1.0),
-                                  backgroundColor: AppColors.border,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    progressColor,
-                                  ),
-                                  minHeight: 6,
+                                    const Spacer(),
+                                    Text(
+                                      '${_formatCurrency(b.spentAmount)} / ${_formatCurrency(b.limitAmount)}',
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              AppSizes.h4,
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    cat.bucket.displayName,
-                                    style: TextStyle(
-                                      color: cat.bucket.color,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                                AppSizes.h8,
+                                // Progress Bar
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: ratio.clamp(0.0, 1.0),
+                                    backgroundColor: AppColors.border,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      progressColor,
                                     ),
+                                    minHeight: 6,
                                   ),
-                                  Text(
-                                    ratio >= 1.0
-                                        ? 'Exceeded by ${_formatCurrency(b.spentAmount - b.limitAmount)}'
-                                        : '₹${(b.limitAmount - b.spentAmount).toStringAsFixed(0)} left',
-                                    style: TextStyle(
-                                      color: ratio >= 1.0
-                                          ? AppColors.error
-                                          : AppColors.textSecondary,
-                                      fontSize: 10,
+                                ),
+                                AppSizes.h4,
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      cat.bucket.displayName,
+                                      style: TextStyle(
+                                        color: cat.bucket.color,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    Text(
+                                      ratio >= 1.0
+                                          ? 'Exceeded by ${_formatCurrency(b.spentAmount - b.limitAmount)}'
+                                          : '₹${(b.limitAmount - b.spentAmount).toStringAsFixed(0)} left',
+                                      style: TextStyle(
+                                        color: ratio >= 1.0
+                                            ? AppColors.error
+                                            : AppColors.textSecondary,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );

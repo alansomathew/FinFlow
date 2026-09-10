@@ -1466,28 +1466,6 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _limitAmountMeta = const VerificationMeta(
-    'limitAmount',
-  );
-  @override
-  late final GeneratedColumn<double> limitAmount = GeneratedColumn<double>(
-    'limit_amount',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _spentAmountMeta = const VerificationMeta(
-    'spentAmount',
-  );
-  @override
-  late final GeneratedColumn<double> spentAmount = GeneratedColumn<double>(
-    'spent_amount',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _monthYearMeta = const VerificationMeta(
     'monthYear',
   );
@@ -1497,6 +1475,17 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     aliasedName,
     false,
     type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _limitAmountMeta = const VerificationMeta(
+    'limitAmount',
+  );
+  @override
+  late final GeneratedColumn<double> limitAmount = GeneratedColumn<double>(
+    'limit_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _currencyMeta = const VerificationMeta(
@@ -1510,6 +1499,21 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('INR'),
+  );
+  static const VerificationMeta _rolloverEnabledMeta = const VerificationMeta(
+    'rolloverEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> rolloverEnabled = GeneratedColumn<bool>(
+    'rollover_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("rollover_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -1549,10 +1553,10 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
   @override
   List<GeneratedColumn> get $columns => [
     category,
-    limitAmount,
-    spentAmount,
     monthYear,
+    limitAmount,
     currency,
+    rolloverEnabled,
     createdAt,
     updatedAt,
     deletedAt,
@@ -1577,6 +1581,14 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     } else if (isInserting) {
       context.missing(_categoryMeta);
     }
+    if (data.containsKey('month_year')) {
+      context.handle(
+        _monthYearMeta,
+        monthYear.isAcceptableOrUnknown(data['month_year']!, _monthYearMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_monthYearMeta);
+    }
     if (data.containsKey('limit_amount')) {
       context.handle(
         _limitAmountMeta,
@@ -1588,29 +1600,19 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     } else if (isInserting) {
       context.missing(_limitAmountMeta);
     }
-    if (data.containsKey('spent_amount')) {
-      context.handle(
-        _spentAmountMeta,
-        spentAmount.isAcceptableOrUnknown(
-          data['spent_amount']!,
-          _spentAmountMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_spentAmountMeta);
-    }
-    if (data.containsKey('month_year')) {
-      context.handle(
-        _monthYearMeta,
-        monthYear.isAcceptableOrUnknown(data['month_year']!, _monthYearMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_monthYearMeta);
-    }
     if (data.containsKey('currency')) {
       context.handle(
         _currencyMeta,
         currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
+    if (data.containsKey('rollover_enabled')) {
+      context.handle(
+        _rolloverEnabledMeta,
+        rolloverEnabled.isAcceptableOrUnknown(
+          data['rollover_enabled']!,
+          _rolloverEnabledMeta,
+        ),
       );
     }
     if (data.containsKey('created_at')) {
@@ -1635,7 +1637,7 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {category};
+  Set<GeneratedColumn> get $primaryKey => {category, monthYear};
   @override
   Budget map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
@@ -1644,21 +1646,21 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
         DriftSqlType.string,
         data['${effectivePrefix}category'],
       )!,
-      limitAmount: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}limit_amount'],
-      )!,
-      spentAmount: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}spent_amount'],
-      )!,
       monthYear: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}month_year'],
       )!,
+      limitAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}limit_amount'],
+      )!,
       currency: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}currency'],
+      )!,
+      rolloverEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}rollover_enabled'],
       )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -1683,19 +1685,22 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
 
 class Budget extends DataClass implements Insertable<Budget> {
   final String category;
-  final double limitAmount;
-  final double spentAmount;
   final String monthYear;
+  final double limitAmount;
   final String currency;
+
+  /// Pro-tier: unspent budget from this category carries over into next
+  /// month's limit instead of resetting.
+  final bool rolloverEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
   const Budget({
     required this.category,
-    required this.limitAmount,
-    required this.spentAmount,
     required this.monthYear,
+    required this.limitAmount,
     required this.currency,
+    required this.rolloverEnabled,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -1704,10 +1709,10 @@ class Budget extends DataClass implements Insertable<Budget> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['category'] = Variable<String>(category);
-    map['limit_amount'] = Variable<double>(limitAmount);
-    map['spent_amount'] = Variable<double>(spentAmount);
     map['month_year'] = Variable<String>(monthYear);
+    map['limit_amount'] = Variable<double>(limitAmount);
     map['currency'] = Variable<String>(currency);
+    map['rollover_enabled'] = Variable<bool>(rolloverEnabled);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -1719,10 +1724,10 @@ class Budget extends DataClass implements Insertable<Budget> {
   BudgetsCompanion toCompanion(bool nullToAbsent) {
     return BudgetsCompanion(
       category: Value(category),
-      limitAmount: Value(limitAmount),
-      spentAmount: Value(spentAmount),
       monthYear: Value(monthYear),
+      limitAmount: Value(limitAmount),
       currency: Value(currency),
+      rolloverEnabled: Value(rolloverEnabled),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -1738,10 +1743,10 @@ class Budget extends DataClass implements Insertable<Budget> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Budget(
       category: serializer.fromJson<String>(json['category']),
-      limitAmount: serializer.fromJson<double>(json['limitAmount']),
-      spentAmount: serializer.fromJson<double>(json['spentAmount']),
       monthYear: serializer.fromJson<String>(json['monthYear']),
+      limitAmount: serializer.fromJson<double>(json['limitAmount']),
       currency: serializer.fromJson<String>(json['currency']),
+      rolloverEnabled: serializer.fromJson<bool>(json['rolloverEnabled']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -1752,10 +1757,10 @@ class Budget extends DataClass implements Insertable<Budget> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'category': serializer.toJson<String>(category),
-      'limitAmount': serializer.toJson<double>(limitAmount),
-      'spentAmount': serializer.toJson<double>(spentAmount),
       'monthYear': serializer.toJson<String>(monthYear),
+      'limitAmount': serializer.toJson<double>(limitAmount),
       'currency': serializer.toJson<String>(currency),
+      'rolloverEnabled': serializer.toJson<bool>(rolloverEnabled),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -1764,19 +1769,19 @@ class Budget extends DataClass implements Insertable<Budget> {
 
   Budget copyWith({
     String? category,
-    double? limitAmount,
-    double? spentAmount,
     String? monthYear,
+    double? limitAmount,
     String? currency,
+    bool? rolloverEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
   }) => Budget(
     category: category ?? this.category,
-    limitAmount: limitAmount ?? this.limitAmount,
-    spentAmount: spentAmount ?? this.spentAmount,
     monthYear: monthYear ?? this.monthYear,
+    limitAmount: limitAmount ?? this.limitAmount,
     currency: currency ?? this.currency,
+    rolloverEnabled: rolloverEnabled ?? this.rolloverEnabled,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -1784,14 +1789,14 @@ class Budget extends DataClass implements Insertable<Budget> {
   Budget copyWithCompanion(BudgetsCompanion data) {
     return Budget(
       category: data.category.present ? data.category.value : this.category,
+      monthYear: data.monthYear.present ? data.monthYear.value : this.monthYear,
       limitAmount: data.limitAmount.present
           ? data.limitAmount.value
           : this.limitAmount,
-      spentAmount: data.spentAmount.present
-          ? data.spentAmount.value
-          : this.spentAmount,
-      monthYear: data.monthYear.present ? data.monthYear.value : this.monthYear,
       currency: data.currency.present ? data.currency.value : this.currency,
+      rolloverEnabled: data.rolloverEnabled.present
+          ? data.rolloverEnabled.value
+          : this.rolloverEnabled,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -1802,10 +1807,10 @@ class Budget extends DataClass implements Insertable<Budget> {
   String toString() {
     return (StringBuffer('Budget(')
           ..write('category: $category, ')
-          ..write('limitAmount: $limitAmount, ')
-          ..write('spentAmount: $spentAmount, ')
           ..write('monthYear: $monthYear, ')
+          ..write('limitAmount: $limitAmount, ')
           ..write('currency: $currency, ')
+          ..write('rolloverEnabled: $rolloverEnabled, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -1816,10 +1821,10 @@ class Budget extends DataClass implements Insertable<Budget> {
   @override
   int get hashCode => Object.hash(
     category,
-    limitAmount,
-    spentAmount,
     monthYear,
+    limitAmount,
     currency,
+    rolloverEnabled,
     createdAt,
     updatedAt,
     deletedAt,
@@ -1829,10 +1834,10 @@ class Budget extends DataClass implements Insertable<Budget> {
       identical(this, other) ||
       (other is Budget &&
           other.category == this.category &&
-          other.limitAmount == this.limitAmount &&
-          other.spentAmount == this.spentAmount &&
           other.monthYear == this.monthYear &&
+          other.limitAmount == this.limitAmount &&
           other.currency == this.currency &&
+          other.rolloverEnabled == this.rolloverEnabled &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -1840,20 +1845,20 @@ class Budget extends DataClass implements Insertable<Budget> {
 
 class BudgetsCompanion extends UpdateCompanion<Budget> {
   final Value<String> category;
-  final Value<double> limitAmount;
-  final Value<double> spentAmount;
   final Value<String> monthYear;
+  final Value<double> limitAmount;
   final Value<String> currency;
+  final Value<bool> rolloverEnabled;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
   final Value<int> rowid;
   const BudgetsCompanion({
     this.category = const Value.absent(),
-    this.limitAmount = const Value.absent(),
-    this.spentAmount = const Value.absent(),
     this.monthYear = const Value.absent(),
+    this.limitAmount = const Value.absent(),
     this.currency = const Value.absent(),
+    this.rolloverEnabled = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -1861,24 +1866,23 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   });
   BudgetsCompanion.insert({
     required String category,
-    required double limitAmount,
-    required double spentAmount,
     required String monthYear,
+    required double limitAmount,
     this.currency = const Value.absent(),
+    this.rolloverEnabled = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : category = Value(category),
-       limitAmount = Value(limitAmount),
-       spentAmount = Value(spentAmount),
-       monthYear = Value(monthYear);
+       monthYear = Value(monthYear),
+       limitAmount = Value(limitAmount);
   static Insertable<Budget> custom({
     Expression<String>? category,
-    Expression<double>? limitAmount,
-    Expression<double>? spentAmount,
     Expression<String>? monthYear,
+    Expression<double>? limitAmount,
     Expression<String>? currency,
+    Expression<bool>? rolloverEnabled,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -1886,10 +1890,10 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   }) {
     return RawValuesInsertable({
       if (category != null) 'category': category,
-      if (limitAmount != null) 'limit_amount': limitAmount,
-      if (spentAmount != null) 'spent_amount': spentAmount,
       if (monthYear != null) 'month_year': monthYear,
+      if (limitAmount != null) 'limit_amount': limitAmount,
       if (currency != null) 'currency': currency,
+      if (rolloverEnabled != null) 'rollover_enabled': rolloverEnabled,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -1899,10 +1903,10 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
 
   BudgetsCompanion copyWith({
     Value<String>? category,
-    Value<double>? limitAmount,
-    Value<double>? spentAmount,
     Value<String>? monthYear,
+    Value<double>? limitAmount,
     Value<String>? currency,
+    Value<bool>? rolloverEnabled,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -1910,10 +1914,10 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   }) {
     return BudgetsCompanion(
       category: category ?? this.category,
-      limitAmount: limitAmount ?? this.limitAmount,
-      spentAmount: spentAmount ?? this.spentAmount,
       monthYear: monthYear ?? this.monthYear,
+      limitAmount: limitAmount ?? this.limitAmount,
       currency: currency ?? this.currency,
+      rolloverEnabled: rolloverEnabled ?? this.rolloverEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -1927,17 +1931,17 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     if (category.present) {
       map['category'] = Variable<String>(category.value);
     }
-    if (limitAmount.present) {
-      map['limit_amount'] = Variable<double>(limitAmount.value);
-    }
-    if (spentAmount.present) {
-      map['spent_amount'] = Variable<double>(spentAmount.value);
-    }
     if (monthYear.present) {
       map['month_year'] = Variable<String>(monthYear.value);
     }
+    if (limitAmount.present) {
+      map['limit_amount'] = Variable<double>(limitAmount.value);
+    }
     if (currency.present) {
       map['currency'] = Variable<String>(currency.value);
+    }
+    if (rolloverEnabled.present) {
+      map['rollover_enabled'] = Variable<bool>(rolloverEnabled.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -1958,10 +1962,10 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   String toString() {
     return (StringBuffer('BudgetsCompanion(')
           ..write('category: $category, ')
-          ..write('limitAmount: $limitAmount, ')
-          ..write('spentAmount: $spentAmount, ')
           ..write('monthYear: $monthYear, ')
+          ..write('limitAmount: $limitAmount, ')
           ..write('currency: $currency, ')
+          ..write('rolloverEnabled: $rolloverEnabled, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -6075,10 +6079,10 @@ typedef $$TransactionsTableProcessedTableManager =
 typedef $$BudgetsTableCreateCompanionBuilder =
     BudgetsCompanion Function({
       required String category,
-      required double limitAmount,
-      required double spentAmount,
       required String monthYear,
+      required double limitAmount,
       Value<String> currency,
+      Value<bool> rolloverEnabled,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -6087,10 +6091,10 @@ typedef $$BudgetsTableCreateCompanionBuilder =
 typedef $$BudgetsTableUpdateCompanionBuilder =
     BudgetsCompanion Function({
       Value<String> category,
-      Value<double> limitAmount,
-      Value<double> spentAmount,
       Value<String> monthYear,
+      Value<double> limitAmount,
       Value<String> currency,
+      Value<bool> rolloverEnabled,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -6111,23 +6115,23 @@ class $$BudgetsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get limitAmount => $composableBuilder(
-    column: $table.limitAmount,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get spentAmount => $composableBuilder(
-    column: $table.spentAmount,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get monthYear => $composableBuilder(
     column: $table.monthYear,
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get limitAmount => $composableBuilder(
+    column: $table.limitAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get rolloverEnabled => $composableBuilder(
+    column: $table.rolloverEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6161,23 +6165,23 @@ class $$BudgetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get limitAmount => $composableBuilder(
-    column: $table.limitAmount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get spentAmount => $composableBuilder(
-    column: $table.spentAmount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get monthYear => $composableBuilder(
     column: $table.monthYear,
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get limitAmount => $composableBuilder(
+    column: $table.limitAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get rolloverEnabled => $composableBuilder(
+    column: $table.rolloverEnabled,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -6209,21 +6213,21 @@ class $$BudgetsTableAnnotationComposer
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
 
+  GeneratedColumn<String> get monthYear =>
+      $composableBuilder(column: $table.monthYear, builder: (column) => column);
+
   GeneratedColumn<double> get limitAmount => $composableBuilder(
     column: $table.limitAmount,
     builder: (column) => column,
   );
 
-  GeneratedColumn<double> get spentAmount => $composableBuilder(
-    column: $table.spentAmount,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get monthYear =>
-      $composableBuilder(column: $table.monthYear, builder: (column) => column);
-
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<bool> get rolloverEnabled => $composableBuilder(
+    column: $table.rolloverEnabled,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6264,20 +6268,20 @@ class $$BudgetsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> category = const Value.absent(),
-                Value<double> limitAmount = const Value.absent(),
-                Value<double> spentAmount = const Value.absent(),
                 Value<String> monthYear = const Value.absent(),
+                Value<double> limitAmount = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<bool> rolloverEnabled = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BudgetsCompanion(
                 category: category,
-                limitAmount: limitAmount,
-                spentAmount: spentAmount,
                 monthYear: monthYear,
+                limitAmount: limitAmount,
                 currency: currency,
+                rolloverEnabled: rolloverEnabled,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -6286,20 +6290,20 @@ class $$BudgetsTableTableManager
           createCompanionCallback:
               ({
                 required String category,
-                required double limitAmount,
-                required double spentAmount,
                 required String monthYear,
+                required double limitAmount,
                 Value<String> currency = const Value.absent(),
+                Value<bool> rolloverEnabled = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BudgetsCompanion.insert(
                 category: category,
-                limitAmount: limitAmount,
-                spentAmount: spentAmount,
                 monthYear: monthYear,
+                limitAmount: limitAmount,
                 currency: currency,
+                rolloverEnabled: rolloverEnabled,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

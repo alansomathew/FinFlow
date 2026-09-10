@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 
+import '../utils/month_key.dart';
 import 'tables/accounts_table.dart';
 import 'tables/budgets_table.dart';
 import 'tables/investments_table.dart';
@@ -41,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -68,6 +69,17 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.addColumn(localSettings, localSettings.smsParseCount);
         await m.addColumn(localSettings, localSettings.smsParseMonth);
+      }
+      if (from < 5) {
+        // Budgets moves from category-only primary key (one row per
+        // category, ever -- every month's save overwrote the last, so no
+        // history could exist) to (category, monthYear), and drops the
+        // stored spentAmount column entirely in favor of always deriving it
+        // live from transactions. Pre-launch, no installed base to migrate
+        // data for, so this is a clean drop-and-recreate rather than a
+        // column-preserving migration.
+        await m.deleteTable('budgets');
+        await m.createTable(budgets);
       }
     },
     beforeOpen: (details) async {
@@ -101,21 +113,18 @@ class AppDatabase extends _$AppDatabase {
         .write(LocalSettingsCompanion(isPro: Value(isPro)));
   }
 
-  String _currentMonthKey(DateTime now) =>
-      '${now.year}-${now.month.toString().padLeft(2, '0')}';
-
   /// How many SMS have been parsed-to-ledger this calendar month. Resets
   /// implicitly: a stored month that doesn't match the current one reads as
   /// zero without needing an explicit reset write.
   Future<int> smsParsesThisMonth() async {
     final settings = await _getSettings();
-    if (settings.smsParseMonth != _currentMonthKey(DateTime.now())) return 0;
+    if (settings.smsParseMonth != monthKeyOf(DateTime.now())) return 0;
     return settings.smsParseCount;
   }
 
   Future<void> recordSmsParsed() async {
     final settings = await _getSettings();
-    final currentMonth = _currentMonthKey(DateTime.now());
+    final currentMonth = monthKeyOf(DateTime.now());
     final newCount = settings.smsParseMonth == currentMonth
         ? settings.smsParseCount + 1
         : 1;
