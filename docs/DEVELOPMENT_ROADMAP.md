@@ -12,7 +12,7 @@
 |---|---|---|
 | 1 — Foundation & Auth | ✅ Done | Git/CI, Drift migration, real Firebase (Auth: Google + Email/Password, Firestore), migration data-loss bug fixed, app branding |
 | 2 — Core Transactions | ✅ Done | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
-| 3 — SMS Parsing | ⬜ Not started | |
+| 3 — SMS Parsing | ✅ Done | Real device SMS scan+listen, review sheet, SRS-composite duplicate detection, free-tier cap |
 | 4 — Budgeting | ⬜ Not started | |
 | 5 — Accounts & Cards | ⬜ Not started | |
 | 6 — Loans & EMI | ⬜ Not started | |
@@ -171,32 +171,61 @@ auto-adjust on insert/delete, offline-first writes.
 
 ---
 
-## Phase 3 — SMS Parsing
+## Phase 3 — SMS Parsing ✅
 
 Since bank-sync is deferred, this module is the app's **primary automated
 transaction-capture path** — higher priority than the original doc implied.
 
 **Verify/keep:** the regex parser (`sms_parser.dart`, 30+ bank formats,
-confidence scoring) is solid — expand test coverage but don't rewrite it.
-Keep the manual-paste SMS Sandbox permanently as a dev/QA tool.
+confidence scoring) is solid, unchanged. The manual-paste SMS Sandbox stays
+permanently as a dev/QA tool.
 
-**Fix:**
-- No glue code turning an accepted parsed SMS into a real transaction.
-- No real device SMS listener (`flutter_sms_inbox` isn't a dependency yet).
+**Fixed:**
+- The glue code turning an accepted parsed SMS into a real transaction
+  turned out to already exist (wired during the Phase 1 Drift rewrite) —
+  verified rather than assumed stale from the original doc.
+- No real device SMS listener existed.
 
-**Net-new:**
-1. Real device SMS integration: `flutter_sms_inbox` + `READ_SMS`/`RECEIVE_SMS`
-   runtime permission with a clear rationale UI and manual-entry fallback.
-   **Flag:** verify current Google Play policy allows SMS-permission apps in
-   this app's category before shipping — if not, fall back to a
-   share-intent/forward-to-app pattern.
-2. Duplicate detection: composite key = amount + date(±2min) +
-   account-last-4 + reference-number hash.
-3. Review UI: bottom sheet on app foreground-resume, Add/Skip/batch-add.
-4. Free-tier gate: 100 SMS-parses/month counter.
-5. Optional lightweight CSV import as a fallback capture method.
+**Net-new (all done):**
+1. Real device SMS integration via `another_telephony` (chosen over the
+   abandoned `telephony` package and read-only `flutter_sms_inbox` — the
+   only actively-maintained option supporting both inbox queries and a live
+   listener): scans the inbox for bank/UPI-looking messages on app
+   open/resume, listens live while foregrounded. True always-on background
+   capture (app fully closed) deliberately not attempted — the package has
+   no manifest-declared receiver and reliability is questionable given
+   Android's broadcast restrictions since Android 8; scan-on-resume reliably
+   catches up anything missed instead. **Decision confirmed with the user:**
+   build real SMS capture despite the Play Store policy risk (READ_SMS is
+   restricted to apps whose core function requires it) rather than fall
+   back to a share-intent pattern or skip it.
+2. Duplicate detection (`SmsDuplicateDetector`): the actual SRS composite
+   key — exact ref/UPI ID match, or same amount+account+type same-day, or
+   same amount within ±5 minutes (collapsing "bank SMS + UPI app SMS for
+   the same transaction" into one prompt) — replacing the sandbox's
+   previous same-amount-same-day-only check.
+3. `SmsReviewSheet`: permission rationale card (on-device-only parsing,
+   permanently-denied → Settings deep link, always offers manual entry),
+   per-item Add/Skip, batch "Add All High-Confidence" (≥70% per the SRS,
+   skips duplicates). Auto-opens on app foreground/resume once SMS
+   detection is already enabled — first-time enabling is a deliberate
+   profile-menu action, not an auto-prompt, given how sensitive the
+   permission is.
+4. Free-tier gate: 100 SMS-parses/month (`kFreeSmsParseLimit`) via a new
+   `LocalSettings` counter (schema v4).
+5. CSV import: skipped for now (optional per the original plan).
 
-**New dependencies:** `flutter_sms_inbox`, `permission_handler`.
+**New dependencies:** `another_telephony`, `permission_handler`.
+
+**Incidental fixes:** a Gradle "Inconsistent JVM Target Compatibility"
+build failure from `another_telephony`'s Kotlin target defaulting to 1.8
+(fixed by forcing every non-`:app` subproject to JVM 17); a real gitignore
+gap where the root `.gitignore`'s `/build/` never covered
+`android/build/`/`android/app/build/`, which almost committed Gradle build
+output; and a Drift correctness lesson caught by a regression test rather
+than assumed — SQLite's `last_insert_rowid()` is unchanged by an ignored
+`INSERT OR IGNORE`, so `insertSms` checks existence explicitly instead of
+trusting the insert's return value.
 
 ---
 
