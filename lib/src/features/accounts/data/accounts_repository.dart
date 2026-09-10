@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
+import '../../../services/pro_tier_service.dart';
 import '../../auth/data/auth_repository.dart';
+
+const int kFreeAccountLimit = 3;
 
 class AccountModel {
   final String id;
@@ -91,6 +94,7 @@ class AccountsRepository {
             .collection('accounts')
             .get();
         return querySnapshot.docs
+            .where((doc) => doc.data()['closed'] != true)
             .map((doc) => AccountModel.fromMap(doc.data()))
             .toList();
       } catch (e) {
@@ -104,6 +108,15 @@ class AccountsRepository {
       _db.accounts,
     )..where((t) => t.deletedAt.isNull())).get();
     return rows.map(AccountModel.fromRow).toList();
+  }
+
+  Future<int> countAccounts() async => (await getAccounts()).length;
+
+  /// Free tier is capped at [kFreeAccountLimit] accounts; Pro is unlimited.
+  Future<bool> canAddAccount() async {
+    final isPro = _ref.read(isProProvider).valueOrNull ?? false;
+    if (isPro) return true;
+    return (await countAccounts()) < kFreeAccountLimit;
   }
 
   Future<void> addAccount(AccountModel account) async {
@@ -129,10 +142,16 @@ class AccountsRepository {
     await _db.into(_db.accounts).insertOnConflictUpdate(account.toCompanion());
   }
 
-  Future<void> deleteAccount(String id) async {
+  /// Soft-deletes ("closes") an account rather than physically removing the
+  /// row -- the FK from transactions/loans to accounts is ON DELETE RESTRICT,
+  /// so a hard delete would be rejected the moment any history references
+  /// this account (which it almost always does). Closing instead just hides
+  /// the account from active lists/pickers while its historical
+  /// transactions keep resolving normally.
+  Future<void> closeAccount(String id) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await _deleteLocal(id);
+      await _closeLocal(id);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -140,27 +159,18 @@ class AccountsRepository {
             .doc(user.uid)
             .collection('accounts')
             .doc(id)
-            .delete();
-        await _deleteLocal(id);
+            .set({'closed': true}, SetOptions(merge: true));
+        await _closeLocal(id);
       } catch (e) {
-        await _deleteLocal(id);
+        await _closeLocal(id);
       }
     }
   }
 
-  Future<void> _deleteLocal(String id) async {
-    try {
-      await (_db.delete(_db.accounts)..where((t) => t.id.equals(id))).go();
-    } catch (e) {
-      // The FK from transactions/loans to accounts is ON DELETE RESTRICT,
-      // so SQLite refuses this delete while dependents still reference it.
-      if (e.toString().contains('FOREIGN KEY')) {
-        throw StateError(
-          'Cannot delete this account while transactions or loans are still linked to it.',
-        );
-      }
-      rethrow;
-    }
+  Future<void> _closeLocal(String id) async {
+    await (_db.update(_db.accounts)..where((t) => t.id.equals(id))).write(
+      AccountsCompanion(deletedAt: Value(DateTime.now())),
+    );
   }
 }
 
@@ -190,8 +200,8 @@ class AccountListNotifier
     await refresh();
   }
 
-  Future<void> remove(String id) async {
-    await _repo.deleteAccount(id);
+  Future<void> close(String id) async {
+    await _repo.closeAccount(id);
     await refresh();
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../transactions/presentation/transaction_form_sheet.dart';
 import 'dashboard_tab.dart';
@@ -177,6 +178,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               AppSizes.h12,
 
               // Action Options
+              ListTile(
+                leading: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Accounts & Cards',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                subtitle: const Text(
+                  'Manage bank accounts, wallets, and credit cards',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AccountsListScreen(),
+                    ),
+                  );
+                },
+              ),
               if (user.isGuest)
                 ListTile(
                   leading: const Icon(

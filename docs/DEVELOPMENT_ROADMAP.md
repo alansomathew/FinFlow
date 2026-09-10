@@ -14,7 +14,7 @@
 | 2 — Core Transactions | ✅ Done | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
 | 3 — SMS Parsing | ✅ Done | Real device SMS scan+listen, review sheet, SRS-composite duplicate detection, free-tier cap |
 | 4 — Budgeting | ✅ Done (client-side) | Derived spend, monthly history, create/edit/delete UI, cross-bucket warning. Scheduled reset + push alerts deliberately deferred until Blaze is worth adopting for multiple phases at once |
-| 5 — Accounts & Cards | ⬜ Not started | |
+| 5 — Accounts & Cards | ✅ Done | Full accounts UI built from scratch (list/add/edit/detail/close), credit utilization + due-date banner, 3-account free-tier gate |
 | 6 — Loans & EMI | ⬜ Not started | |
 | 7 — Savings Goals | ⬜ Not started | |
 | 8 — Investments | ⬜ Not started | |
@@ -277,15 +277,43 @@ above.
 
 ## Phase 5 — Accounts & Cards
 
-**Fix:** no edit-account UI, no detail/tap-through view.
+**Fix:** turned out there was no accounts UI at all, in either direction --
+accounts could only be created by the demo seeder and selected (read-only)
+from a dropdown when adding a transaction. No add/edit/detail screen, no
+navigation entry point, existed anywhere in the app.
 
-**Net-new:**
-1. Edit-account sheet, account detail screen (balance history, linked
-   transactions, soft-delete "close account").
-2. Credit-card due-date reminder, credit-utilization display.
-3. Free-tier gate: 3 accounts (free) / unlimited (Pro).
-4. Nullable `owner_uids` array column on `accounts` (used by Phase 11's
-   joint wallet) so that feature doesn't need its own migration later.
+**Done:**
+1. `AccountsListScreen` (entry points: a new "Accounts & Cards" drawer item,
+   and tapping the dashboard's Net Worth card) -- lists all active accounts
+   with balance, type, and credit-utilization bar for cards.
+2. `AccountFormSheet` -- shared add/edit form (name, type, balance, and for
+   credit cards, credit limit + due date + a color swatch picker).
+3. `AccountDetailScreen` -- balance/utilization header, a due-date banner
+   ("Due in N days" / "Overdue by N days", color-coded) for credit cards,
+   and the account's linked transaction history (tap-through to the
+   existing transaction detail screen).
+4. Close-account flow implemented as a **soft delete** (`deletedAt` locally,
+   a `closed` flag in Firestore), not a hard delete: the accounts→
+   transactions/loans foreign key is `ON DELETE RESTRICT`, so a real delete
+   would be rejected the moment any history references the account (which
+   is effectively always). Closing instead just hides the account from
+   active lists while every transaction that references it keeps resolving
+   normally.
+5. Free-tier gate: `kFreeAccountLimit = 3`, unlimited on Pro -- same
+   `canAddX()` pattern already used for recurring transactions and SMS
+   parses.
+6. Added a nullable `owner_uids` column to `accounts` now (schema version
+   6) for Phase 11's joint wallet, so that feature won't need its own
+   migration later.
+
+**Deferred:** a true OS-level scheduled push reminder for card due dates
+(would need `flutter_local_notifications` + timezone-aware scheduling +
+Android 13 notification permission) was scoped down to the in-app due-date
+banner above -- that scheduling code isn't something I could verify
+actually fires without a real device/emulator to advance the clock on, so
+shipping it unverified felt worse than shipping the deterministic in-app
+version and revisiting real push reminders alongside Phase 4's FCM work
+once Cloud Functions are stood up.
 
 ---
 

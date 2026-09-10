@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
 import '../../accounts/data/accounts_repository.dart';
+import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
 import '../../budget/data/budget_repository.dart';
@@ -95,7 +96,16 @@ class DashboardTab extends ConsumerWidget {
                   }
                   final netWorth = assets - liabilities;
 
-                  return Container(
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const AccountsListScreen(),
+                        ),
+                      ),
+                      child: Container(
                     padding: const EdgeInsets.all(AppSizes.lg),
                     decoration: BoxDecoration(
                       gradient: AppColors.primaryGradient,
@@ -174,6 +184,8 @@ class DashboardTab extends ConsumerWidget {
                           ],
                         ),
                       ],
+                    ),
+                      ),
                     ),
                   );
                 },

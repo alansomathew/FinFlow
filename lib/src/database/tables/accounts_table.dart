@@ -10,6 +10,11 @@ class Accounts extends Table {
   TextColumn get colorHex => text()();
   TextColumn get currency => text().withDefault(const Constant('INR'))();
 
+  /// JSON-encoded array of Firebase UIDs with access to this account, beyond
+  /// the owner. Nullable and unused until Phase 11's joint wallet feature;
+  /// added now so that feature doesn't need its own migration later.
+  TextColumn get ownerUids => text().nullable()();
+
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(() => DateTime.now())();
   DateTimeColumn get updatedAt =>

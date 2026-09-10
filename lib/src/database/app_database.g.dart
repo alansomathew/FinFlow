@@ -92,6 +92,17 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     requiredDuringInsert: false,
     defaultValue: const Constant('INR'),
   );
+  static const VerificationMeta _ownerUidsMeta = const VerificationMeta(
+    'ownerUids',
+  );
+  @override
+  late final GeneratedColumn<String> ownerUids = GeneratedColumn<String>(
+    'owner_uids',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -137,6 +148,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     cardDueDate,
     colorHex,
     currency,
+    ownerUids,
     createdAt,
     updatedAt,
     deletedAt,
@@ -214,6 +226,12 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
       );
     }
+    if (data.containsKey('owner_uids')) {
+      context.handle(
+        _ownerUidsMeta,
+        ownerUids.isAcceptableOrUnknown(data['owner_uids']!, _ownerUidsMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -273,6 +291,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         DriftSqlType.string,
         data['${effectivePrefix}currency'],
       )!,
+      ownerUids: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_uids'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -303,6 +325,11 @@ class Account extends DataClass implements Insertable<Account> {
   final String? cardDueDate;
   final String colorHex;
   final String currency;
+
+  /// JSON-encoded array of Firebase UIDs with access to this account, beyond
+  /// the owner. Nullable and unused until Phase 11's joint wallet feature;
+  /// added now so that feature doesn't need its own migration later.
+  final String? ownerUids;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -315,6 +342,7 @@ class Account extends DataClass implements Insertable<Account> {
     this.cardDueDate,
     required this.colorHex,
     required this.currency,
+    this.ownerUids,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -332,6 +360,9 @@ class Account extends DataClass implements Insertable<Account> {
     }
     map['color_hex'] = Variable<String>(colorHex);
     map['currency'] = Variable<String>(currency);
+    if (!nullToAbsent || ownerUids != null) {
+      map['owner_uids'] = Variable<String>(ownerUids);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -352,6 +383,9 @@ class Account extends DataClass implements Insertable<Account> {
           : Value(cardDueDate),
       colorHex: Value(colorHex),
       currency: Value(currency),
+      ownerUids: ownerUids == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerUids),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -374,6 +408,7 @@ class Account extends DataClass implements Insertable<Account> {
       cardDueDate: serializer.fromJson<String?>(json['cardDueDate']),
       colorHex: serializer.fromJson<String>(json['colorHex']),
       currency: serializer.fromJson<String>(json['currency']),
+      ownerUids: serializer.fromJson<String?>(json['ownerUids']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -391,6 +426,7 @@ class Account extends DataClass implements Insertable<Account> {
       'cardDueDate': serializer.toJson<String?>(cardDueDate),
       'colorHex': serializer.toJson<String>(colorHex),
       'currency': serializer.toJson<String>(currency),
+      'ownerUids': serializer.toJson<String?>(ownerUids),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -406,6 +442,7 @@ class Account extends DataClass implements Insertable<Account> {
     Value<String?> cardDueDate = const Value.absent(),
     String? colorHex,
     String? currency,
+    Value<String?> ownerUids = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -418,6 +455,7 @@ class Account extends DataClass implements Insertable<Account> {
     cardDueDate: cardDueDate.present ? cardDueDate.value : this.cardDueDate,
     colorHex: colorHex ?? this.colorHex,
     currency: currency ?? this.currency,
+    ownerUids: ownerUids.present ? ownerUids.value : this.ownerUids,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -436,6 +474,7 @@ class Account extends DataClass implements Insertable<Account> {
           : this.cardDueDate,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
       currency: data.currency.present ? data.currency.value : this.currency,
+      ownerUids: data.ownerUids.present ? data.ownerUids.value : this.ownerUids,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -453,6 +492,7 @@ class Account extends DataClass implements Insertable<Account> {
           ..write('cardDueDate: $cardDueDate, ')
           ..write('colorHex: $colorHex, ')
           ..write('currency: $currency, ')
+          ..write('ownerUids: $ownerUids, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -470,6 +510,7 @@ class Account extends DataClass implements Insertable<Account> {
     cardDueDate,
     colorHex,
     currency,
+    ownerUids,
     createdAt,
     updatedAt,
     deletedAt,
@@ -486,6 +527,7 @@ class Account extends DataClass implements Insertable<Account> {
           other.cardDueDate == this.cardDueDate &&
           other.colorHex == this.colorHex &&
           other.currency == this.currency &&
+          other.ownerUids == this.ownerUids &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -500,6 +542,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String?> cardDueDate;
   final Value<String> colorHex;
   final Value<String> currency;
+  final Value<String?> ownerUids;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -513,6 +556,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.cardDueDate = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.currency = const Value.absent(),
+    this.ownerUids = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -527,6 +571,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.cardDueDate = const Value.absent(),
     required String colorHex,
     this.currency = const Value.absent(),
+    this.ownerUids = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -545,6 +590,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Expression<String>? cardDueDate,
     Expression<String>? colorHex,
     Expression<String>? currency,
+    Expression<String>? ownerUids,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -559,6 +605,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       if (cardDueDate != null) 'card_due_date': cardDueDate,
       if (colorHex != null) 'color_hex': colorHex,
       if (currency != null) 'currency': currency,
+      if (ownerUids != null) 'owner_uids': ownerUids,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -575,6 +622,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<String?>? cardDueDate,
     Value<String>? colorHex,
     Value<String>? currency,
+    Value<String?>? ownerUids,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -589,6 +637,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       cardDueDate: cardDueDate ?? this.cardDueDate,
       colorHex: colorHex ?? this.colorHex,
       currency: currency ?? this.currency,
+      ownerUids: ownerUids ?? this.ownerUids,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -623,6 +672,9 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     if (currency.present) {
       map['currency'] = Variable<String>(currency.value);
     }
+    if (ownerUids.present) {
+      map['owner_uids'] = Variable<String>(ownerUids.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -649,6 +701,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
           ..write('cardDueDate: $cardDueDate, ')
           ..write('colorHex: $colorHex, ')
           ..write('currency: $currency, ')
+          ..write('ownerUids: $ownerUids, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -4979,6 +5032,7 @@ typedef $$AccountsTableCreateCompanionBuilder =
       Value<String?> cardDueDate,
       required String colorHex,
       Value<String> currency,
+      Value<String?> ownerUids,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -4994,6 +5048,7 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<String?> cardDueDate,
       Value<String> colorHex,
       Value<String> currency,
+      Value<String?> ownerUids,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -5106,6 +5161,11 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerUids => $composableBuilder(
+    column: $table.ownerUids,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5249,6 +5309,11 @@ class $$AccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get ownerUids => $composableBuilder(
+    column: $table.ownerUids,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -5301,6 +5366,9 @@ class $$AccountsTableAnnotationComposer
 
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerUids =>
+      $composableBuilder(column: $table.ownerUids, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5427,6 +5495,7 @@ class $$AccountsTableTableManager
                 Value<String?> cardDueDate = const Value.absent(),
                 Value<String> colorHex = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<String?> ownerUids = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -5440,6 +5509,7 @@ class $$AccountsTableTableManager
                 cardDueDate: cardDueDate,
                 colorHex: colorHex,
                 currency: currency,
+                ownerUids: ownerUids,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -5455,6 +5525,7 @@ class $$AccountsTableTableManager
                 Value<String?> cardDueDate = const Value.absent(),
                 required String colorHex,
                 Value<String> currency = const Value.absent(),
+                Value<String?> ownerUids = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -5468,6 +5539,7 @@ class $$AccountsTableTableManager
                 cardDueDate: cardDueDate,
                 colorHex: colorHex,
                 currency: currency,
+                ownerUids: ownerUids,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

@@ -84,7 +84,7 @@ class TransactionDetailScreen extends ConsumerWidget {
             ?.where((a) => a.id == current.accountId)
             .firstOrNull
             ?.name ??
-        'Unknown Account';
+        'Closed Account';
 
     final category = TransactionCategory.getByName(current.category);
     final isDebit = current.bucket != BudgetBucket.income;

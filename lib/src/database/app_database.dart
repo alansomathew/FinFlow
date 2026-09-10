@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -80,6 +80,9 @@ class AppDatabase extends _$AppDatabase {
         // column-preserving migration.
         await m.deleteTable('budgets');
         await m.createTable(budgets);
+      }
+      if (from < 6) {
+        await m.addColumn(accounts, accounts.ownerUids);
       }
     },
     beforeOpen: (details) async {
