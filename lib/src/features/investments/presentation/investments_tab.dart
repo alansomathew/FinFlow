@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'dart:math';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../services/pro_tier_service.dart';
 import '../data/investments_repository.dart';
+import 'investment_form_sheet.dart';
 
 class InvestmentsTab extends ConsumerStatefulWidget {
   const InvestmentsTab({super.key});
@@ -16,7 +17,6 @@ class InvestmentsTab extends ConsumerStatefulWidget {
 class _InvestmentsTabState extends ConsumerState<InvestmentsTab>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _random = Random();
 
   @override
   void initState() {
@@ -38,50 +38,77 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab>
     ).format(amount);
   }
 
-  // Live NAV / Price Update Simulator
-  Future<void> _simulateLivePricesUpdate(List<InvestmentModel> list) async {
-    final notifier = ref.read(investmentListProvider.notifier);
+  void _showAddSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const InvestmentFormSheet(),
+    );
+  }
 
-    // Simulate updating prices by a random margin (-3% to +4%)
-    for (var inv in list) {
-      final changePercent =
-          -0.03 +
-          _random.nextDouble() * 0.07; // random value between -0.03 and +0.04
-      final newPrice = inv.currentPrice * (1 + changePercent);
+  void _showEditSheet(InvestmentModel investment) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => InvestmentFormSheet(existing: investment),
+    );
+  }
 
-      final updated = InvestmentModel(
-        id: inv.id,
-        type: inv.type,
-        name: inv.name,
-        unitsQuantity: inv.unitsQuantity,
-        purchasePrice: inv.purchasePrice,
-        currentPrice: newPrice,
-        datePurchased: inv.datePurchased,
-      );
-
-      // Update in repository
-      await ref.read(investmentsRepositoryProvider).addInvestment(updated);
-    }
-
-    // Refresh Provider
-    await notifier.refresh();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Live market feeds updated! Portfolio revalued.'),
-          backgroundColor: AppColors.success,
+  Future<void> _confirmDelete(InvestmentModel investment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-      );
+        title: const Text(
+          'Delete Investment?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'This removes "${investment.name}" from your portfolio.',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ref.read(investmentListProvider.notifier).remove(investment.id);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isPro = ref.watch(isProProvider).valueOrNull ?? false;
+
+    if (!isPro) {
+      return const _InvestmentsUpsell();
+    }
+
     final investmentsAsync = ref.watch(investmentListProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.primary,
+        onPressed: _showAddSheet,
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
       body: investmentsAsync.when(
         data: (investments) {
           double totalInvested = 0;
@@ -112,54 +139,27 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab>
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Portfolio Value',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                              AppSizes.h4,
-                              Text(
-                                _formatCurrency(currentVal),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Portfolio Value',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
                           ),
-                          ElevatedButton.icon(
-                            onPressed: () =>
-                                _simulateLivePricesUpdate(investments),
-                            icon: const Icon(
-                              Icons.flash_on_rounded,
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                            label: const Text(
-                              'Update Feed',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                            ),
+                        ),
+                      ),
+                      AppSizes.h4,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          _formatCurrency(currentVal),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
+                        ),
                       ),
                       AppSizes.h12,
                       const Divider(color: AppColors.border, height: 1),
@@ -274,10 +274,25 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab>
 
   Widget _buildInvestmentList(List<InvestmentModel> list) {
     if (list.isEmpty) {
-      return const Center(
-        child: Text(
-          'No assets logged in this category.',
-          style: TextStyle(color: AppColors.textSecondary),
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'No assets logged in this category.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            AppSizes.h12,
+            ElevatedButton.icon(
+              onPressed: _showAddSheet,
+              icon: const Icon(Icons.add_rounded, color: Colors.white),
+              label: const Text(
+                'Add Investment',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            ),
+          ],
         ),
       );
     }
@@ -295,73 +310,124 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab>
         return Card(
           color: AppColors.cardBg,
           margin: const EdgeInsets.only(bottom: 8),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSizes.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      inv.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      _formatCurrency(marketValue),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                AppSizes.h8,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Qty: ${inv.unitsQuantity.toStringAsFixed(inv.type == 'Stock' ? 0 : 2)} • Avg Price: ${_formatCurrency(inv.purchasePrice)}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 10,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Icon(
-                          isPositive
-                              ? Icons.arrow_drop_up_rounded
-                              : Icons.arrow_drop_down_rounded,
-                          color: isPositive
-                              ? AppColors.success
-                              : AppColors.error,
-                          size: 14,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            onTap: () => _showEditSheet(inv),
+            onLongPress: () => _confirmDelete(inv),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        inv.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
-                        Text(
-                          '${isPositive ? "+" : ""}${pnlPercent.toStringAsFixed(1)}%',
-                          style: TextStyle(
+                      ),
+                      Text(
+                        _formatCurrency(marketValue),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  AppSizes.h8,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Qty: ${inv.unitsQuantity.toStringAsFixed(inv.type == 'Stock' ? 0 : 2)} • Avg Price: ${_formatCurrency(inv.purchasePrice)}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(
+                            isPositive
+                                ? Icons.arrow_drop_up_rounded
+                                : Icons.arrow_drop_down_rounded,
                             color: isPositive
                                 ? AppColors.success
                                 : AppColors.error,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            size: 14,
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                          Text(
+                            '${isPositive ? "+" : ""}${pnlPercent.toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              color: isPositive
+                                  ? AppColors.success
+                                  : AppColors.error,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _InvestmentsUpsell extends StatelessWidget {
+  const _InvestmentsUpsell();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.workspace_premium_rounded,
+                color: AppColors.warning,
+                size: 48,
+              ),
+              AppSizes.h16,
+              const Text(
+                'Investments is a Pro Feature',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              AppSizes.h8,
+              const Text(
+                'Track stocks, mutual funds, and SIPs with portfolio-level P&L. Upgrade to Pro to unlock this module.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

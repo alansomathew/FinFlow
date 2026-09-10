@@ -17,7 +17,7 @@
 | 5 — Accounts & Cards | ✅ Done | Full accounts UI built from scratch (list/add/edit/detail/close), credit utilization + due-date banner, 3-account free-tier gate |
 | 6 — Loans & EMI | ✅ Done (client-side) | Real AmortizationEngine (unit-tested) replaces fudge-factor debt math, loan CRUD UI built from scratch, 2-loan free-tier gate, Pro-gated Snowball/Avalanche. EMI auto-posting deferred with the rest of the Cloud Functions work |
 | 7 — Savings Goals | ✅ Done | Fully net-new module built from scratch: goals table/repo/UI, confetti milestone celebration, 3-goal free-tier gate, dashboard preview |
-| 8 — Investments | ⬜ Not started | |
+| 8 — Investments | ✅ Done (client-side) | Removed fake Random() price jitter, built investment CRUD UI, Pro-gated the whole module. Real Cloud Function-backed price feeds deferred (Blaze hold + open provider choice) |
 | 9 — Analytics | ⬜ Not started | |
 | 10 — AI & Tips | ⬜ Not started | |
 | 11 — Pro Features | ⬜ Not started | |
@@ -393,18 +393,35 @@ once Cloud Functions are worth standing up for multiple features at once.
 
 ## Phase 8 — Investments
 
-**Fix — the fake-feed bug:** `investments_tab.dart`'s "Update Feed" button
-randomly jitters prices via `Random()` instead of fetching anything real.
+**Fixed -- the fake-feed bug:** `investments_tab.dart`'s "Update Feed"
+button called `Random()` to jitter every holding's price by -3%/+4% and
+called that "Live market feeds updated!" -- pure fabrication, not backed
+by any real market data. Removed entirely rather than kept as a "demo"
+feature, since a finance app silently showing fake price movement is
+worse than showing none.
 
-**Net-new — real feeds via Cloud Functions:**
-1. Scheduled `fetchMfNav`: downloads AMFI's free public `NAVAll.txt`.
-2. Scheduled `fetchStockPrices` (market hours only) — concrete provider TBD
-   (RapidAPI NSE wrapper vs. broker-partner API like Kite Connect).
-3. Client reads from Firestore cache; "Update Feed" becomes a rate-limited
-   on-demand refresh.
-4. Portfolio P&L computation once real prices exist.
-5. Investment add/edit form if missing.
-6. Free-tier gate: entire module is Pro-only.
+**Done:**
+1. Investment add/edit UI (`InvestmentFormSheet`) -- like Accounts/Loans/
+   Goals before their phases, there was no add/edit form anywhere, only
+   the demo seeder ever created a holding. `currentPrice` is now a plain
+   editable field on this form: real live feeds are deferred (below), so
+   until they land, manually updating a price here is how it happens --
+   honestly, instead of a random jitter pretending to be one.
+2. Portfolio P&L computation (invested vs. current value, % return) was
+   already implemented client-side on top of the fake feed; kept as-is,
+   now computing over honestly-sourced prices.
+3. Free-tier gate: the entire module is Pro-only per the SRS. Free users
+   see an upsell screen in place of the Investments tab; the dashboard's
+   read-only portfolio-value summary card stays visible either way since
+   it's passive, not interactive.
+
+**Deferred -- real feeds via Cloud Functions (`fetchMfNav` from AMFI's
+free `NAVAll.txt`, `fetchStockPrices` from a still-undecided provider):**
+same Blaze-plan hold as Phases 4 and 6, plus a genuinely open decision
+(RapidAPI NSE wrapper vs. a broker-partner API like Kite Connect) that
+doesn't need resolving until this work is actually scheduled. When it
+lands, "Update Feed" becomes a rate-limited on-demand refresh from the
+Firestore price cache instead of the manual form field above.
 
 ---
 
