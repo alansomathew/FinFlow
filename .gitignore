@@ -62,3 +62,11 @@ serviceAccountKey*.json
 # Local tooling state
 .claude/
 .qodo/
+
+# Desktop/web platforms dropped from this project (Android-only) — Flutter
+# tooling occasionally regenerates ephemeral scaffolding for them on
+# `pub get`; never track it if it reappears.
+/macos/
+/windows/
+/linux/
+/web/
