@@ -5,26 +5,54 @@ import 'package:uuid/uuid.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
 import '../../accounts/data/accounts_repository.dart';
+import '../data/recurring_repository.dart';
 import '../data/transaction_repository.dart';
 import '../domain/transaction.dart';
 
-class AddTransactionSheet extends ConsumerStatefulWidget {
-  const AddTransactionSheet({super.key});
+/// Add/edit form for a single transaction. Pass [existing] to edit it in
+/// place; omit it to add a new one. The recurring toggle is only offered
+/// when adding, since retrofitting recurrence onto an already-materialized
+/// transaction would need to locate/update its originating rule, which
+/// isn't tracked back from the transaction row.
+class TransactionFormSheet extends ConsumerStatefulWidget {
+  final TransactionModel? existing;
+  const TransactionFormSheet({super.key, this.existing});
 
   @override
-  ConsumerState<AddTransactionSheet> createState() =>
-      _AddTransactionSheetState();
+  ConsumerState<TransactionFormSheet> createState() =>
+      _TransactionFormSheetState();
 }
 
-class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _amountController = TextEditingController();
-  final _payeeController = TextEditingController();
-  final _noteController = TextEditingController();
+const _frequencies = ['daily', 'weekly', 'monthly'];
 
-  TransactionCategory _selectedCategory = TransactionCategory.presets.first;
+class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _amountController;
+  late final TextEditingController _payeeController;
+  late final TextEditingController _noteController;
+
+  late TransactionCategory _selectedCategory;
   AccountModel? _selectedAccount;
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
+  bool _isRecurring = false;
+  String _frequency = 'monthly';
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final existing = widget.existing;
+    _amountController = TextEditingController(
+      text: existing != null ? existing.amount.toString() : '',
+    );
+    _payeeController = TextEditingController(text: existing?.payee ?? '');
+    _noteController = TextEditingController(text: existing?.note ?? '');
+    _selectedCategory = existing != null
+        ? TransactionCategory.getByName(existing.category)
+        : TransactionCategory.presets.first;
+    _selectedDate = existing?.date ?? DateTime.now();
+  }
 
   @override
   void dispose() {
@@ -61,7 +89,19 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     }
   }
 
-  void _submit() {
+  DateTime _firstOccurrenceAfter(DateTime date, String frequency) {
+    switch (frequency) {
+      case 'daily':
+        return date.add(const Duration(days: 1));
+      case 'weekly':
+        return date.add(const Duration(days: 7));
+      case 'monthly':
+      default:
+        return DateTime(date.year, date.month + 1, date.day);
+    }
+  }
+
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -72,24 +112,65 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     }
 
     final amount = double.parse(_amountController.text);
-    final tx = TransactionModel(
-      id: const Uuid().v4(),
-      amount: amount,
-      category: _selectedCategory.name,
-      bucket: _selectedCategory.bucket,
-      accountId: _selectedAccount!.id,
-      date: _selectedDate,
-      payee: _payeeController.text.trim(),
-      note: _noteController.text.trim(),
-      isRecurring: false,
-    );
 
-    // Add transaction to provider
-    ref.read(transactionListProvider.notifier).add(tx);
-    // Refresh account balances
-    ref.read(accountListProvider.notifier).refresh();
+    if (_isEditing) {
+      final updated = TransactionModel(
+        id: widget.existing!.id,
+        amount: amount,
+        category: _selectedCategory.name,
+        bucket: _selectedCategory.bucket,
+        accountId: _selectedAccount!.id,
+        date: _selectedDate,
+        payee: _payeeController.text.trim(),
+        note: _noteController.text.trim(),
+        isRecurring: widget.existing!.isRecurring,
+        refId: widget.existing!.refId,
+      );
+      await ref
+          .read(transactionListProvider.notifier)
+          .update(widget.existing!, updated);
+      await ref.read(accountListProvider.notifier).refresh();
+    } else {
+      final tx = TransactionModel(
+        id: const Uuid().v4(),
+        amount: amount,
+        category: _selectedCategory.name,
+        bucket: _selectedCategory.bucket,
+        accountId: _selectedAccount!.id,
+        date: _selectedDate,
+        payee: _payeeController.text.trim(),
+        note: _noteController.text.trim(),
+        isRecurring: _isRecurring,
+      );
+      await ref.read(transactionListProvider.notifier).add(tx);
+      await ref.read(accountListProvider.notifier).refresh();
 
-    Navigator.pop(context);
+      if (_isRecurring) {
+        final recurringRepo = ref.read(recurringRepositoryProvider);
+        if (await recurringRepo.canAddRule()) {
+          await recurringRepo.addRule(
+            amount: amount,
+            category: _selectedCategory.name,
+            bucket: _selectedCategory.bucket,
+            accountId: _selectedAccount!.id,
+            payee: _payeeController.text.trim(),
+            note: _noteController.text.trim(),
+            frequency: _frequency,
+            nextDueDate: _firstOccurrenceAfter(_selectedDate, _frequency),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Free tier allows up to $kFreeRecurringLimit recurring transactions. This one was added once, but not scheduled to repeat.',
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    if (mounted) Navigator.pop(context);
   }
 
   @override
@@ -128,9 +209,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     ),
                   ),
                   AppSizes.h12,
-                  const Text(
-                    'Add Transaction',
-                    style: TextStyle(
+                  Text(
+                    _isEditing ? 'Edit Transaction' : 'Add Transaction',
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -214,8 +295,12 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         );
                       }
 
-                      // Auto-select first account
-                      _selectedAccount ??= accounts.first;
+                      _selectedAccount ??= _isEditing
+                          ? accounts.firstWhere(
+                              (a) => a.id == widget.existing!.accountId,
+                              orElse: () => accounts.first,
+                            )
+                          : accounts.first;
 
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -226,7 +311,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                           ),
                         ),
                         child: DropdownButtonFormField<AccountModel>(
-                          value: _selectedAccount,
+                          initialValue: _selectedAccount,
                           dropdownColor: AppColors.surface,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
@@ -266,7 +351,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
                     child: DropdownButtonFormField<TransactionCategory>(
-                      value: _selectedCategory,
+                      initialValue: _selectedCategory,
                       dropdownColor: AppColors.surface,
                       decoration: const InputDecoration(
                         border: InputBorder.none,
@@ -293,43 +378,33 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   ),
                   AppSizes.h12,
 
-                  // Date Picker & Note Field Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDate(context),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.cardBg,
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusMd,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_month_rounded,
-                                  color: AppColors.textSecondary,
-                                  size: 20,
-                                ),
-                                AppSizes.w8,
-                                Text(
-                                  DateFormat(
-                                    'dd MMM yyyy',
-                                  ).format(_selectedDate),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                  // Date Picker
+                  InkWell(
+                    onTap: () => _selectDate(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 12,
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBg,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_month_rounded,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          AppSizes.w8,
+                          Text(
+                            DateFormat('dd MMM yyyy').format(_selectedDate),
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                   AppSizes.h12,
 
@@ -354,6 +429,70 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       ),
                     ),
                   ),
+
+                  if (!_isEditing) ...[
+                    AppSizes.h12,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBg,
+                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      ),
+                      child: SwitchListTile(
+                        title: const Text(
+                          'Repeat this transaction',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          'Free tier: up to $kFreeRecurringLimit active recurring transactions',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                        value: _isRecurring,
+                        activeThumbColor: AppColors.primary,
+                        onChanged: (val) => setState(() => _isRecurring = val),
+                      ),
+                    ),
+                    if (_isRecurring) ...[
+                      AppSizes.h8,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardBg,
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
+                        ),
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _frequency,
+                          dropdownColor: AppColors.surface,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            labelText: 'Frequency',
+                            labelStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          style: const TextStyle(color: Colors.white),
+                          items: _frequencies
+                              .map(
+                                (f) => DropdownMenuItem(
+                                  value: f,
+                                  child: Text(
+                                    f[0].toUpperCase() + f.substring(1),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _frequency = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
                   AppSizes.h24,
 
                   // Submit Button
@@ -366,9 +505,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                     ),
-                    child: const Text(
-                      'Save Transaction',
-                      style: TextStyle(
+                    child: Text(
+                      _isEditing ? 'Save Changes' : 'Save Transaction',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

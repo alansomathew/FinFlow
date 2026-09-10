@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../transactions/data/recurring_repository.dart';
 import '../data/auth_repository.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -25,6 +26,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     final user = ref.read(authProvider);
     if (user != null) {
+      // Materialize any due recurring transactions before entering the app
+      // so the dashboard/ledger reflect them immediately, rather than
+      // waiting for a manual refresh. Best-effort: a failure here (e.g.
+      // offline on a cloud account) shouldn't block reaching the app.
+      try {
+        await ref.read(recurringRepositoryProvider).materializeDueRules();
+      } catch (_) {
+        // Ignored -- recurring materialization will retry on next app open.
+      }
+      if (!mounted) return;
       context.go('/home');
     } else {
       context.go('/login');

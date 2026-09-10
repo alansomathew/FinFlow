@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
 import '../../auth/data/auth_repository.dart';
-import '../../transactions/presentation/add_transaction_sheet.dart';
+import '../../transactions/presentation/transaction_form_sheet.dart';
 import 'dashboard_tab.dart';
 import '../../transactions/presentation/transactions_tab.dart';
 import '../../budget/presentation/budget_tab.dart';
@@ -24,7 +24,7 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const AddTransactionSheet(),
+      builder: (context) => const TransactionFormSheet(),
     );
   }
 

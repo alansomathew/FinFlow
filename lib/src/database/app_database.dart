@@ -11,6 +11,7 @@ import 'tables/budgets_table.dart';
 import 'tables/investments_table.dart';
 import 'tables/loans_table.dart';
 import 'tables/local_settings_table.dart';
+import 'tables/recurring_rules_table.dart';
 import 'tables/sms_inbox_table.dart';
 import 'tables/transactions_table.dart';
 
@@ -27,6 +28,7 @@ const _singletonSettingsId = 0;
     Investments,
     SmsInbox,
     LocalSettings,
+    RecurringRules,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -39,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,6 +61,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await m.createTable(localSettings);
         await _seedLocalSettings();
+      }
+      if (from < 3) {
+        await m.createTable(recurringRules);
       }
     },
     beforeOpen: (details) async {
@@ -92,6 +97,7 @@ class AppDatabase extends _$AppDatabase {
   /// deletes.
   Future<void> clearAllData() async {
     await transaction(() async {
+      await delete(recurringRules).go();
       await delete(transactions).go();
       await delete(loans).go();
       await delete(investments).go();
