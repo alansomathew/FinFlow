@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../database/app_database.dart';
 
 class UserProfile {
   final String uid;
@@ -181,6 +182,14 @@ class AuthNotifier extends StateNotifier<UserProfile?> {
       }
       await fb_auth.FirebaseAuth.instance.signOut();
     }
+
+    // Local SQLite is a per-signed-in-account offline cache (every
+    // repository write-throughs to it), not just guest storage. Without
+    // clearing it here, a second account signing in on the same device
+    // could fall back to reading the first account's cached data if its own
+    // Firestore read ever failed -- local has no uid-scoping to prevent
+    // that, so wiping it on sign-out is the only thing that does.
+    await AppDatabase.instance.clearAllData();
 
     state = null;
   }

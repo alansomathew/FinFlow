@@ -7,18 +7,18 @@ import '../features/investments/data/investments_repository.dart';
 import '../features/transactions/domain/transaction.dart';
 import 'app_database.dart';
 
-/// Result of a guest-to-cloud migration attempt. Distinguishes "nothing to
-/// migrate" / genuine success from a failed cloud write, since only the
-/// former may safely clear local data.
+/// Result of a guest-to-cloud migration attempt.
 enum MigrationResult { success, failed }
 
 class MigrationService {
-  /// Migrates all local guest data to Firestore for [uid], then clears the
-  /// local copy — but ONLY after the Firestore write is confirmed to have
-  /// committed. If the batch write throws (offline, Firestore not
-  /// configured, permission error, etc.), local data is left untouched and
-  /// [MigrationResult.failed] is returned so the caller can surface the
-  /// failure instead of silently proceeding as if the backup succeeded.
+  /// Copies all local guest data to Firestore under [uid]. Local data is
+  /// left in place either way: on success it becomes the warm offline
+  /// cache for the newly-linked account (every repository already
+  /// write-throughs to both Firestore and local for real accounts); on
+  /// failure ([MigrationResult.failed]) it's simply the only copy that
+  /// still exists, since the Firestore write never verifiably committed.
+  /// The caller should surface a failure rather than silently proceeding
+  /// as if the backup succeeded.
   static Future<MigrationResult> migrateGuestDataToFirebase(String uid) async {
     final db = AppDatabase.instance;
 
@@ -120,9 +120,16 @@ class MigrationService {
       // which deleted the user's only copy of their data. Propagate instead.
       await batch.commit();
 
-      // Only reachable once the cloud write is verified to have committed.
-      await db.clearAllData();
-
+      // Deliberately NOT clearing local data here. Every repository already
+      // write-throughs to both Firestore and local SQLite for real accounts
+      // and falls back to the local copy if a Firestore read fails (offline,
+      // transient error, etc.) -- local is the app's offline cache, not
+      // guest-only storage. Wiping it immediately after migration would
+      // leave that cache empty, so a user who loses connectivity right
+      // after joining would see an empty app despite their data being safe
+      // in Firestore. Since batch.commit() just verified above, local and
+      // Firestore now hold the same data under the same IDs, so keeping
+      // local is exactly the warm cache the offline-fallback path expects.
       debugPrint("Migration completed successfully!");
       return MigrationResult.success;
     } catch (e) {
