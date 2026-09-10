@@ -9,6 +9,7 @@ import '../../transactions/domain/transaction.dart';
 import '../../budget/data/budget_repository.dart';
 import '../../debt/data/debt_repository.dart';
 import '../../investments/data/investments_repository.dart';
+import '../../transactions/presentation/transaction_detail_screen.dart';
 import 'home_screen.dart';
 
 class DashboardTab extends ConsumerWidget {
@@ -521,6 +522,12 @@ class DashboardTab extends ConsumerWidget {
 
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                TransactionDetailScreen(transaction: t),
+                          ),
+                        ),
                         leading: CircleAvatar(
                           backgroundColor: t.bucket.color.withOpacity(0.15),
                           child: Text(

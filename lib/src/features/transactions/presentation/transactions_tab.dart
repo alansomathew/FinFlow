@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../accounts/data/accounts_repository.dart';
 import '../data/transaction_repository.dart';
 import '../domain/transaction.dart';
+import 'transaction_detail_screen.dart';
 
 class TransactionsTab extends ConsumerStatefulWidget {
   const TransactionsTab({super.key});
@@ -192,6 +194,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                       ),
                       onDismissed: (dir) {
                         ref.read(transactionListProvider.notifier).remove(t.id);
+                        ref.read(accountListProvider.notifier).refresh();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -210,6 +213,12 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                           ),
                         ),
                         child: ListTile(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  TransactionDetailScreen(transaction: t),
+                            ),
+                          ),
                           leading: CircleAvatar(
                             backgroundColor: t.bucket.color.withOpacity(0.15),
                             child: Text(
