@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../database/app_database.dart';
+import '../../../services/pro_tier_service.dart';
 import '../../auth/data/auth_repository.dart';
+
+const int kFreeLoanLimit = 2;
 
 class LoanModel {
   final String id;
@@ -110,6 +113,15 @@ class DebtRepository {
       _db.loans,
     )..where((t) => t.deletedAt.isNull())).get();
     return rows.map(LoanModel.fromRow).toList();
+  }
+
+  Future<int> countLoans() async => (await getLoans()).length;
+
+  /// Free tier is capped at [kFreeLoanLimit] loans; Pro is unlimited.
+  Future<bool> canAddLoan() async {
+    final isPro = _ref.read(isProProvider).valueOrNull ?? false;
+    if (isPro) return true;
+    return (await countLoans()) < kFreeLoanLimit;
   }
 
   Future<void> addLoan(LoanModel loan) async {

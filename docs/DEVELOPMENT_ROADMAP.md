@@ -15,7 +15,7 @@
 | 3 — SMS Parsing | ✅ Done | Real device SMS scan+listen, review sheet, SRS-composite duplicate detection, free-tier cap |
 | 4 — Budgeting | ✅ Done (client-side) | Derived spend, monthly history, create/edit/delete UI, cross-bucket warning. Scheduled reset + push alerts deliberately deferred until Blaze is worth adopting for multiple phases at once |
 | 5 — Accounts & Cards | ✅ Done | Full accounts UI built from scratch (list/add/edit/detail/close), credit utilization + due-date banner, 3-account free-tier gate |
-| 6 — Loans & EMI | ⬜ Not started | |
+| 6 — Loans & EMI | ✅ Done (client-side) | Real AmortizationEngine (unit-tested) replaces fudge-factor debt math, loan CRUD UI built from scratch, 2-loan free-tier gate, Pro-gated Snowball/Avalanche. EMI auto-posting deferred with the rest of the Cloud Functions work |
 | 7 — Savings Goals | ⬜ Not started | |
 | 8 — Investments | ⬜ Not started | |
 | 9 — Analytics | ⬜ Not started | |
@@ -319,18 +319,45 @@ once Cloud Functions are stood up.
 
 ## Phase 6 — Loans & EMI
 
-**Fix — the debt-math bug:** `debt_planner_sheet.dart` computes Snowball vs.
+**Fix -- the debt-math bug:** `debt_planner_sheet.dart` computed Snowball vs.
 Avalanche interest with hardcoded fudge factors (`interest * 0.95` /
-`* 0.98`), which always declares the same "winner" regardless of the actual
-loan mix. Replace with a real amortization engine.
+`* 0.98`) applied to the *same* per-loan simple-interest estimate, plus a
+hardcoded "pays off 3 months faster" recommendation string -- so it always
+declared the same winner by the same made-up margin regardless of the
+user's actual loan mix. Also, like Accounts before Phase 5, there was no
+loan add/edit UI anywhere -- only the demo seeder ever created a loan.
 
-**Net-new:**
-1. `AmortizationEngine` (pure Dart, unit-tested): reducing-balance EMI
-   formula, per-loan schedule, genuine Snowball/Avalanche simulations.
-2. EMI auto-posting via a scheduled Cloud Function.
-3. Loan add/edit form if genuinely missing.
-4. Free-tier gate: 2 loans (free) / unlimited (Pro); Snowball/Avalanche
-   comparison UI is Pro-only.
+**Done:**
+1. `AmortizationEngine` (`lib/src/features/debt/domain/amortization_engine.dart`,
+   pure Dart, no Flutter/Riverpod dependency): the standard reducing-balance
+   EMI formula, a full per-loan amortization schedule, `outstandingBalance()`
+   that derives a loan's current principal live from (amount, rate, tenure,
+   start date) instead of storing a running balance anywhere, and a genuine
+   Snowball/Avalanche portfolio simulator. The simulator holds the combined
+   EMI budget fixed and redirects a paid-off loan's freed EMI to whichever
+   loan the strategy prioritizes next -- the mechanism that actually makes
+   loan order affect total interest (paying loans independently with no
+   redirection gives identical interest regardless of order, so a
+   from-scratch model had to include this to be a real comparison at all).
+   Covered by `test/amortization_engine_test.dart`, including a textbook
+   reference-EMI check and a 3-loan scenario that verifies Snowball and
+   Avalanche genuinely diverge (and agree when every loan shares one rate).
+2. Debt Payoff Planner now shows each loan's real current outstanding
+   balance (not the original principal), and the Snowball/Avalanche cards
+   show real simulated total interest and months-to-debt-free with a
+   dynamically computed recommendation -- no more hardcoded fudge factors
+   or canned text.
+3. Loan add/edit UI (`LoanFormSheet`): EMI auto-calculates from
+   amount/rate/tenure via the new engine but can be manually overridden;
+   tap a loan card to edit, long-press to delete.
+4. Free-tier gate: `kFreeLoanLimit = 2`, unlimited on Pro. The Snowball/
+   Avalanche comparison itself is Pro-only per the SRS -- free users still
+   see their loan list and total debt, but get an upsell card instead of
+   the simulation.
+
+**Deferred:** EMI auto-posting via a scheduled Cloud Function -- same
+Blaze-plan hold as Phase 4's scheduled reset; will be built alongside it
+once Cloud Functions are worth standing up for multiple features at once.
 
 ---
 
