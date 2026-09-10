@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../database/db_service.dart';
+import '../../../database/app_database.dart';
 import '../../auth/data/auth_repository.dart';
 
 class BudgetModel {
@@ -33,17 +34,37 @@ class BudgetModel {
       monthYear: map['month_year'] ?? '',
     );
   }
+
+  factory BudgetModel.fromRow(Budget row) {
+    return BudgetModel(
+      category: row.category,
+      limitAmount: row.limitAmount,
+      spentAmount: row.spentAmount,
+      monthYear: row.monthYear,
+    );
+  }
+
+  BudgetsCompanion toCompanion() {
+    return BudgetsCompanion(
+      category: Value(category),
+      limitAmount: Value(limitAmount),
+      spentAmount: Value(spentAmount),
+      monthYear: Value(monthYear),
+      updatedAt: Value(DateTime.now()),
+    );
+  }
 }
 
 class BudgetRepository {
   final Ref _ref;
   BudgetRepository(this._ref);
 
+  AppDatabase get _db => AppDatabase.instance;
+
   Future<List<BudgetModel>> getBudgets() async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      final list = await DbService.instance.queryAllBudgets();
-      return list.map((e) => BudgetModel.fromMap(e)).toList();
+      return _getLocalBudgets();
     } else {
       try {
         final querySnapshot = await FirebaseFirestore.instance
@@ -53,16 +74,20 @@ class BudgetRepository {
             .get();
         return querySnapshot.docs.map((doc) => BudgetModel.fromMap(doc.data())).toList();
       } catch (e) {
-        final list = await DbService.instance.queryAllBudgets();
-        return list.map((e) => BudgetModel.fromMap(e)).toList();
+        return _getLocalBudgets();
       }
     }
+  }
+
+  Future<List<BudgetModel>> _getLocalBudgets() async {
+    final rows = await (_db.select(_db.budgets)..where((t) => t.deletedAt.isNull())).get();
+    return rows.map(BudgetModel.fromRow).toList();
   }
 
   Future<void> saveBudget(BudgetModel budget) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.insertBudget(budget.toMap());
+      await _upsertLocal(budget);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -71,11 +96,15 @@ class BudgetRepository {
             .collection('budgets')
             .doc(budget.category)
             .set(budget.toMap());
-        await DbService.instance.insertBudget(budget.toMap());
+        await _upsertLocal(budget);
       } catch (e) {
-        await DbService.instance.insertBudget(budget.toMap());
+        await _upsertLocal(budget);
       }
     }
+  }
+
+  Future<void> _upsertLocal(BudgetModel budget) async {
+    await _db.into(_db.budgets).insertOnConflictUpdate(budget.toCompanion());
   }
 }
 

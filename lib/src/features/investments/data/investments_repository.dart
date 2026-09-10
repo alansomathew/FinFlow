@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../database/db_service.dart';
+import '../../../database/app_database.dart';
 import '../../auth/data/auth_repository.dart';
 
 class InvestmentModel {
@@ -45,17 +46,43 @@ class InvestmentModel {
       datePurchased: map['date_purchased'] ?? '',
     );
   }
+
+  factory InvestmentModel.fromRow(Investment row) {
+    return InvestmentModel(
+      id: row.id,
+      type: row.type,
+      name: row.name,
+      unitsQuantity: row.unitsQuantity,
+      purchasePrice: row.purchasePrice,
+      currentPrice: row.currentPrice,
+      datePurchased: row.datePurchased,
+    );
+  }
+
+  InvestmentsCompanion toCompanion() {
+    return InvestmentsCompanion(
+      id: Value(id),
+      type: Value(type),
+      name: Value(name),
+      unitsQuantity: Value(unitsQuantity),
+      purchasePrice: Value(purchasePrice),
+      currentPrice: Value(currentPrice),
+      datePurchased: Value(datePurchased),
+      updatedAt: Value(DateTime.now()),
+    );
+  }
 }
 
 class InvestmentsRepository {
   final Ref _ref;
   InvestmentsRepository(this._ref);
 
+  AppDatabase get _db => AppDatabase.instance;
+
   Future<List<InvestmentModel>> getInvestments() async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      final list = await DbService.instance.queryAllInvestments();
-      return list.map((e) => InvestmentModel.fromMap(e)).toList();
+      return _getLocalInvestments();
     } else {
       try {
         final querySnapshot = await FirebaseFirestore.instance
@@ -65,16 +92,20 @@ class InvestmentsRepository {
             .get();
         return querySnapshot.docs.map((doc) => InvestmentModel.fromMap(doc.data())).toList();
       } catch (e) {
-        final list = await DbService.instance.queryAllInvestments();
-        return list.map((e) => InvestmentModel.fromMap(e)).toList();
+        return _getLocalInvestments();
       }
     }
+  }
+
+  Future<List<InvestmentModel>> _getLocalInvestments() async {
+    final rows = await (_db.select(_db.investments)..where((t) => t.deletedAt.isNull())).get();
+    return rows.map(InvestmentModel.fromRow).toList();
   }
 
   Future<void> addInvestment(InvestmentModel investment) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.insertInvestment(investment.toMap());
+      await _upsertLocal(investment);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -83,17 +114,21 @@ class InvestmentsRepository {
             .collection('investments')
             .doc(investment.id)
             .set(investment.toMap());
-        await DbService.instance.insertInvestment(investment.toMap());
+        await _upsertLocal(investment);
       } catch (e) {
-        await DbService.instance.insertInvestment(investment.toMap());
+        await _upsertLocal(investment);
       }
     }
+  }
+
+  Future<void> _upsertLocal(InvestmentModel investment) async {
+    await _db.into(_db.investments).insertOnConflictUpdate(investment.toCompanion());
   }
 
   Future<void> deleteInvestment(String id) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.deleteInvestment(id);
+      await _deleteLocal(id);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -102,11 +137,15 @@ class InvestmentsRepository {
             .collection('investments')
             .doc(id)
             .delete();
-        await DbService.instance.deleteInvestment(id);
+        await _deleteLocal(id);
       } catch (e) {
-        await DbService.instance.deleteInvestment(id);
+        await _deleteLocal(id);
       }
     }
+  }
+
+  Future<void> _deleteLocal(String id) async {
+    await (_db.delete(_db.investments)..where((t) => t.id.equals(id))).go();
   }
 }
 

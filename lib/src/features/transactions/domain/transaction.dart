@@ -1,4 +1,6 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import '../../../database/app_database.dart';
 
 enum BudgetBucket {
   needs,
@@ -142,6 +144,40 @@ class TransactionModel {
       payee: map['payee'] ?? '',
       isRecurring: map['is_recurring'] == 1,
       refId: map['ref_id'] ?? '',
+    );
+  }
+
+  factory TransactionModel.fromRow(Transaction row) {
+    return TransactionModel(
+      id: row.id,
+      amount: row.amount,
+      category: row.category,
+      bucket: BudgetBucket.values.firstWhere(
+        (b) => b.name == row.bucket,
+        orElse: () => BudgetBucket.wants,
+      ),
+      accountId: row.accountId,
+      date: row.date,
+      note: row.note ?? '',
+      payee: row.payee,
+      isRecurring: row.isRecurring,
+      refId: row.refId ?? '',
+    );
+  }
+
+  TransactionsCompanion toCompanion() {
+    return TransactionsCompanion(
+      id: Value(id),
+      amount: Value(amount),
+      category: Value(category),
+      bucket: Value(bucket.name),
+      accountId: Value(accountId),
+      date: Value(date),
+      note: Value(note.isEmpty ? null : note),
+      payee: Value(payee),
+      isRecurring: Value(isRecurring),
+      refId: Value(refId.isEmpty ? null : refId),
+      updatedAt: Value(DateTime.now()),
     );
   }
 }

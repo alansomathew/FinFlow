@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
-import '../../../database/db_service.dart';
+import '../../../database/app_database.dart';
 import '../../../database/demo_data_seeder.dart';
 import '../../../database/migration_service.dart';
 import '../data/auth_repository.dart';
@@ -32,7 +32,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
     
     // Check if there is local Guest data to migrate
-    final localTx = await DbService.instance.queryAllTransactions();
+    final localTx = await AppDatabase.instance.select(AppDatabase.instance.transactions).get();
     final hasLocalData = localTx.isNotEmpty;
 
     if (hasLocalData) {
@@ -131,7 +131,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     } else {
       // Clear Guest SQLite data if choosing to start fresh
-      await DbService.instance.clearAllData();
+      await AppDatabase.instance.clearAllData();
     }
 
     // Update Auth State

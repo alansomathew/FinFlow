@@ -4,11 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
-import '../../../database/db_service.dart';
+import '../../../database/app_database.dart';
 import '../../../utils/sms_parser.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
+import '../data/sms_repository.dart';
 
 class SmsSandboxSheet extends ConsumerStatefulWidget {
   const SmsSandboxSheet({super.key});
@@ -19,7 +20,7 @@ class SmsSandboxSheet extends ConsumerStatefulWidget {
 
 class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   final _textController = TextEditingController();
-  List<Map<String, dynamic>> _smsQueue = [];
+  List<SmsInboxData> _smsQueue = [];
   ParsedSms? _parsedResult;
   bool _isDuplicate = false;
 
@@ -36,9 +37,9 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   }
 
   Future<void> _loadQueue() async {
-    final list = await DbService.instance.queryAllSms();
+    final list = await smsRepository.getPendingInbox();
     setState(() {
-      _smsQueue = list.where((m) => m['is_parsed'] == 0 && m['is_skipped'] == 0).toList();
+      _smsQueue = list;
     });
   }
 
@@ -61,20 +62,19 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   }
 
   Future<void> _checkDuplicate(ParsedSms parsed) async {
-    final txs = await DbService.instance.queryAllTransactions();
+    final txs = await ref.read(transactionRepositoryProvider).getTransactions();
     // Duplicate detection: Same amount + same day OR same reference ID
     bool dup = false;
     for (var tx in txs) {
-      if (parsed.refId.isNotEmpty && tx['ref_id'] == parsed.refId) {
+      if (parsed.refId.isNotEmpty && tx.refId == parsed.refId) {
         dup = true;
         break;
       }
       // Check amount and same day
-      final txDate = DateTime.parse(tx['date'] as String);
-      final isSameDay = txDate.day == DateTime.now().day &&
-                        txDate.month == DateTime.now().month &&
-                        txDate.year == DateTime.now().year;
-      if (tx['amount'] == parsed.amount && isSameDay) {
+      final isSameDay = tx.date.day == DateTime.now().day &&
+          tx.date.month == DateTime.now().month &&
+          tx.date.year == DateTime.now().year;
+      if (tx.amount == parsed.amount && isSameDay) {
         dup = true;
         break;
       }
@@ -120,15 +120,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
     await ref.read(transactionListProvider.notifier).add(tx);
     await ref.read(accountListProvider.notifier).refresh();
 
-    // Mark SMS as parsed in database
-    await DbService.instance.updateSms({
-      'id': smsId,
-      'is_parsed': 1,
-      'is_skipped': 0,
-      'message_body': 'parsed', // placeholder update
-      'sender': 'system',
-      'date': DateTime.now().toIso8601String(),
-    });
+    // Mark SMS as parsed without touching its original message content
+    await smsRepository.markParsed(smsId);
 
     _loadQueue();
     
@@ -146,14 +139,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   }
 
   Future<void> _skipSms(String smsId) async {
-    await DbService.instance.updateSms({
-      'id': smsId,
-      'is_parsed': 0,
-      'is_skipped': 1,
-      'message_body': 'skipped',
-      'sender': 'system',
-      'date': DateTime.now().toIso8601String(),
-    });
+    await smsRepository.markSkipped(smsId);
     _loadQueue();
   }
 
@@ -339,8 +325,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         itemCount: _smsQueue.length,
                         itemBuilder: (context, index) {
                           final sms = _smsQueue[index];
-                          final body = sms['message_body'] as String;
-                          final date = DateTime.parse(sms['date'] as String);
+                          final body = sms.messageBody;
+                          final date = sms.date;
 
                           return Card(
                             color: AppColors.cardBg,
@@ -354,7 +340,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        sms['sender'] as String,
+                                        sms.sender,
                                         style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 12),
                                       ),
                                       Text(
@@ -373,7 +359,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       OutlinedButton(
-                                        onPressed: () => _skipSms(sms['id'] as String),
+                                        onPressed: () => _skipSms(sms.id),
                                         style: OutlinedButton.styleFrom(
                                           side: const BorderSide(color: AppColors.border),
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
@@ -385,7 +371,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                         onPressed: () {
                                           final parsed = SmsParser.parse(body);
                                           if (parsed != null) {
-                                            _addParsedToLedger(parsed, sms['id'] as String);
+                                            _addParsedToLedger(parsed, sms.id);
                                           }
                                         },
                                         style: ElevatedButton.styleFrom(

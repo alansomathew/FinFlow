@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../database/db_service.dart';
+import '../../../database/app_database.dart';
 import '../../auth/data/auth_repository.dart';
 
 class AccountModel {
@@ -45,17 +46,43 @@ class AccountModel {
       colorHex: map['color_hex'] ?? '#1E1E1E',
     );
   }
+
+  factory AccountModel.fromRow(Account row) {
+    return AccountModel(
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      balance: row.balance,
+      creditLimit: row.creditLimit,
+      cardDueDate: row.cardDueDate ?? '',
+      colorHex: row.colorHex,
+    );
+  }
+
+  AccountsCompanion toCompanion() {
+    return AccountsCompanion(
+      id: Value(id),
+      name: Value(name),
+      type: Value(type),
+      balance: Value(balance),
+      creditLimit: Value(creditLimit),
+      cardDueDate: Value(cardDueDate.isEmpty ? null : cardDueDate),
+      colorHex: Value(colorHex),
+      updatedAt: Value(DateTime.now()),
+    );
+  }
 }
 
 class AccountsRepository {
   final Ref _ref;
   AccountsRepository(this._ref);
 
+  AppDatabase get _db => AppDatabase.instance;
+
   Future<List<AccountModel>> getAccounts() async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      final list = await DbService.instance.queryAllAccounts();
-      return list.map((e) => AccountModel.fromMap(e)).toList();
+      return _getLocalAccounts();
     } else {
       try {
         final querySnapshot = await FirebaseFirestore.instance
@@ -65,16 +92,20 @@ class AccountsRepository {
             .get();
         return querySnapshot.docs.map((doc) => AccountModel.fromMap(doc.data())).toList();
       } catch (e) {
-        final list = await DbService.instance.queryAllAccounts();
-        return list.map((e) => AccountModel.fromMap(e)).toList();
+        return _getLocalAccounts();
       }
     }
+  }
+
+  Future<List<AccountModel>> _getLocalAccounts() async {
+    final rows = await (_db.select(_db.accounts)..where((t) => t.deletedAt.isNull())).get();
+    return rows.map(AccountModel.fromRow).toList();
   }
 
   Future<void> addAccount(AccountModel account) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.insertAccount(account.toMap());
+      await _upsertLocal(account);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -83,17 +114,21 @@ class AccountsRepository {
             .collection('accounts')
             .doc(account.id)
             .set(account.toMap());
-        await DbService.instance.insertAccount(account.toMap());
+        await _upsertLocal(account);
       } catch (e) {
-        await DbService.instance.insertAccount(account.toMap());
+        await _upsertLocal(account);
       }
     }
+  }
+
+  Future<void> _upsertLocal(AccountModel account) async {
+    await _db.into(_db.accounts).insertOnConflictUpdate(account.toCompanion());
   }
 
   Future<void> deleteAccount(String id) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.deleteAccount(id);
+      await _deleteLocal(id);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -102,10 +137,25 @@ class AccountsRepository {
             .collection('accounts')
             .doc(id)
             .delete();
-        await DbService.instance.deleteAccount(id);
+        await _deleteLocal(id);
       } catch (e) {
-        await DbService.instance.deleteAccount(id);
+        await _deleteLocal(id);
       }
+    }
+  }
+
+  Future<void> _deleteLocal(String id) async {
+    try {
+      await (_db.delete(_db.accounts)..where((t) => t.id.equals(id))).go();
+    } catch (e) {
+      // The FK from transactions/loans to accounts is ON DELETE RESTRICT,
+      // so SQLite refuses this delete while dependents still reference it.
+      if (e.toString().contains('FOREIGN KEY')) {
+        throw StateError(
+          'Cannot delete this account while transactions or loans are still linked to it.',
+        );
+      }
+      rethrow;
     }
   }
 }

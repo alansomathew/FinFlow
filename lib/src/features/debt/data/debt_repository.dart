@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../database/db_service.dart';
+import '../../../database/app_database.dart';
 import '../../auth/data/auth_repository.dart';
 
 class LoanModel {
@@ -49,17 +50,45 @@ class LoanModel {
       debitAccountId: map['debit_account_id'] ?? '',
     );
   }
+
+  factory LoanModel.fromRow(Loan row) {
+    return LoanModel(
+      id: row.id,
+      lenderName: row.lenderName,
+      loanAmount: row.loanAmount,
+      interestRate: row.interestRate,
+      tenureMonths: row.tenureMonths,
+      startDate: row.startDate,
+      emiAmount: row.emiAmount,
+      debitAccountId: row.debitAccountId,
+    );
+  }
+
+  LoansCompanion toCompanion() {
+    return LoansCompanion(
+      id: Value(id),
+      lenderName: Value(lenderName),
+      loanAmount: Value(loanAmount),
+      interestRate: Value(interestRate),
+      tenureMonths: Value(tenureMonths),
+      startDate: Value(startDate),
+      emiAmount: Value(emiAmount),
+      debitAccountId: Value(debitAccountId),
+      updatedAt: Value(DateTime.now()),
+    );
+  }
 }
 
 class DebtRepository {
   final Ref _ref;
   DebtRepository(this._ref);
 
+  AppDatabase get _db => AppDatabase.instance;
+
   Future<List<LoanModel>> getLoans() async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      final list = await DbService.instance.queryAllLoans();
-      return list.map((e) => LoanModel.fromMap(e)).toList();
+      return _getLocalLoans();
     } else {
       try {
         final querySnapshot = await FirebaseFirestore.instance
@@ -69,16 +98,20 @@ class DebtRepository {
             .get();
         return querySnapshot.docs.map((doc) => LoanModel.fromMap(doc.data())).toList();
       } catch (e) {
-        final list = await DbService.instance.queryAllLoans();
-        return list.map((e) => LoanModel.fromMap(e)).toList();
+        return _getLocalLoans();
       }
     }
+  }
+
+  Future<List<LoanModel>> _getLocalLoans() async {
+    final rows = await (_db.select(_db.loans)..where((t) => t.deletedAt.isNull())).get();
+    return rows.map(LoanModel.fromRow).toList();
   }
 
   Future<void> addLoan(LoanModel loan) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.insertLoan(loan.toMap());
+      await _upsertLocal(loan);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -87,17 +120,21 @@ class DebtRepository {
             .collection('loans')
             .doc(loan.id)
             .set(loan.toMap());
-        await DbService.instance.insertLoan(loan.toMap());
+        await _upsertLocal(loan);
       } catch (e) {
-        await DbService.instance.insertLoan(loan.toMap());
+        await _upsertLocal(loan);
       }
     }
+  }
+
+  Future<void> _upsertLocal(LoanModel loan) async {
+    await _db.into(_db.loans).insertOnConflictUpdate(loan.toCompanion());
   }
 
   Future<void> deleteLoan(String id) async {
     final user = _ref.read(authProvider);
     if (user == null || user.isGuest) {
-      await DbService.instance.deleteLoan(id);
+      await _deleteLocal(id);
     } else {
       try {
         await FirebaseFirestore.instance
@@ -106,11 +143,15 @@ class DebtRepository {
             .collection('loans')
             .doc(id)
             .delete();
-        await DbService.instance.deleteLoan(id);
+        await _deleteLocal(id);
       } catch (e) {
-        await DbService.instance.deleteLoan(id);
+        await _deleteLocal(id);
       }
     }
+  }
+
+  Future<void> _deleteLocal(String id) async {
+    await (_db.delete(_db.loans)..where((t) => t.id.equals(id))).go();
   }
 }
 
