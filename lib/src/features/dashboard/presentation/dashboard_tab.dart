@@ -5,6 +5,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../../accounts/presentation/accounts_list_screen.dart';
+import '../../analytics/domain/net_worth_calculator.dart';
 import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
 import '../../budget/data/budget_repository.dart';
@@ -89,16 +90,14 @@ class DashboardTab extends ConsumerWidget {
               // Net Worth Card
               accountsAsync.when(
                 data: (accounts) {
-                  double assets = 0;
-                  double liabilities = 0;
-                  for (var acc in accounts) {
-                    if (acc.type == 'credit_card') {
-                      liabilities += acc.balance.abs();
-                    } else {
-                      assets += acc.balance;
-                    }
-                  }
-                  final netWorth = assets - liabilities;
+                  final totals = NetWorthCalculator.compute(
+                    accounts: accounts,
+                    investments: investmentsAsync.valueOrNull ?? [],
+                    loans: loansAsync.valueOrNull ?? [],
+                  );
+                  final assets = totals.assets;
+                  final liabilities = totals.liabilities;
+                  final netWorth = totals.netWorth;
 
                   return Material(
                     color: Colors.transparent,

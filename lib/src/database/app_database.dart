@@ -13,6 +13,7 @@ import 'tables/goals_table.dart';
 import 'tables/investments_table.dart';
 import 'tables/loans_table.dart';
 import 'tables/local_settings_table.dart';
+import 'tables/net_worth_snapshots_table.dart';
 import 'tables/recurring_rules_table.dart';
 import 'tables/sms_inbox_table.dart';
 import 'tables/transactions_table.dart';
@@ -32,6 +33,7 @@ const _singletonSettingsId = 0;
     LocalSettings,
     RecurringRules,
     Goals,
+    NetWorthSnapshots,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -44,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -88,6 +90,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         await m.createTable(goals);
+      }
+      if (from < 8) {
+        await m.createTable(netWorthSnapshots);
       }
     },
     beforeOpen: (details) async {
@@ -158,6 +163,7 @@ class AppDatabase extends _$AppDatabase {
       await delete(investments).go();
       await delete(budgets).go();
       await delete(goals).go();
+      await delete(netWorthSnapshots).go();
       await delete(smsInbox).go();
       await delete(accounts).go();
     });

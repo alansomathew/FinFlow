@@ -18,7 +18,7 @@
 | 6 — Loans & EMI | ✅ Done (client-side) | Real AmortizationEngine (unit-tested) replaces fudge-factor debt math, loan CRUD UI built from scratch, 2-loan free-tier gate, Pro-gated Snowball/Avalanche. EMI auto-posting deferred with the rest of the Cloud Functions work |
 | 7 — Savings Goals | ✅ Done | Fully net-new module built from scratch: goals table/repo/UI, confetti milestone celebration, 3-goal free-tier gate, dashboard preview |
 | 8 — Investments | ✅ Done (client-side) | Removed fake Random() price jitter, built investment CRUD UI, Pro-gated the whole module. Real Cloud Function-backed price feeds deferred (Blaze hold + open provider choice) |
-| 9 — Analytics | ⬜ Not started | |
+| 9 — Analytics | ✅ Done | Fixed broken CSV export path, added date-range filter + shared error-state widget, fixed dashboard net worth bug (ignored investments/loans), added Pro fl_chart set (top categories, income/expense trend, net worth trend) + PDF export. Syncfusion skipped by user decision; Excel export dropped (dependency conflict) |
 | 10 — AI & Tips | ⬜ Not started | |
 | 11 — Pro Features | ⬜ Not started | |
 | 12 — Polish & Launch | ⬜ Not started | |
@@ -427,20 +427,62 @@ Firestore price cache instead of the manual form field above.
 
 ## Phase 9 — Analytics
 
-**Fix:**
-- CSV export hardcoded to a broken Windows dev path — replace with
-  `path_provider` + `share_plus`.
-- No date-range filtering at the analytics level.
-- Inconsistent silent error states across the app — introduce one shared
-  error/empty-state widget pattern here since Analytics reads from every
-  other module.
+**Decision confirmed with the user:** skip Syncfusion entirely (Community
+License eligibility depends on facts about the user/company I can't
+determine) and build every chart on `fl_chart`, which is already a
+dependency and fully open-source, with zero licensing risk regardless of
+how the app is monetized later.
 
-**Net-new:**
-1. Advanced Pro-tier charts (12+ per the docs) via `syncfusion_flutter_charts`
-   — **flag:** confirm Community License eligibility first.
-2. Full export suite: PDF + Excel for Pro, CSV stays free.
-3. Net worth tracker (Pro-only).
-4. Rule-based spending insight text as a baseline (AI version is Phase 10).
+**Fixed:**
+- CSV export was hardcoded to a Windows dev-machine path
+  (`d:\FinFlow\docs\...`) that doesn't exist on a real device. Replaced
+  with `path_provider` (app documents dir) + `share_plus` (OS share
+  sheet) — same fix applied to the new PDF export.
+- No date-range filtering at the analytics level — added preset chips
+  (This Month / Last 3 Months / This Year / All Time) that filter the
+  50/30/20 chart, the new charts below, and both exports. The Budget
+  Adherence chart deliberately ignores this filter and always shows the
+  current calendar month, since "budget adherence" is inherently a
+  this-month concept.
+- Introduced one shared `AppStateMessage` widget (icon + message +
+  optional retry) for empty/error states, replacing the inconsistent mix
+  of bare `Container()`s and raw `Text('Error: $e')`. Applied throughout
+  Analytics, which reads from every other module and so hit the most
+  silent-failure spots; a full app-wide sweep to every screen is future
+  work, not claimed as done here.
+
+**Done (Pro-gated, `fl_chart`-based):**
+1. Top Spending Categories -- all-time totals per category, sorted.
+2. Income vs. Expense -- a 6-month bar-chart trend.
+3. Net Worth Trend -- a new local-only `net_worth_snapshots` table
+   records one reading per calendar day (upserted, so reopening the
+   screen the same day doesn't duplicate it); the line chart renders once
+   at least two days of history exist. Deliberately not synced to
+   Firestore like the rest of the app's data, since it's a derived trend
+   rather than user-entered data -- a fresh device just starts building
+   its own history forward rather than needing a cloud copy.
+   Built via a new `NetWorthCalculator` (assets = non-credit-card account
+   balances + investment market value; liabilities = credit card
+   balances + every loan's live `AmortizationEngine.outstandingBalance()`)
+   which also **fixed a real bug**: the dashboard's existing "Net Worth"
+   card only ever looked at accounts, silently ignoring investments and
+   loans entirely despite the label -- now correctly aggregates all three
+   per the SRS's actual definition.
+4. PDF export (Pro) alongside CSV (stays free), via `pdf` + `printing`,
+   shared through the same fixed share-sheet path as CSV.
+
+**Not done -- honestly scoped down, not silently dropped:**
+- Excel export: the `excel` package's `archive` dependency conflicts with
+  `flutter_native_splash`'s (a dev dependency already in use for app
+  branding) and pub couldn't resolve both together. Not worth forcing a
+  resolution for the lowest-priority item in the export suite; CSV (free)
+  + PDF (Pro) already cover it.
+- The "12+ advanced charts" from the original vision is aspirational
+  product-doc scope; the four `fl_chart` charts above are a genuinely
+  useful Pro set, not a 1:1 match to that list.
+- Rule-based spending insight text already exists (the dashboard's "AI
+  Coach" card), so it wasn't duplicated in Analytics -- the real Gemini-
+  backed version still lands in Phase 10 as planned.
 
 ---
 
