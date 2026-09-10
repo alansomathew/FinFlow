@@ -13,7 +13,7 @@
 | 1 — Foundation & Auth | ✅ Done | Git/CI, Drift migration, real Firebase (Auth: Google + Email/Password, Firestore), migration data-loss bug fixed, app branding |
 | 2 — Core Transactions | ✅ Done | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
 | 3 — SMS Parsing | ✅ Done | Real device SMS scan+listen, review sheet, SRS-composite duplicate detection, free-tier cap |
-| 4 — Budgeting | 🟡 Client-side done | Derived spend, monthly history, create/edit/delete UI, cross-bucket warning. Scheduled reset + push alerts on hold pending Cloud Functions/Blaze decision |
+| 4 — Budgeting | ✅ Done (client-side) | Derived spend, monthly history, create/edit/delete UI, cross-bucket warning. Scheduled reset + push alerts deliberately deferred until Blaze is worth adopting for multiple phases at once |
 | 5 — Accounts & Cards | ⬜ Not started | |
 | 6 — Loans & EMI | ⬜ Not started | |
 | 7 — Savings Goals | ⬜ Not started | |
@@ -256,8 +256,9 @@ trusting the insert's return value.
   `getAvailableMonths()`) drilling into a read-only per-category breakdown
   for that month.
 
-**Deferred — needs an explicit user decision before starting (Cloud
-Functions require the paid Blaze plan):**
+**Deferred (explicit decision: hold off on Blaze until more Cloud
+Functions consumers — EMI auto-posting in Phase 6, price feeds in Phase 8,
+AI tips in Phase 10 — are ready to justify standing up the infra together):**
 1. Scaffold `functions/` (Node 20 + TypeScript) — would also be reused by
    Phase 6 (EMI posting), Phase 8 (price feeds), Phase 10 (AI tips).
 2. Scheduled `resetMonthlyBudgets` function — not required for the core
