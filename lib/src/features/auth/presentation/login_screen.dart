@@ -100,8 +100,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     const mockPhoto = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
 
     if (migrateData) {
-      // Run the migration service to upload SQLite records to Firestore
-      await MigrationService.migrateGuestDataToFirebase(mockUid);
+      // Run the migration service to upload SQLite records to Firestore.
+      // Local data is only cleared by the service if this genuinely
+      // succeeds — on failure it is left intact, so it's safe to let the
+      // user retry rather than silently sign them into a cloud account
+      // that never actually received their data.
+      final result = await MigrationService.migrateGuestDataToFirebase(mockUid);
+      if (result == MigrationResult.failed) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+            title: const Text('Cloud Backup Failed', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            content: const Text(
+              "We couldn't back up your data to the cloud right now. Your local data is safe and untouched — please check your connection and try again.",
+              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
     } else {
       // Clear Guest SQLite data if choosing to start fresh
       await DbService.instance.clearAllData();
