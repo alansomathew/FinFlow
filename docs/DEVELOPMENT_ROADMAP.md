@@ -1,0 +1,378 @@
+# FinFlow — Full Development Roadmap
+
+> This is the working engineering roadmap for taking FinFlow from its current
+> partial state through to a Play Store launch. It complements
+> `FinFlow_Project_Plan.txt` and `FinFlow_Requirements_SRS.txt` (the original
+> product spec) with a phase-by-phase implementation plan, kept up to date as
+> work lands.
+
+## Progress
+
+| Phase | Status | Notes |
+|---|---|---|
+| 1 — Foundation & Auth | ✅ Done | Git/CI, Drift migration, real Firebase (Auth: Google + Email/Password, Firestore), migration data-loss bug fixed, app branding |
+| 2 — Core Transactions | 🚧 In progress | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
+| 3 — SMS Parsing | ⬜ Not started | |
+| 4 — Budgeting | ⬜ Not started | |
+| 5 — Accounts & Cards | ⬜ Not started | |
+| 6 — Loans & EMI | ⬜ Not started | |
+| 7 — Savings Goals | ⬜ Not started | |
+| 8 — Investments | ⬜ Not started | |
+| 9 — Analytics | ⬜ Not started | |
+| 10 — AI & Tips | ⬜ Not started | |
+| 11 — Pro Features | ⬜ Not started | |
+| 12 — Polish & Launch | ⬜ Not started | |
+
+---
+
+## Context
+
+FinFlow is a Flutter personal-finance app with two detailed spec docs
+(`FinFlow_Project_Plan.txt`, `FinFlow_Requirements_SRS.txt`) describing a full
+12-module vision. An initial audit of the codebase found genuine working
+functionality (guest mode, local SQLite storage, a solid SMS-parsing regex
+engine, Firestore write-through sync, five feature tabs with live data)
+alongside real gaps: functional bugs, several modules with fake/simulated
+data instead of real logic, two SRS modules with zero code, and a project
+that had never been placed under version control or CI.
+
+This roadmap is a single ordered backlog (solo developer + Claude Code, not a
+team) that takes FinFlow from that partial state through to launch, built in
+an order where nothing depends on work that comes later. It keeps the
+original 12 phase names/order from the Project Plan so it stays legible
+against the docs, but each phase explicitly separates **already-done**
+(verify only), **partially-done** (fix/complete), and **net-new** work, and
+pulls infrastructure the original doc left implicit (Drift migration, Cloud
+Functions, CI) forward into the phase where it's cheapest to build.
+
+**Decisions confirmed before this plan was finalized:**
+- **Platform: Android only.** `windows/`, `linux/`, `macos/`, `web/`
+  scaffolding removed — iOS/Web are out of scope for this roadmap (SMS
+  parsing, a core feature, is Android-only anyway).
+- **Data layer: migrated from raw `sqflite` to Drift in Phase 1**, not
+  later — cheapest while there were only 6 tables and little UI depended on
+  raw SQL maps.
+- **AI Tips (Phase 10): Google Vertex AI / Gemini** via Firebase AI Logic,
+  not Claude API — tighter integration with the existing Firebase project.
+- **Bank-account sync (Account Aggregator / Plaid): deferred entirely, out
+  of scope for this plan.** No adapter, no sandbox integration. Transaction
+  capture relies on SMS parsing + manual entry.
+
+---
+
+## Cross-cutting bugs fixed in Phase 1 (before anything else built on them)
+
+1. **Guest→Firebase migration data-loss bug** (`lib/src/database/migration_service.dart`):
+   the Firestore batch-write was wrapped in a try/catch that only logged a
+   "simulating cloud backup" message on failure, then `clearAllData()` ran
+   **unconditionally** afterward regardless of whether the batch actually
+   committed. Fixed: `clearAllData()` now only runs after a verified
+   successful commit; on failure, the UI surfaces an error and local data is
+   left untouched.
+2. **Google Sign-In was entirely mocked** (`lib/src/features/auth/presentation/login_screen.dart`):
+   hardcoded `mockUid`/`mockEmail`/`mockName` with a fake delay, no real
+   `GoogleSignIn`/`FirebaseAuth` call. Fixed: real `google_sign_in` →
+   `FirebaseAuth.instance.signInWithCredential`, plus Email/Password
+   sign-in/registration.
+
+---
+
+## Phase 1 — Foundation & Auth ✅
+
+**Verify/keep:** Riverpod + go_router shell, dark-first design system
+(`AppColors`/`AppSizes`), guest mode end-to-end, Android `applicationId
+com.finflow.app`.
+
+**Fixed:**
+- Both cross-cutting bugs above.
+- No `onUpgrade` migration path, no FK constraints, no indexes, no
+  soft-delete, no audit timestamps in the old raw-sqflite schema.
+- `.gitignore` didn't exclude secrets; repo wasn't under version control.
+- No CI at all.
+- No app branding (default Flutter launcher icons; generic pubspec name).
+
+**Net-new (all done):**
+1. `git init`, hardened `.gitignore`, baseline commit.
+2. Deleted `windows/`, `linux/`, `macos/`, `web/`.
+3. Real Firebase project (`finflow-3ae88`): Auth (Google + Email/Password),
+   Firestore. Registered the Android app, downloaded real
+   `google-services.json`/`firebase_options.dart`, registered the debug
+   keystore's SHA-1/SHA-256 (required for Google Sign-In to work at all —
+   without it, sign-in fails with `DEVELOPER_ERROR`), deployed Auth provider
+   config and Firestore security rules to the live project.
+4. **Migrated `db_service.dart` → Drift.** New `AppDatabase` with tables for
+   `accounts`, `transactions`, `budgets`, `loans`, `investments`,
+   `sms_inbox`. Every table has `id`, `created_at`, `updated_at`,
+   `deleted_at` (soft-delete), and a `currency` column (default `INR`,
+   unused until Phase 11 but painful to retrofit later). Real FKs
+   (`transactions.account_id → accounts.id`, `ON DELETE RESTRICT`) and
+   indexes (`transactions(account_id, date)`, `transactions(category)`).
+   Caught and fixed a real bug in the process: income transactions were
+   silently treated as debits due to a `'Income'` vs `'income'` casing
+   mismatch, decrementing balance instead of increasing it.
+5. Rewrote `auth_repository.dart`: `authStateChanges()` drives `authProvider`
+   for real accounts; guest mode layered on top as a local-only concept.
+6. Firestore Security Rules deployed (per-user ownership, default-deny
+   fallback) — a reasonable prototype, not yet field-validated/hardened.
+7. GitHub Actions CI (`flutter analyze`, `dart format` check, `flutter
+   test`, debug APK build).
+8. Real app branding: logo rasterized into launcher icon (incl. Android
+   adaptive icon) + splash screen via `flutter_launcher_icons`/
+   `flutter_native_splash`.
+
+**Key files:** `lib/src/database/app_database.dart`, `lib/src/database/tables/*.dart`,
+`lib/src/database/migration_service.dart`, `lib/src/features/auth/data/auth_repository.dart`,
+`lib/src/features/auth/presentation/login_screen.dart`, `firestore.rules`, `.github/workflows/ci.yaml`.
+
+---
+
+## Phase 2 — Core Transactions 🚧
+
+**Verify/keep:** manual entry via `add_transaction_sheet.dart`, 50/30/20
+bucket tagging, account-balance auto-adjust on insert/delete, offline-first
+writes.
+
+**Fix:**
+- No edit-transaction flow anywhere — the single biggest CRUD gap in the app.
+- `is_recurring` flag exists in the schema but nothing acts on it.
+- No date-range filters, no tap-through/detail view.
+
+**Net-new:**
+1. `updateTransaction` (repository + UI) — generalize `add_transaction_sheet.dart`
+   into add/edit mode; reverse-then-reapply the balance adjustment on edit.
+2. Transaction detail screen (tap-through from list/dashboard) with edit/delete actions.
+3. Date-range filter on the transactions list.
+4. Recurring-transactions data model with client-side materialization on
+   app-open for now; reliable app-closed execution moves to a Cloud Function
+   once Phase 4 stands up Cloud Functions infra.
+5. `isPro` stub field so every later free/Pro gate has a real field to read
+   from day one instead of being invented ad hoc per phase.
+6. Free-tier gate: recurring transactions capped at 5.
+
+**Key files:** `lib/src/features/transactions/data/transaction_repository.dart`,
+`add_transaction_sheet.dart`, new `transaction_detail_screen.dart`, new
+`lib/src/database/tables/recurring_rules_table.dart`.
+
+---
+
+## Phase 3 — SMS Parsing
+
+Since bank-sync is deferred, this module is the app's **primary automated
+transaction-capture path** — higher priority than the original doc implied.
+
+**Verify/keep:** the regex parser (`sms_parser.dart`, 30+ bank formats,
+confidence scoring) is solid — expand test coverage but don't rewrite it.
+Keep the manual-paste SMS Sandbox permanently as a dev/QA tool.
+
+**Fix:**
+- No glue code turning an accepted parsed SMS into a real transaction.
+- No real device SMS listener (`flutter_sms_inbox` isn't a dependency yet).
+
+**Net-new:**
+1. Real device SMS integration: `flutter_sms_inbox` + `READ_SMS`/`RECEIVE_SMS`
+   runtime permission with a clear rationale UI and manual-entry fallback.
+   **Flag:** verify current Google Play policy allows SMS-permission apps in
+   this app's category before shipping — if not, fall back to a
+   share-intent/forward-to-app pattern.
+2. Duplicate detection: composite key = amount + date(±2min) +
+   account-last-4 + reference-number hash.
+3. Review UI: bottom sheet on app foreground-resume, Add/Skip/batch-add.
+4. Free-tier gate: 100 SMS-parses/month counter.
+5. Optional lightweight CSV import as a fallback capture method.
+
+**New dependencies:** `flutter_sms_inbox`, `permission_handler`.
+
+---
+
+## Phase 4 — Budgeting
+
+**Fix:** budgets are upsert-only (no edit UI); the entire SRS §6 "Budget
+Reset & Period Logic" is unbuilt (no monthly auto-reset, archiving,
+rollover, envelope enforcement, or 80%/100% alerts).
+
+**Net-new — Cloud Functions infrastructure stood up for the whole project:**
+1. Scaffold `functions/` (Node 20 + TypeScript) — reused by Phase 6 (EMI
+   posting), Phase 8 (price feeds), Phase 10 (AI tips).
+2. Scheduled `resetMonthlyBudgets` function (per-user configured reset day,
+   archives into `budgetHistory`, resets `spent_amount`, Pro-tier rollover).
+   Also consolidates Phase 2/3's client-side "reset on the 1st" counters.
+3. FCM wiring for 80%/100% budget-threshold pushes and month-end summaries.
+4. Envelope enforcement (client-side: no auto-borrow across categories).
+5. Progress-bar color thresholds (amber ≥80%, red ≥100%).
+6. Basic "Monthly History" list view.
+
+**New dependencies:** `firebase_messaging`, `flutter_local_notifications`;
+Node-side `firebase-functions`/`firebase-admin`.
+
+---
+
+## Phase 5 — Accounts & Cards
+
+**Fix:** no edit-account UI, no detail/tap-through view.
+
+**Net-new:**
+1. Edit-account sheet, account detail screen (balance history, linked
+   transactions, soft-delete "close account").
+2. Credit-card due-date reminder, credit-utilization display.
+3. Free-tier gate: 3 accounts (free) / unlimited (Pro).
+4. Nullable `owner_uids` array column on `accounts` (used by Phase 11's
+   joint wallet) so that feature doesn't need its own migration later.
+
+---
+
+## Phase 6 — Loans & EMI
+
+**Fix — the debt-math bug:** `debt_planner_sheet.dart` computes Snowball vs.
+Avalanche interest with hardcoded fudge factors (`interest * 0.95` /
+`* 0.98`), which always declares the same "winner" regardless of the actual
+loan mix. Replace with a real amortization engine.
+
+**Net-new:**
+1. `AmortizationEngine` (pure Dart, unit-tested): reducing-balance EMI
+   formula, per-loan schedule, genuine Snowball/Avalanche simulations.
+2. EMI auto-posting via a scheduled Cloud Function.
+3. Loan add/edit form if genuinely missing.
+4. Free-tier gate: 2 loans (free) / unlimited (Pro); Snowball/Avalanche
+   comparison UI is Pro-only.
+
+---
+
+## Phase 7 — Savings Goals *(zero code today — fully net-new)*
+
+1. New `goals` table (name, target_amount, current_amount, target_date,
+   icon/color, optional linked account).
+2. Goal creation/edit UI, progress visualization, manual "contribute" action.
+3. Celebration animation at 25/50/75/100% milestones.
+4. Firestore sync via the established write-through pattern.
+5. Free-tier gate: 3 goals (free) / unlimited (Pro).
+6. Surface top 1–2 active goals on the dashboard.
+
+**New dependencies:** a confetti/celebration package.
+
+---
+
+## Phase 8 — Investments
+
+**Fix — the fake-feed bug:** `investments_tab.dart`'s "Update Feed" button
+randomly jitters prices via `Random()` instead of fetching anything real.
+
+**Net-new — real feeds via Cloud Functions:**
+1. Scheduled `fetchMfNav`: downloads AMFI's free public `NAVAll.txt`.
+2. Scheduled `fetchStockPrices` (market hours only) — concrete provider TBD
+   (RapidAPI NSE wrapper vs. broker-partner API like Kite Connect).
+3. Client reads from Firestore cache; "Update Feed" becomes a rate-limited
+   on-demand refresh.
+4. Portfolio P&L computation once real prices exist.
+5. Investment add/edit form if missing.
+6. Free-tier gate: entire module is Pro-only.
+
+---
+
+## Phase 9 — Analytics
+
+**Fix:**
+- CSV export hardcoded to a broken Windows dev path — replace with
+  `path_provider` + `share_plus`.
+- No date-range filtering at the analytics level.
+- Inconsistent silent error states across the app — introduce one shared
+  error/empty-state widget pattern here since Analytics reads from every
+  other module.
+
+**Net-new:**
+1. Advanced Pro-tier charts (12+ per the docs) via `syncfusion_flutter_charts`
+   — **flag:** confirm Community License eligibility first.
+2. Full export suite: PDF + Excel for Pro, CSV stays free.
+3. Net worth tracker (Pro-only).
+4. Rule-based spending insight text as a baseline (AI version is Phase 10).
+
+---
+
+## Phase 10 — AI & Tips (Google Vertex AI / Gemini)
+
+**Net-new (entire module):**
+1. Cloud Function `generateFinancialTips` (Callable, App Check-protected):
+   pulls recent Firestore data, calls Gemini via Firebase AI Logic, returns
+   structured JSON tips.
+2. Server-side rate limiting: 3 tips/week free, unlimited Pro.
+3. Auto-categorization: rule-based free tier, Gemini-backed batch
+   classification for Pro.
+4. Coaching nudges via Phase 4's FCM infrastructure.
+5. Client "Tips" feed on the dashboard.
+
+**Flag:** set up Cloud Billing budget alerts alongside this phase.
+
+---
+
+## Phase 11 — Pro Features (multi-currency, joint wallet, OCR, monetization)
+
+Bank-API sync explicitly **out of scope**.
+
+1. **Receipt OCR (Pro-only):** `google_ml_kit` on-device text recognition →
+   pre-filled transaction form for confirmation.
+2. **Multi-currency (Pro-only):** activates the `currency` column from
+   Phase 1; scheduled `fetchExchangeRates` function.
+3. **Joint wallet (Pro-only, up to 5 members):** activates `owner_uids` from
+   Phase 5; restructures Firestore paths into `sharedAccounts/{accountId}`.
+4. **Monetization/billing:** `isPro` (stubbed since Phase 2) gets its real
+   source of truth via `in_app_purchase` + server-side receipt validation.
+5. Optional: CSV import if it slipped from Phase 3.
+6. Optional/lowest priority: minimal ads for free tier.
+
+---
+
+## Phase 12 — Polish & Launch
+
+**Fix:**
+- Debug-only Android signing → real release keystore + signing config.
+- No accessibility semantics anywhere — dedicated audit pass.
+- Roll out Phase 9's shared error-state pattern everywhere.
+
+**Net-new:**
+1. Biometric app-lock with configurable idle-timeout auto-lock.
+2. Extend AES-256-at-rest coverage; mask raw account numbers to last-4.
+3. Firebase Analytics + Crashlytics + Performance Monitoring.
+4. **Settings module (zero code today — fully net-new):** theme,
+   currency/region, notification preferences, biometric toggle, budget
+   reset-day picker, data export, account deletion, sign-out.
+5. Full onboarding wizard per the SRS's 7-step flow.
+6. Expand testing: amortization engine, repository tests against an
+   in-memory Drift DB, widget tests, guest→Google migration regression test.
+7. CI/CD hardening: build-and-sign, Firebase App Distribution, Play Store
+   closed-track upload.
+8. Beta testing, Play Store listing assets, Data Safety form.
+9. Cost/rate-limit review of every Cloud Function before public launch.
+
+---
+
+## Phase Dependency Summary
+
+- Phase 1 gates everything (git/CI, real Firebase, Drift schema, both
+  critical bug fixes).
+- Phase 1's schema decisions (`currency`, audit columns) are consumed by
+  Phase 11; Phase 5's `owner_uids` column is consumed by Phase 11 — added
+  early specifically to avoid a second migration later.
+- Phase 4's Cloud Functions scaffold is reused by Phases 6, 8, 10, 11.
+- Phase 2's `isPro` stub is read by Phases 5/6/7/8 before Phase 11 wires up
+  the real billing system that sets it for real — intentional.
+- Phases 6/8 (real amortization math, real price feeds) must precede
+  Phase 10 — tips generated over fudge-factor debt math or jittered stock
+  prices would be actively misleading.
+- Phase 9 (shared error-state pattern) should land before Phase 12's final
+  accessibility/polish pass.
+
+## Remaining Open Decisions
+
+1. Concrete stock-price data provider for Phase 8.
+2. Concrete FX-rate provider for Phase 11's multi-currency.
+3. Syncfusion Community License eligibility for Phase 9's advanced charts.
+4. Whether to keep Mixpanel alongside Firebase Analytics in Phase 12 (drop
+   recommended for solo-maintenance simplicity).
+5. Whether CSV import (Phase 3, optional) is worth building now.
+
+## Verification Strategy
+
+- Every phase's CI run must pass before merging that phase's work.
+- Manual verification: run the app on a real Android device/emulator after
+  each phase and exercise its new screens directly.
+- Before Phase 12's store submission: a full clean-install walkthrough of
+  onboarding → guest mode → sign-in → core feature tour.
