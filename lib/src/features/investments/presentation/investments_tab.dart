@@ -13,7 +13,8 @@ class InvestmentsTab extends ConsumerStatefulWidget {
   ConsumerState<InvestmentsTab> createState() => _InvestmentsTabState();
 }
 
-class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTickerProviderStateMixin {
+class _InvestmentsTabState extends ConsumerState<InvestmentsTab>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _random = Random();
 
@@ -30,18 +31,24 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
   }
 
   String _formatCurrency(double amount) {
-    return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   // Live NAV / Price Update Simulator
   Future<void> _simulateLivePricesUpdate(List<InvestmentModel> list) async {
     final notifier = ref.read(investmentListProvider.notifier);
-    
+
     // Simulate updating prices by a random margin (-3% to +4%)
     for (var inv in list) {
-      final changePercent = -0.03 + _random.nextDouble() * 0.07; // random value between -0.03 and +0.04
+      final changePercent =
+          -0.03 +
+          _random.nextDouble() * 0.07; // random value between -0.03 and +0.04
       final newPrice = inv.currentPrice * (1 + changePercent);
-      
+
       final updated = InvestmentModel(
         id: inv.id,
         type: inv.type,
@@ -51,14 +58,14 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
         currentPrice: newPrice,
         datePurchased: inv.datePurchased,
       );
-      
+
       // Update in repository
       await ref.read(investmentsRepositoryProvider).addInvestment(updated);
     }
-    
+
     // Refresh Provider
     await notifier.refresh();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -86,7 +93,9 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
           }
 
           final returns = currentVal - totalInvested;
-          final returnsPercent = totalInvested > 0 ? (returns / totalInvested * 100) : 0.0;
+          final returnsPercent = totalInvested > 0
+              ? (returns / totalInvested * 100)
+              : 0.0;
           final isPositive = returns >= 0;
 
           return Padding(
@@ -109,18 +118,45 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Portfolio Value', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                              const Text(
+                                'Portfolio Value',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
                               AppSizes.h4,
-                              Text(_formatCurrency(currentVal), style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                              Text(
+                                _formatCurrency(currentVal),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                           ElevatedButton.icon(
-                            onPressed: () => _simulateLivePricesUpdate(investments),
-                            icon: const Icon(Icons.flash_on_rounded, color: Colors.white, size: 14),
-                            label: const Text('Update Feed', style: TextStyle(color: Colors.white, fontSize: 11)),
+                            onPressed: () =>
+                                _simulateLivePricesUpdate(investments),
+                            icon: const Icon(
+                              Icons.flash_on_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            label: const Text(
+                              'Update Feed',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
                             ),
                           ),
                         ],
@@ -134,25 +170,50 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Invested Amount', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
-                              Text(_formatCurrency(totalInvested), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                              const Text(
+                                'Invested Amount',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10,
+                                ),
+                              ),
+                              Text(
+                                _formatCurrency(totalInvested),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ],
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text('Total returns', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                              const Text(
+                                'Total returns',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 10,
+                                ),
+                              ),
                               Row(
                                 children: [
                                   Icon(
-                                    isPositive ? Icons.arrow_drop_up_rounded : Icons.arrow_drop_down_rounded,
-                                    color: isPositive ? AppColors.success : AppColors.error,
+                                    isPositive
+                                        ? Icons.arrow_drop_up_rounded
+                                        : Icons.arrow_drop_down_rounded,
+                                    color: isPositive
+                                        ? AppColors.success
+                                        : AppColors.error,
                                     size: 16,
                                   ),
                                   Text(
                                     '${isPositive ? "+" : ""}${_formatCurrency(returns)} (${returnsPercent.toStringAsFixed(2)}%)',
                                     style: TextStyle(
-                                      color: isPositive ? AppColors.success : AppColors.error,
+                                      color: isPositive
+                                          ? AppColors.success
+                                          : AppColors.error,
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -188,11 +249,15 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
                     children: [
                       // Stocks Panel
                       _buildInvestmentList(
-                        investments.where((inv) => inv.type == 'Stock').toList(),
+                        investments
+                            .where((inv) => inv.type == 'Stock')
+                            .toList(),
                       ),
                       // Mutual Fund Panel
                       _buildInvestmentList(
-                        investments.where((inv) => inv.type != 'Stock').toList(),
+                        investments
+                            .where((inv) => inv.type != 'Stock')
+                            .toList(),
                       ),
                     ],
                   ),
@@ -210,7 +275,10 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
   Widget _buildInvestmentList(List<InvestmentModel> list) {
     if (list.isEmpty) {
       return const Center(
-        child: Text('No assets logged in this category.', style: TextStyle(color: AppColors.textSecondary)),
+        child: Text(
+          'No assets logged in this category.',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
       );
     }
 
@@ -235,10 +303,21 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(inv.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text(
+                      inv.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
                     Text(
                       _formatCurrency(marketValue),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -248,19 +327,28 @@ class _InvestmentsTabState extends ConsumerState<InvestmentsTab> with SingleTick
                   children: [
                     Text(
                       'Qty: ${inv.unitsQuantity.toStringAsFixed(inv.type == 'Stock' ? 0 : 2)} • Avg Price: ${_formatCurrency(inv.purchasePrice)}',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                      ),
                     ),
                     Row(
                       children: [
                         Icon(
-                          isPositive ? Icons.arrow_drop_up_rounded : Icons.arrow_drop_down_rounded,
-                          color: isPositive ? AppColors.success : AppColors.error,
+                          isPositive
+                              ? Icons.arrow_drop_up_rounded
+                              : Icons.arrow_drop_down_rounded,
+                          color: isPositive
+                              ? AppColors.success
+                              : AppColors.error,
                           size: 14,
                         ),
                         Text(
                           '${isPositive ? "+" : ""}${pnlPercent.toStringAsFixed(1)}%',
                           style: TextStyle(
-                            color: isPositive ? AppColors.success : AppColors.error,
+                            color: isPositive
+                                ? AppColors.success
+                                : AppColors.error,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),

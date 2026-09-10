@@ -8,7 +8,6 @@ import '../features/dashboard/presentation/home_screen.dart';
 final routerProvider = Provider<GoRouter>((ref) {
   ref.watch(authProvider);
 
-
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
@@ -24,18 +23,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const SplashScreen(),
-      ),
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) => const HomeScreen(),
-      ),
+      GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     ],
   );
 });

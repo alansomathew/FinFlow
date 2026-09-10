@@ -14,13 +14,17 @@ void main() {
   });
 
   test('creates schema and round-trips an account', () async {
-    await db.into(db.accounts).insert(AccountsCompanion.insert(
-          id: 'acc1',
-          name: 'Test Account',
-          type: 'bank',
-          balance: 100.0,
-          colorHex: '#000000',
-        ));
+    await db
+        .into(db.accounts)
+        .insert(
+          AccountsCompanion.insert(
+            id: 'acc1',
+            name: 'Test Account',
+            type: 'bank',
+            balance: 100.0,
+            colorHex: '#000000',
+          ),
+        );
 
     final accounts = await db.select(db.accounts).get();
     expect(accounts, hasLength(1));
@@ -30,22 +34,30 @@ void main() {
   });
 
   test('foreign key from transactions to accounts is enforced', () async {
-    await db.into(db.accounts).insert(AccountsCompanion.insert(
-          id: 'acc1',
-          name: 'Test Account',
-          type: 'bank',
-          balance: 100.0,
-          colorHex: '#000000',
-        ));
-    await db.into(db.transactions).insert(TransactionsCompanion.insert(
-          id: 'tx1',
-          amount: 50.0,
-          category: 'Groceries',
-          bucket: 'needs',
-          accountId: 'acc1',
-          date: DateTime(2026, 1, 1),
-          payee: 'Store',
-        ));
+    await db
+        .into(db.accounts)
+        .insert(
+          AccountsCompanion.insert(
+            id: 'acc1',
+            name: 'Test Account',
+            type: 'bank',
+            balance: 100.0,
+            colorHex: '#000000',
+          ),
+        );
+    await db
+        .into(db.transactions)
+        .insert(
+          TransactionsCompanion.insert(
+            id: 'tx1',
+            amount: 50.0,
+            category: 'Groceries',
+            bucket: 'needs',
+            accountId: 'acc1',
+            date: DateTime(2026, 1, 1),
+            payee: 'Store',
+          ),
+        );
 
     // Deleting an account that still has a transaction referencing it must
     // be rejected by the ON DELETE RESTRICT foreign key, not silently orphan
@@ -59,27 +71,38 @@ void main() {
     expect(transactions, hasLength(1));
   });
 
-  test('clearAllData wipes every table without violating foreign keys', () async {
-    await db.into(db.accounts).insert(AccountsCompanion.insert(
-          id: 'acc1',
-          name: 'Test Account',
-          type: 'bank',
-          balance: 100.0,
-          colorHex: '#000000',
-        ));
-    await db.into(db.transactions).insert(TransactionsCompanion.insert(
-          id: 'tx1',
-          amount: 50.0,
-          category: 'Groceries',
-          bucket: 'needs',
-          accountId: 'acc1',
-          date: DateTime(2026, 1, 1),
-          payee: 'Store',
-        ));
+  test(
+    'clearAllData wipes every table without violating foreign keys',
+    () async {
+      await db
+          .into(db.accounts)
+          .insert(
+            AccountsCompanion.insert(
+              id: 'acc1',
+              name: 'Test Account',
+              type: 'bank',
+              balance: 100.0,
+              colorHex: '#000000',
+            ),
+          );
+      await db
+          .into(db.transactions)
+          .insert(
+            TransactionsCompanion.insert(
+              id: 'tx1',
+              amount: 50.0,
+              category: 'Groceries',
+              bucket: 'needs',
+              accountId: 'acc1',
+              date: DateTime(2026, 1, 1),
+              payee: 'Store',
+            ),
+          );
 
-    await db.clearAllData();
+      await db.clearAllData();
 
-    expect(await db.select(db.accounts).get(), isEmpty);
-    expect(await db.select(db.transactions).get(), isEmpty);
-  });
+      expect(await db.select(db.accounts).get(), isEmpty);
+      expect(await db.select(db.transactions).get(), isEmpty);
+    },
+  );
 }

@@ -23,7 +23,9 @@ class TransactionRepository {
             .collection('transactions')
             .orderBy('date', descending: true)
             .get();
-        return querySnapshot.docs.map((doc) => TransactionModel.fromMap(doc.data())).toList();
+        return querySnapshot.docs
+            .map((doc) => TransactionModel.fromMap(doc.data()))
+            .toList();
       } catch (e) {
         // Fallback to local SQLite if Firebase is unconfigured or offline
         return _getLocalTransactions();
@@ -65,14 +67,22 @@ class TransactionRepository {
     await _db.transaction(() async {
       await _db.into(_db.transactions).insertOnConflictUpdate(tx.toCompanion());
 
-      final account =
-          await (_db.select(_db.accounts)..where((a) => a.id.equals(tx.accountId))).getSingleOrNull();
+      final account = await (_db.select(
+        _db.accounts,
+      )..where((a) => a.id.equals(tx.accountId))).getSingleOrNull();
       if (account != null) {
         // Income increases the balance; every other bucket is a spend.
         final isCredit = tx.bucket == BudgetBucket.income;
-        final newBalance = isCredit ? account.balance + tx.amount : account.balance - tx.amount;
-        await (_db.update(_db.accounts)..where((a) => a.id.equals(tx.accountId))).write(
-          AccountsCompanion(balance: Value(newBalance), updatedAt: Value(DateTime.now())),
+        final newBalance = isCredit
+            ? account.balance + tx.amount
+            : account.balance - tx.amount;
+        await (_db.update(
+          _db.accounts,
+        )..where((a) => a.id.equals(tx.accountId))).write(
+          AccountsCompanion(
+            balance: Value(newBalance),
+            updatedAt: Value(DateTime.now()),
+          ),
         );
       }
     });
@@ -99,17 +109,27 @@ class TransactionRepository {
 
   Future<void> _deleteLocal(String id) async {
     await _db.transaction(() async {
-      final tx = await (_db.select(_db.transactions)..where((t) => t.id.equals(id))).getSingleOrNull();
+      final tx = await (_db.select(
+        _db.transactions,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
       if (tx == null) return;
 
       // Reverse the balance adjustment applied when this transaction was added.
-      final account =
-          await (_db.select(_db.accounts)..where((a) => a.id.equals(tx.accountId))).getSingleOrNull();
+      final account = await (_db.select(
+        _db.accounts,
+      )..where((a) => a.id.equals(tx.accountId))).getSingleOrNull();
       if (account != null) {
         final wasCredit = tx.bucket == BudgetBucket.income.name;
-        final newBalance = wasCredit ? account.balance - tx.amount : account.balance + tx.amount;
-        await (_db.update(_db.accounts)..where((a) => a.id.equals(tx.accountId))).write(
-          AccountsCompanion(balance: Value(newBalance), updatedAt: Value(DateTime.now())),
+        final newBalance = wasCredit
+            ? account.balance - tx.amount
+            : account.balance + tx.amount;
+        await (_db.update(
+          _db.accounts,
+        )..where((a) => a.id.equals(tx.accountId))).write(
+          AccountsCompanion(
+            balance: Value(newBalance),
+            updatedAt: Value(DateTime.now()),
+          ),
         );
       }
 
@@ -122,7 +142,8 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
   return TransactionRepository(ref);
 });
 
-class TransactionListNotifier extends StateNotifier<AsyncValue<List<TransactionModel>>> {
+class TransactionListNotifier
+    extends StateNotifier<AsyncValue<List<TransactionModel>>> {
   final TransactionRepository _repo;
   TransactionListNotifier(this._repo) : super(const AsyncValue.loading()) {
     refresh();
@@ -149,7 +170,11 @@ class TransactionListNotifier extends StateNotifier<AsyncValue<List<TransactionM
   }
 }
 
-final transactionListProvider = StateNotifierProvider<TransactionListNotifier, AsyncValue<List<TransactionModel>>>((ref) {
-  final repo = ref.watch(transactionRepositoryProvider);
-  return TransactionListNotifier(repo);
-});
+final transactionListProvider =
+    StateNotifierProvider<
+      TransactionListNotifier,
+      AsyncValue<List<TransactionModel>>
+    >((ref) {
+      final repo = ref.watch(transactionRepositoryProvider);
+      return TransactionListNotifier(repo);
+    });

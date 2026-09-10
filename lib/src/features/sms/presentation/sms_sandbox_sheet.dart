@@ -45,11 +45,13 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
 
   void _parseCustomSms(String body) {
     if (body.isEmpty) return;
-    
+
     final parsed = SmsParser.parse(body);
     if (parsed == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to parse SMS. Verify currency/format.')),
+        const SnackBar(
+          content: Text('Failed to parse SMS. Verify currency/format.'),
+        ),
       );
       setState(() {
         _parsedResult = null;
@@ -71,7 +73,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
         break;
       }
       // Check amount and same day
-      final isSameDay = tx.date.day == DateTime.now().day &&
+      final isSameDay =
+          tx.date.day == DateTime.now().day &&
           tx.date.month == DateTime.now().month &&
           tx.date.year == DateTime.now().year;
       if (tx.amount == parsed.amount && isSameDay) {
@@ -97,7 +100,9 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
 
     // Match bank by last 4 digits, fallback to first account
     final matchingAccount = accounts.firstWhere(
-      (a) => a.name.contains(parsed.accountLast4) || a.id.contains(parsed.accountLast4),
+      (a) =>
+          a.name.contains(parsed.accountLast4) ||
+          a.id.contains(parsed.accountLast4),
       orElse: () => accounts.first,
     );
 
@@ -124,7 +129,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
     await smsRepository.markParsed(smsId);
 
     _loadQueue();
-    
+
     setState(() {
       _parsedResult = null;
       _textController.clear();
@@ -132,7 +137,9 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added ${_isDuplicate ? "Duplicate " : ""}Transaction: ₹${parsed.amount} to ${matchingAccount.name}'),
+        content: Text(
+          'Added ${_isDuplicate ? "Duplicate " : ""}Transaction: ₹${parsed.amount} to ${matchingAccount.name}',
+        ),
         backgroundColor: AppColors.success,
       ),
     );
@@ -149,7 +156,9 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLg),
+        ),
       ),
       child: SafeArea(
         child: Padding(
@@ -171,14 +180,20 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
               AppSizes.h12,
               const Text(
                 'SMS Parsing Simulator',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               AppSizes.h16,
 
               // Paste Custom SMS Testing Panel
               Card(
                 color: AppColors.cardBg,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(AppSizes.md),
                   child: Column(
@@ -186,19 +201,33 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                     children: [
                       const Text(
                         'Simulate Custom SMS Message',
-                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       AppSizes.h8,
                       TextField(
                         controller: _textController,
                         maxLines: 2,
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
                         decoration: InputDecoration(
-                          hintText: 'Paste HDFC / SBI / ICICI transaction SMS here...',
-                          hintStyle: const TextStyle(color: AppColors.textSecondary),
+                          hintText:
+                              'Paste HDFC / SBI / ICICI transaction SMS here...',
+                          hintStyle: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-                            borderSide: const BorderSide(color: AppColors.border),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm,
+                            ),
+                            borderSide: const BorderSide(
+                              color: AppColors.border,
+                            ),
                           ),
                           fillColor: AppColors.background,
                           filled: true,
@@ -209,15 +238,22 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         onPressed: () => _parseCustomSms(_textController.text),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm,
+                            ),
+                          ),
                         ),
-                        child: const Text('Parse SMS Text', style: TextStyle(color: Colors.white)),
+                        child: const Text(
+                          'Parse SMS Text',
+                          style: TextStyle(color: Colors.white),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              
+
               // Dynamic Parsing Results Panel
               if (_parsedResult != null) ...[
                 AppSizes.h12,
@@ -225,7 +261,10 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                   color: AppColors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    side: BorderSide(color: _isDuplicate ? AppColors.error : AppColors.success, width: 1.5),
+                    side: BorderSide(
+                      color: _isDuplicate ? AppColors.error : AppColors.success,
+                      width: 1.5,
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(AppSizes.md),
@@ -235,16 +274,30 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('PARSING PREVIEW', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
+                            const Text(
+                              'PARSING PREVIEW',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
                                 'Confidence: ${_parsedResult!.confidenceScore}%',
-                                style: const TextStyle(color: AppColors.primaryLight, fontSize: 10, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
@@ -253,27 +306,55 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         Text(
                           '₹${_parsedResult!.amount.toStringAsFixed(2)}',
                           style: TextStyle(
-                            color: _parsedResult!.type == 'credit' ? AppColors.success : Colors.white,
+                            color: _parsedResult!.type == 'credit'
+                                ? AppColors.success
+                                : Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         AppSizes.h8,
-                        Text('Merchant: ${_parsedResult!.payee}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 13)),
-                        Text('Account (last 4): ${_parsedResult!.accountLast4}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        Text(
+                          'Merchant: ${_parsedResult!.payee}',
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          'Account (last 4): ${_parsedResult!.accountLast4}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
                         if (_parsedResult!.refId.isNotEmpty)
-                          Text('Ref ID: ${_parsedResult!.refId}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                        
+                          Text(
+                            'Ref ID: ${_parsedResult!.refId}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+
                         if (_isDuplicate) ...[
                           AppSizes.h8,
                           const Row(
                             children: [
-                              Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 16),
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: AppColors.error,
+                                size: 16,
+                              ),
                               SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Duplicate Alert: A transaction with this amount has already been logged today.',
-                                  style: TextStyle(color: AppColors.error, fontSize: 11, fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    color: AppColors.error,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -284,17 +365,35 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton(
-                              onPressed: () => setState(() => _parsedResult = null),
-                              child: const Text('Discard', style: TextStyle(color: AppColors.textSecondary)),
+                              onPressed: () =>
+                                  setState(() => _parsedResult = null),
+                              child: const Text(
+                                'Discard',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
                             AppSizes.w12,
                             ElevatedButton(
-                              onPressed: () => _addParsedToLedger(_parsedResult!, const Uuid().v4()),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: _isDuplicate ? AppColors.error : AppColors.success,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                              onPressed: () => _addParsedToLedger(
+                                _parsedResult!,
+                                const Uuid().v4(),
                               ),
-                              child: Text(_isDuplicate ? 'Add Anyway' : 'Add to Ledger', style: const TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isDuplicate
+                                    ? AppColors.error
+                                    : AppColors.success,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusSm,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                _isDuplicate ? 'Add Anyway' : 'Add to Ledger',
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                           ],
                         ),
@@ -303,14 +402,18 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                   ),
                 ),
               ],
-              
+
               AppSizes.h16,
               const Text(
                 'Simulated Pending Inbox Reviews',
-                style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               AppSizes.h8,
-              
+
               // Scrollable simulated queue
               Expanded(
                 child: _smsQueue.isEmpty
@@ -318,7 +421,10 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         child: Text(
                           'No pending inbox items.\nType an SMS above to test parsing.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                       )
                     : ListView.builder(
@@ -337,22 +443,36 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         sms.sender,
-                                        style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 12),
+                                        style: const TextStyle(
+                                          color: AppColors.primaryLight,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                       Text(
-                                        DateFormat('dd MMM hh:mm a').format(date),
-                                        style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+                                        DateFormat(
+                                          'dd MMM hh:mm a',
+                                        ).format(date),
+                                        style: const TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 10,
+                                        ),
                                       ),
                                     ],
                                   ),
                                   AppSizes.h8,
                                   Text(
                                     body,
-                                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, height: 1.3),
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 12,
+                                      height: 1.3,
+                                    ),
                                   ),
                                   AppSizes.h12,
                                   Row(
@@ -361,10 +481,22 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                       OutlinedButton(
                                         onPressed: () => _skipSms(sms.id),
                                         style: OutlinedButton.styleFrom(
-                                          side: const BorderSide(color: AppColors.border),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                                          side: const BorderSide(
+                                            color: AppColors.border,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              AppSizes.radiusSm,
+                                            ),
+                                          ),
                                         ),
-                                        child: const Text('Skip', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                                        child: const Text(
+                                          'Skip',
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 11,
+                                          ),
+                                        ),
                                       ),
                                       AppSizes.w8,
                                       ElevatedButton(
@@ -376,9 +508,19 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColors.primary,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              AppSizes.radiusSm,
+                                            ),
+                                          ),
                                         ),
-                                        child: const Text('Parse & Add', style: TextStyle(color: Colors.white, fontSize: 11)),
+                                        child: const Text(
+                                          'Parse & Add',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),

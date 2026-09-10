@@ -9,7 +9,12 @@ class SmsRepository {
 
   Future<List<SmsInboxData>> getPendingInbox() async {
     final query = _db.select(_db.smsInbox)
-      ..where((t) => t.deletedAt.isNull() & t.isParsed.equals(false) & t.isSkipped.equals(false))
+      ..where(
+        (t) =>
+            t.deletedAt.isNull() &
+            t.isParsed.equals(false) &
+            t.isSkipped.equals(false),
+      )
       ..orderBy([(t) => OrderingTerm.desc(t.date)]);
     return query.get();
   }
@@ -20,7 +25,9 @@ class SmsRepository {
     required String sender,
     required DateTime date,
   }) async {
-    await _db.into(_db.smsInbox).insert(
+    await _db
+        .into(_db.smsInbox)
+        .insert(
           SmsInboxCompanion.insert(
             id: id,
             messageBody: messageBody,
@@ -37,13 +44,19 @@ class SmsRepository {
   /// status update, destroying the original SMS text.
   Future<void> markParsed(String id) async {
     await (_db.update(_db.smsInbox)..where((t) => t.id.equals(id))).write(
-      SmsInboxCompanion(isParsed: const Value(true), updatedAt: Value(DateTime.now())),
+      SmsInboxCompanion(
+        isParsed: const Value(true),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 
   Future<void> markSkipped(String id) async {
     await (_db.update(_db.smsInbox)..where((t) => t.id.equals(id))).write(
-      SmsInboxCompanion(isSkipped: const Value(true), updatedAt: Value(DateTime.now())),
+      SmsInboxCompanion(
+        isSkipped: const Value(true),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 }

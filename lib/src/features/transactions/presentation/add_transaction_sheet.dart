@@ -12,7 +12,8 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
   const AddTransactionSheet({super.key});
 
   @override
-  ConsumerState<AddTransactionSheet> createState() => _AddTransactionSheetState();
+  ConsumerState<AddTransactionSheet> createState() =>
+      _AddTransactionSheetState();
 }
 
 class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
@@ -20,7 +21,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   final _amountController = TextEditingController();
   final _payeeController = TextEditingController();
   final _noteController = TextEditingController();
-  
+
   TransactionCategory _selectedCategory = TransactionCategory.presets.first;
   AccountModel? _selectedAccount;
   DateTime _selectedDate = DateTime.now();
@@ -63,7 +64,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   void _submit() {
     if (!_formKey.currentState!.validate() || _selectedAccount == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields and select an account')),
+        const SnackBar(
+          content: Text('Please fill all fields and select an account'),
+        ),
       );
       return;
     }
@@ -85,7 +88,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     ref.read(transactionListProvider.notifier).add(tx);
     // Refresh account balances
     ref.read(accountListProvider.notifier).refresh();
-    
+
     Navigator.pop(context);
   }
 
@@ -99,7 +102,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       ),
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLg),
+        ),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -125,31 +130,50 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   AppSizes.h12,
                   const Text(
                     'Add Transaction',
-                    style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   AppSizes.h16,
 
                   // Amount Field
                   TextFormField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                     decoration: InputDecoration(
                       hintText: '₹ 0.00',
-                      hintStyle: TextStyle(color: AppColors.textMuted, fontSize: 24),
+                      hintStyle: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 24,
+                      ),
                       fillColor: AppColors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(Icons.currency_rupee_rounded, color: AppColors.primaryLight, size: 24),
+                      prefixIcon: const Icon(
+                        Icons.currency_rupee_rounded,
+                        color: AppColors.primaryLight,
+                        size: 24,
+                      ),
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) return 'Enter amount';
-                      if (double.tryParse(val) == null) return 'Enter a valid number';
-                      if (double.parse(val) <= 0) return 'Amount must be greater than zero';
+                      if (double.tryParse(val) == null)
+                        return 'Enter a valid number';
+                      if (double.parse(val) <= 0)
+                        return 'Amount must be greater than zero';
                       return null;
                     },
                   ),
@@ -161,16 +185,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Payee / Merchant',
-                      labelStyle: const TextStyle(color: AppColors.textSecondary),
+                      labelStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                      ),
                       fillColor: AppColors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(Icons.storefront_rounded, color: AppColors.textSecondary),
+                      prefixIcon: const Icon(
+                        Icons.storefront_rounded,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                    validator: (val) => val == null || val.isEmpty ? 'Enter payee' : null,
+                    validator: (val) =>
+                        val == null || val.isEmpty ? 'Enter payee' : null,
                   ),
                   AppSizes.h12,
 
@@ -178,9 +208,12 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   accountsAsync.when(
                     data: (accounts) {
                       if (accounts.isEmpty) {
-                        return const Text('Create an account first in settings.', style: TextStyle(color: AppColors.error));
+                        return const Text(
+                          'Create an account first in settings.',
+                          style: TextStyle(color: AppColors.error),
+                        );
                       }
-                      
+
                       // Auto-select first account
                       _selectedAccount ??= accounts.first;
 
@@ -188,7 +221,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           color: AppColors.cardBg,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
                         ),
                         child: DropdownButtonFormField<AccountModel>(
                           value: _selectedAccount,
@@ -196,13 +231,17 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             labelText: 'Debit/Credit Account',
-                            labelStyle: TextStyle(color: AppColors.textSecondary),
+                            labelStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                           style: const TextStyle(color: Colors.white),
                           items: accounts.map((acc) {
                             return DropdownMenuItem<AccountModel>(
                               value: acc,
-                              child: Text('${acc.name} (Bal: ₹${acc.balance.toStringAsFixed(0)})'),
+                              child: Text(
+                                '${acc.name} (Bal: ₹${acc.balance.toStringAsFixed(0)})',
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -213,7 +252,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         ),
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Text('Error loading accounts: $e'),
                   ),
                   AppSizes.h12,
@@ -237,7 +277,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       items: TransactionCategory.presets.map((cat) {
                         return DropdownMenuItem<TransactionCategory>(
                           value: cat,
-                          child: Text('${cat.icon} ${cat.name} (${cat.bucket.displayName})'),
+                          child: Text(
+                            '${cat.icon} ${cat.name} (${cat.bucket.displayName})',
+                          ),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -258,17 +300,28 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         child: InkWell(
                           onTap: () => _selectDate(context),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.cardBg,
-                              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusMd,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.calendar_month_rounded, color: AppColors.textSecondary, size: 20),
+                                const Icon(
+                                  Icons.calendar_month_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
                                 AppSizes.w8,
                                 Text(
-                                  DateFormat('dd MMM yyyy').format(_selectedDate),
+                                  DateFormat(
+                                    'dd MMM yyyy',
+                                  ).format(_selectedDate),
                                   style: const TextStyle(color: Colors.white),
                                 ),
                               ],
@@ -286,14 +339,19 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Add optional note...',
-                      labelStyle: const TextStyle(color: AppColors.textSecondary),
+                      labelStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                      ),
                       fillColor: AppColors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(Icons.sticky_note_2_rounded, color: AppColors.textSecondary),
+                      prefixIcon: const Icon(
+                        Icons.sticky_note_2_rounded,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                   AppSizes.h24,
@@ -310,7 +368,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     ),
                     child: const Text(
                       'Save Transaction',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],

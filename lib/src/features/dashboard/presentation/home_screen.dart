@@ -35,7 +35,9 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLg),
+        ),
       ),
       builder: (context) => SafeArea(
         child: Padding(
@@ -50,9 +52,17 @@ class HomeScreen extends ConsumerWidget {
                   CircleAvatar(
                     radius: 25,
                     backgroundColor: AppColors.primary,
-                    backgroundImage: user.photoUrl.isNotEmpty ? NetworkImage(user.photoUrl) : null,
+                    backgroundImage: user.photoUrl.isNotEmpty
+                        ? NetworkImage(user.photoUrl)
+                        : null,
                     child: user.photoUrl.isEmpty
-                        ? Text(user.displayName[0], style: const TextStyle(color: Colors.white, fontSize: 20))
+                        ? Text(
+                            user.displayName[0],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                            ),
+                          )
                         : null,
                   ),
                   AppSizes.w16,
@@ -62,25 +72,39 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         Text(
                           user.displayName,
-                          style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         Text(
                           user.email,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: user.isGuest ? AppColors.wants.withOpacity(0.2) : AppColors.savings.withOpacity(0.2),
+                      color: user.isGuest
+                          ? AppColors.wants.withOpacity(0.2)
+                          : AppColors.savings.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       user.isGuest ? 'Guest' : 'Cloud Sync',
                       style: TextStyle(
-                        color: user.isGuest ? AppColors.wants : AppColors.savings,
+                        color: user.isGuest
+                            ? AppColors.wants
+                            : AppColors.savings,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -95,18 +119,42 @@ class HomeScreen extends ConsumerWidget {
               // Action Options
               if (user.isGuest)
                 ListTile(
-                  leading: const Icon(Icons.cloud_upload_rounded, color: AppColors.primary),
-                  title: const Text('Upgrade to Cloud Sync', style: TextStyle(color: AppColors.textPrimary)),
-                  subtitle: const Text('Link Google account and backup data', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                  leading: const Icon(
+                    Icons.cloud_upload_rounded,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Upgrade to Cloud Sync',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
+                  subtitle: const Text(
+                    'Link Google account and backup data',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     context.go('/login');
                   },
                 ),
               ListTile(
-                leading: const Icon(Icons.sms_rounded, color: AppColors.secondary),
-                title: const Text('SMS Parsing Sandbox', style: TextStyle(color: AppColors.textPrimary)),
-                subtitle: const Text('Simulate bank SMS messages to test parser', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                leading: const Icon(
+                  Icons.sms_rounded,
+                  color: AppColors.secondary,
+                ),
+                title: const Text(
+                  'SMS Parsing Sandbox',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                subtitle: const Text(
+                  'Simulate bank SMS messages to test parser',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   showModalBottomSheet(
@@ -118,9 +166,21 @@ class HomeScreen extends ConsumerWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.calculate_rounded, color: AppColors.primary),
-                title: const Text('Debt Payoff Planner', style: TextStyle(color: AppColors.textPrimary)),
-                subtitle: const Text('Compare Snowball vs Avalanche payoff methods', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                leading: const Icon(
+                  Icons.calculate_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'Debt Payoff Planner',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                subtitle: const Text(
+                  'Compare Snowball vs Avalanche payoff methods',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   showModalBottomSheet(
@@ -132,8 +192,17 @@ class HomeScreen extends ConsumerWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-                title: const Text('Sign Out', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                leading: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.error,
+                ),
+                title: const Text(
+                  'Sign Out',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 onTap: () async {
                   Navigator.pop(context);
                   await ref.read(authProvider.notifier).signOut();
@@ -169,10 +238,21 @@ class HomeScreen extends ConsumerWidget {
         elevation: 0,
         title: Row(
           children: [
-            const Icon(Icons.auto_graph_rounded, color: AppColors.primary, size: 24),
+            const Icon(
+              Icons.auto_graph_rounded,
+              color: AppColors.primary,
+              size: 24,
+            ),
             const SizedBox(width: 8),
             Text(
-              activeTab == 0 ? 'FinFlow' : ['Transactions', 'Budgets', 'Investments', 'Analytics'][activeTab - 1],
+              activeTab == 0
+                  ? 'FinFlow'
+                  : [
+                      'Transactions',
+                      'Budgets',
+                      'Investments',
+                      'Analytics',
+                    ][activeTab - 1],
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -189,25 +269,31 @@ class HomeScreen extends ConsumerWidget {
               child: CircleAvatar(
                 radius: 18,
                 backgroundColor: AppColors.border,
-                backgroundImage: user?.photoUrl != null && user!.photoUrl.isNotEmpty
+                backgroundImage:
+                    user?.photoUrl != null && user!.photoUrl.isNotEmpty
                     ? NetworkImage(user.photoUrl)
                     : null,
                 child: user?.photoUrl == null || user!.photoUrl.isEmpty
-                    ? Text(user?.displayName[0] ?? 'U', style: const TextStyle(color: Colors.white, fontSize: 14))
+                    ? Text(
+                        user?.displayName[0] ?? 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      )
                     : null,
               ),
             ),
           ),
         ],
       ),
-      body: IndexedStack(
-        index: activeTab,
-        children: tabs,
-      ),
+      body: IndexedStack(index: activeTab, children: tabs),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTransaction(context),
         backgroundColor: AppColors.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
         child: Container(
           width: 56,
           height: 56,
@@ -244,7 +330,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBottomNavItem(WidgetRef ref, int index, IconData icon, String label) {
+  Widget _buildBottomNavItem(
+    WidgetRef ref,
+    int index,
+    IconData icon,
+    String label,
+  ) {
     final activeTab = ref.watch(activeTabProvider);
     final isSelected = activeTab == index;
 
@@ -266,7 +357,9 @@ class HomeScreen extends ConsumerWidget {
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),

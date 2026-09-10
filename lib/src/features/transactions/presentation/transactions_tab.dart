@@ -19,7 +19,11 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
 
   // Format currency
   String _formatCurrency(double amount) {
-    return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   @override
@@ -44,7 +48,10 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                 decoration: InputDecoration(
                   hintText: 'Search merchant, note, amount...',
                   hintStyle: const TextStyle(color: AppColors.textSecondary),
-                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textSecondary,
+                  ),
                   fillColor: AppColors.cardBg,
                   filled: true,
                   border: OutlineInputBorder(
@@ -68,7 +75,9 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         selected: _selectedBucket == null,
                         label: const Text('All'),
                         labelStyle: TextStyle(
-                          color: _selectedBucket == null ? Colors.white : AppColors.textSecondary,
+                          color: _selectedBucket == null
+                              ? Colors.white
+                              : AppColors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
                         selectedColor: AppColors.primary,
@@ -91,7 +100,9 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                           selected: isSelected,
                           label: Text(bucket.displayName),
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textSecondary,
                             fontWeight: FontWeight.bold,
                           ),
                           selectedColor: bucket.color,
@@ -122,13 +133,19 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                 if (_selectedBucket != null && t.bucket != _selectedBucket) {
                   return false;
                 }
-                
+
                 // Filter by search query
                 if (_searchQuery.isNotEmpty) {
-                  final payeeMatch = t.payee.toLowerCase().contains(_searchQuery);
+                  final payeeMatch = t.payee.toLowerCase().contains(
+                    _searchQuery,
+                  );
                   final noteMatch = t.note.toLowerCase().contains(_searchQuery);
-                  final catMatch = t.category.toLowerCase().contains(_searchQuery);
-                  final amountMatch = t.amount.toString().contains(_searchQuery);
+                  final catMatch = t.category.toLowerCase().contains(
+                    _searchQuery,
+                  );
+                  final amountMatch = t.amount.toString().contains(
+                    _searchQuery,
+                  );
                   return payeeMatch || noteMatch || catMatch || amountMatch;
                 }
 
@@ -164,15 +181,22 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
                           color: AppColors.error,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
                         ),
-                        child: const Icon(Icons.delete_rounded, color: Colors.white),
+                        child: const Icon(
+                          Icons.delete_rounded,
+                          color: Colors.white,
+                        ),
                       ),
                       onDismissed: (dir) {
                         ref.read(transactionListProvider.notifier).remove(t.id);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${t.payee.isNotEmpty ? t.payee : t.category} deleted'),
+                            content: Text(
+                              '${t.payee.isNotEmpty ? t.payee : t.category} deleted',
+                            ),
                             backgroundColor: AppColors.error,
                           ),
                         );
@@ -181,27 +205,40 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         color: AppColors.cardBg,
                         margin: const EdgeInsets.only(bottom: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: t.bucket.color.withOpacity(0.15),
-                            child: Text(category.icon, style: const TextStyle(fontSize: 18)),
+                            child: Text(
+                              category.icon,
+                              style: const TextStyle(fontSize: 18),
+                            ),
                           ),
                           title: Text(
                             t.payee.isNotEmpty ? t.payee : t.category,
-                            style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           subtitle: Text(
                             '${DateFormat('dd MMM yyyy').format(t.date)} ${t.note.isNotEmpty ? '• ${t.note}' : ''}',
-                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           trailing: Text(
                             '${isDebit ? "-" : "+"}${_formatCurrency(t.amount)}',
                             style: TextStyle(
-                              color: isDebit ? AppColors.textPrimary : AppColors.success,
+                              color: isDebit
+                                  ? AppColors.textPrimary
+                                  : AppColors.success,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -214,7 +251,12 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
+            error: (e, _) => Center(
+              child: Text(
+                'Error: $e',
+                style: const TextStyle(color: AppColors.error),
+              ),
+            ),
           ),
         ),
       ],

@@ -30,29 +30,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _loginWithGoogle() async {
     setState(() => _isLoading = true);
-    
+
     // Check if there is local Guest data to migrate
-    final localTx = await AppDatabase.instance.select(AppDatabase.instance.transactions).get();
+    final localTx = await AppDatabase.instance
+        .select(AppDatabase.instance.transactions)
+        .get();
     final hasLocalData = localTx.isNotEmpty;
 
     if (hasLocalData) {
       setState(() => _isLoading = false);
       if (!mounted) return;
-      
+
       // Prompt migration
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          ),
           title: const Row(
             children: [
               Icon(Icons.cloud_upload_rounded, color: AppColors.primary),
               SizedBox(width: 10),
               Text(
                 'Migrate Guest Data?',
-                style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -66,7 +73,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Navigator.of(context).pop();
                 _performGoogleLogin(migrateData: false); // Start Fresh
               },
-              child: const Text('Start Fresh', style: TextStyle(color: AppColors.error)),
+              child: const Text(
+                'Start Fresh',
+                style: TextStyle(color: AppColors.error),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
@@ -75,9 +85,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                ),
               ),
-              child: const Text('Yes, Migrate Data', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Yes, Migrate Data',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -89,15 +104,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _performGoogleLogin({required bool migrateData}) async {
     setState(() => _isLoading = true);
-    
+
     // Simulate Google Sign-In and fetch user info
     // In production, this would call GoogleSignIn() and FirebaseAuth.instance.signInWithCredential()
     await Future.delayed(const Duration(seconds: 1));
-    
+
     const mockUid = 'google_user_991823';
     const mockEmail = 'john.doe@gmail.com';
     const mockName = 'John Doe';
-    const mockPhoto = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
+    const mockPhoto =
+        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80';
 
     if (migrateData) {
       // Run the migration service to upload SQLite records to Firestore.
@@ -113,8 +129,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
-            title: const Text('Cloud Backup Failed', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
+            title: const Text(
+              'Cloud Backup Failed',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: const Text(
               "We couldn't back up your data to the cloud right now. Your local data is safe and untouched — please check your connection and try again.",
               style: TextStyle(color: AppColors.textSecondary, height: 1.4),
@@ -122,7 +146,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
             ],
           ),
@@ -135,12 +162,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     // Update Auth State
-    await ref.read(authProvider.notifier).signInWithGoogle(
-      uid: mockUid,
-      email: mockEmail,
-      displayName: mockName,
-      photoUrl: mockPhoto,
-    );
+    await ref
+        .read(authProvider.notifier)
+        .signInWithGoogle(
+          uid: mockUid,
+          email: mockEmail,
+          displayName: mockName,
+          photoUrl: mockPhoto,
+        );
 
     if (mounted) {
       context.go('/home');
@@ -198,11 +227,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const Spacer(),
-              
+
               if (_isLoading)
                 const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
                   ),
                 )
               else
@@ -212,21 +243,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Google Login Button
                     ElevatedButton.icon(
                       onPressed: _loginWithGoogle,
-                      icon: const Icon(Icons.g_mobiledata_rounded, size: 30, color: Colors.white),
+                      icon: const Icon(
+                        Icons.g_mobiledata_rounded,
+                        size: 30,
+                        color: Colors.white,
+                      ),
                       label: const Text(
                         'Continue with Google',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4285F4),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
                         ),
                       ),
                     ),
                     AppSizes.h16,
-                    
+
                     // Guest Mode Button
                     OutlinedButton(
                       onPressed: _enterGuestMode,
@@ -234,7 +275,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         side: const BorderSide(color: AppColors.border),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
                         ),
                       ),
                       child: const Text(
@@ -248,15 +291,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ],
                 ),
-              
+
               const Spacer(),
               const Center(
                 child: Text(
                   'By continuing, you agree to our Terms & Privacy Policy',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 11,
-                  ),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 11),
                 ),
               ),
               AppSizes.h16,

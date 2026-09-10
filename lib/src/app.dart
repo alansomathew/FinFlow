@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'routing/app_router.dart';
 import 'constants/app_colors.dart';
 
-
 class FinFlowApp extends ConsumerWidget {
   const FinFlowApp({super.key});
 
@@ -16,7 +15,7 @@ class FinFlowApp extends ConsumerWidget {
       title: 'FinFlow',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      
+
       // Premium Dark Theme First configuration
       themeMode: ThemeMode.dark,
       darkTheme: ThemeData(
@@ -30,14 +29,25 @@ class FinFlowApp extends ConsumerWidget {
           background: AppColors.background,
           error: AppColors.error,
         ),
-        
+
         // Font customization
-        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
-          bodyLarge: GoogleFonts.outfit(color: AppColors.textPrimary, fontSize: 16),
-          bodyMedium: GoogleFonts.outfit(color: AppColors.textSecondary, fontSize: 14),
-          titleLarge: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme)
+            .copyWith(
+              bodyLarge: GoogleFonts.outfit(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+              ),
+              bodyMedium: GoogleFonts.outfit(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+              titleLarge: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.background,
           elevation: 0,

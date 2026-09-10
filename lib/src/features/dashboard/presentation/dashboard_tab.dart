@@ -11,20 +11,28 @@ import '../../debt/data/debt_repository.dart';
 import '../../investments/data/investments_repository.dart';
 import 'home_screen.dart';
 
-
 class DashboardTab extends ConsumerWidget {
   const DashboardTab({super.key});
 
   // Helper to format currency in INR style
   String _formatINR(double amount) {
-    final format = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final format = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    );
     return format.format(amount);
   }
 
   // Dynamic AI financial advice generator
-  String _generateAiTip(List<TransactionModel> txs, double monthlyBudget, double totalSpent) {
-    if (txs.isEmpty) return "Welcome to FinFlow! Start tracking to receive personalized AI financial advice.";
-    
+  String _generateAiTip(
+    List<TransactionModel> txs,
+    double monthlyBudget,
+    double totalSpent,
+  ) {
+    if (txs.isEmpty)
+      return "Welcome to FinFlow! Start tracking to receive personalized AI financial advice.";
+
     // Check dining out
     final diningOutTxs = txs.where((t) => t.category == 'Dining Out').toList();
     final diningOutSum = diningOutTxs.fold(0.0, (sum, t) => sum + t.amount);
@@ -38,7 +46,9 @@ class DashboardTab extends ConsumerWidget {
     }
 
     // Check savings rate
-    final savingsTxs = txs.where((t) => t.bucket == BudgetBucket.savings).toList();
+    final savingsTxs = txs
+        .where((t) => t.bucket == BudgetBucket.savings)
+        .toList();
     final savingsSum = savingsTxs.fold(0.0, (sum, t) => sum + t.amount);
     if (savingsSum > 10000) {
       return "AI Coach: Excellent! Your SIPs and investments of ${_formatINR(savingsSum)} are on track. That grows to ₹1.2L this year!";
@@ -94,7 +104,7 @@ class DashboardTab extends ConsumerWidget {
                           color: AppColors.primary.withOpacity(0.3),
                           blurRadius: 15,
                           offset: const Offset(0, 8),
-                        )
+                        ),
                       ],
                     ),
                     child: Column(
@@ -125,15 +135,39 @@ class DashboardTab extends ConsumerWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Assets', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                                Text(_formatINR(assets), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                const Text(
+                                  'Assets',
+                                  style: TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  _formatINR(assets),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                             ),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                const Text('Liabilities', style: TextStyle(color: Colors.white60, fontSize: 11)),
-                                Text(_formatINR(liabilities), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                const Text(
+                                  'Liabilities',
+                                  style: TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  _formatINR(liabilities),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ],
                             ),
                           ],
@@ -153,22 +187,46 @@ class DashboardTab extends ConsumerWidget {
                   Expanded(
                     child: budgetsAsync.when(
                       data: (budgets) {
-                        final totalLimit = budgets.fold(0.0, (sum, b) => sum + b.limitAmount);
-                        final totalSpent = budgets.fold(0.0, (sum, b) => sum + b.spentAmount);
+                        final totalLimit = budgets.fold(
+                          0.0,
+                          (sum, b) => sum + b.limitAmount,
+                        );
+                        final totalSpent = budgets.fold(
+                          0.0,
+                          (sum, b) => sum + b.spentAmount,
+                        );
                         final remaining = totalLimit - totalSpent;
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.md,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.cardBg,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Remaining Budget', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+                              const Text(
+                                'Remaining Budget',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
                               AppSizes.h4,
-                              Text(_formatINR(remaining), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(
+                                _formatINR(remaining),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -181,25 +239,54 @@ class DashboardTab extends ConsumerWidget {
                   Expanded(
                     child: budgetsAsync.when(
                       data: (budgets) {
-                        final totalLimit = budgets.fold(0.0, (sum, b) => sum + b.limitAmount);
-                        final totalSpent = budgets.fold(0.0, (sum, b) => sum + b.spentAmount);
+                        final totalLimit = budgets.fold(
+                          0.0,
+                          (sum, b) => sum + b.limitAmount,
+                        );
+                        final totalSpent = budgets.fold(
+                          0.0,
+                          (sum, b) => sum + b.spentAmount,
+                        );
                         final remaining = totalLimit - totalSpent;
                         final daysLeft = 30 - DateTime.now().day + 1;
-                        final dailyLimit = remaining > 0 ? remaining / daysLeft : 0.0;
+                        final dailyLimit = remaining > 0
+                            ? remaining / daysLeft
+                            : 0.0;
 
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.md,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.cardBg,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Safe Daily Spend', style: TextStyle(color: AppColors.primaryLight, fontSize: 11, fontWeight: FontWeight.w600)),
+                              const Text(
+                                'Safe Daily Spend',
+                                style: TextStyle(
+                                  color: AppColors.primaryLight,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                               AppSizes.h4,
-                              Text(_formatINR(dailyLimit), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text(
+                                _formatINR(dailyLimit),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         );
@@ -230,12 +317,18 @@ class DashboardTab extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.2),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.psychology_rounded, color: AppColors.primaryLight, size: 28),
+                        const Icon(
+                          Icons.psychology_rounded,
+                          color: AppColors.primaryLight,
+                          size: 28,
+                        ),
                         AppSizes.w12,
                         Expanded(
                           child: Text(
@@ -271,22 +364,38 @@ class DashboardTab extends ConsumerWidget {
                           padding: const EdgeInsets.all(AppSizes.md),
                           decoration: BoxDecoration(
                             color: AppColors.cardBg,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.show_chart_rounded, color: AppColors.savings, size: 18),
+                                  Icon(
+                                    Icons.show_chart_rounded,
+                                    color: AppColors.savings,
+                                    size: 18,
+                                  ),
                                   SizedBox(width: 6),
-                                  Text('Investments', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                  Text(
+                                    'Investments',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                               AppSizes.h8,
                               Text(
                                 _formatINR(totalValue),
-                                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -301,27 +410,46 @@ class DashboardTab extends ConsumerWidget {
                   Expanded(
                     child: loansAsync.when(
                       data: (loans) {
-                        double totalDebt = loans.fold(0.0, (sum, l) => sum + l.loanAmount);
+                        double totalDebt = loans.fold(
+                          0.0,
+                          (sum, l) => sum + l.loanAmount,
+                        );
                         return Container(
                           padding: const EdgeInsets.all(AppSizes.md),
                           decoration: BoxDecoration(
                             color: AppColors.cardBg,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.credit_card_rounded, color: AppColors.error, size: 18),
+                                  Icon(
+                                    Icons.credit_card_rounded,
+                                    color: AppColors.error,
+                                    size: 18,
+                                  ),
                                   SizedBox(width: 6),
-                                  Text('Active Loans', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                                  Text(
+                                    'Active Loans',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                               AppSizes.h8,
                               Text(
                                 _formatINR(totalDebt),
-                                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
                           ),
@@ -349,13 +477,20 @@ class DashboardTab extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      ref.read(activeTabProvider.notifier).state = 1; // Navigate to Ledger
+                      ref.read(activeTabProvider.notifier).state =
+                          1; // Navigate to Ledger
                     },
-                    child: const Text('See All', style: TextStyle(color: AppColors.primaryLight, fontSize: 12)),
+                    child: const Text(
+                      'See All',
+                      style: TextStyle(
+                        color: AppColors.primaryLight,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              
+
               // Recent Transactions list (5)
               transactionsAsync.when(
                 data: (txs) {
@@ -369,36 +504,51 @@ class DashboardTab extends ConsumerWidget {
                       ),
                     );
                   }
-                  
+
                   final recent = txs.take(5).toList();
                   return ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: recent.length,
-                    separatorBuilder: (_, __) => const Divider(color: AppColors.border, height: 1),
+                    separatorBuilder: (_, __) =>
+                        const Divider(color: AppColors.border, height: 1),
                     itemBuilder: (context, idx) {
                       final t = recent[idx];
-                      final category = TransactionCategory.getByName(t.category);
+                      final category = TransactionCategory.getByName(
+                        t.category,
+                      );
                       final isDebit = t.bucket != BudgetBucket.income;
 
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: CircleAvatar(
                           backgroundColor: t.bucket.color.withOpacity(0.15),
-                          child: Text(category.icon, style: const TextStyle(fontSize: 18)),
+                          child: Text(
+                            category.icon,
+                            style: const TextStyle(fontSize: 18),
+                          ),
                         ),
                         title: Text(
                           t.payee.isNotEmpty ? t.payee : t.category,
-                          style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 14),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
                         subtitle: Text(
                           DateFormat('dd MMM yyyy').format(t.date),
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
                         ),
                         trailing: Text(
                           '${isDebit ? "-" : "+"}${_formatINR(t.amount)}',
                           style: TextStyle(
-                            color: isDebit ? AppColors.textPrimary : AppColors.success,
+                            color: isDebit
+                                ? AppColors.textPrimary
+                                : AppColors.success,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),

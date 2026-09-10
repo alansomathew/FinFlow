@@ -15,22 +15,31 @@ class AnalyticsTab extends ConsumerWidget {
   const AnalyticsTab({super.key});
 
   String _formatCurrency(double amount) {
-    return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   // Exports all transactions to a CSV file in the docs directory
-  Future<void> _exportCsvLedger(BuildContext context, List<TransactionModel> txs) async {
+  Future<void> _exportCsvLedger(
+    BuildContext context,
+    List<TransactionModel> txs,
+  ) async {
     try {
       final buffer = StringBuffer();
       // CSV Headers
-      buffer.writeln("Transaction ID,Date,Payee/Merchant,Category,Bucket,Amount,Note,Reference ID");
-      
+      buffer.writeln(
+        "Transaction ID,Date,Payee/Merchant,Category,Bucket,Amount,Note,Reference ID",
+      );
+
       for (var t in txs) {
         final dateStr = DateFormat('yyyy-MM-dd').format(t.date);
         final escapedPayee = t.payee.replaceAll('"', '""');
         final escapedNote = t.note.replaceAll('"', '""');
         buffer.writeln(
-          '"${t.id}","$dateStr","$escapedPayee","${t.category}","${t.bucket.displayName}",${t.amount},"$escapedNote","${t.refId}"'
+          '"${t.id}","$dateStr","$escapedPayee","${t.category}","${t.bucket.displayName}",${t.amount},"$escapedNote","${t.refId}"',
         );
       }
 
@@ -38,14 +47,16 @@ class AnalyticsTab extends ConsumerWidget {
       if (!docsDir.existsSync()) {
         docsDir.createSync(recursive: true);
       }
-      
+
       final exportFile = File("d:\\FinFlow\\docs\\FinFlow_Ledger_Export.csv");
       await exportFile.writeAsString(buffer.toString());
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ledger successfully exported to ${exportFile.path}!'),
+            content: Text(
+              'Ledger successfully exported to ${exportFile.path}!',
+            ),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 4),
           ),
@@ -110,15 +121,30 @@ class AnalyticsTab extends ConsumerWidget {
                     children: [
                       const Text(
                         'Spend Analytics',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       ElevatedButton.icon(
                         onPressed: () => _exportCsvLedger(context, txs),
-                        icon: const Icon(Icons.download_rounded, color: Colors.white, size: 16),
-                        label: const Text('Export CSV', style: TextStyle(color: Colors.white, fontSize: 12)),
+                        icon: const Icon(
+                          Icons.download_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        label: const Text(
+                          'Export CSV',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -128,7 +154,9 @@ class AnalyticsTab extends ConsumerWidget {
                   // 50/30/20 Donut Pie Chart Card
                   Card(
                     color: AppColors.cardBg,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSizes.md),
                       child: Column(
@@ -136,14 +164,23 @@ class AnalyticsTab extends ConsumerWidget {
                         children: [
                           const Text(
                             '50/30/20 Distribution',
-                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           AppSizes.h16,
                           if (total == 0)
                             const SizedBox(
                               height: 200,
                               child: Center(
-                                child: Text('Add expense items to view allocations.', style: TextStyle(color: AppColors.textSecondary)),
+                                child: Text(
+                                  'Add expense items to view allocations.',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
                               ),
                             )
                           else ...[
@@ -156,24 +193,39 @@ class AnalyticsTab extends ConsumerWidget {
                                   sections: [
                                     PieChartSectionData(
                                       value: needs,
-                                      title: '${(needs / total * 100).toStringAsFixed(0)}%',
+                                      title:
+                                          '${(needs / total * 100).toStringAsFixed(0)}%',
                                       color: AppColors.needs,
                                       radius: 20,
-                                      titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                      titleStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                     PieChartSectionData(
                                       value: wants,
-                                      title: '${(wants / total * 100).toStringAsFixed(0)}%',
+                                      title:
+                                          '${(wants / total * 100).toStringAsFixed(0)}%',
                                       color: AppColors.wants,
                                       radius: 20,
-                                      titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                      titleStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                     PieChartSectionData(
                                       value: savings,
-                                      title: '${(savings / total * 100).toStringAsFixed(0)}%',
+                                      title:
+                                          '${(savings / total * 100).toStringAsFixed(0)}%',
                                       color: AppColors.savings,
                                       radius: 20,
-                                      titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                      titleStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -184,9 +236,21 @@ class AnalyticsTab extends ConsumerWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
-                                _buildLegendItem('Needs', _formatCurrency(needs), AppColors.needs),
-                                _buildLegendItem('Wants', _formatCurrency(wants), AppColors.wants),
-                                _buildLegendItem('Savings', _formatCurrency(savings), AppColors.savings),
+                                _buildLegendItem(
+                                  'Needs',
+                                  _formatCurrency(needs),
+                                  AppColors.needs,
+                                ),
+                                _buildLegendItem(
+                                  'Wants',
+                                  _formatCurrency(wants),
+                                  AppColors.wants,
+                                ),
+                                _buildLegendItem(
+                                  'Savings',
+                                  _formatCurrency(savings),
+                                  AppColors.savings,
+                                ),
                               ],
                             ),
                           ],
@@ -203,7 +267,11 @@ class AnalyticsTab extends ConsumerWidget {
 
                       return Card(
                         color: AppColors.cardBg,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(AppSizes.md),
                           child: Column(
@@ -211,7 +279,11 @@ class AnalyticsTab extends ConsumerWidget {
                             children: [
                               const Text(
                                 'Budget Adherence by Envelope',
-                                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                               AppSizes.h24,
                               SizedBox(
@@ -222,26 +294,52 @@ class AnalyticsTab extends ConsumerWidget {
                                     gridData: const FlGridData(show: false),
                                     titlesData: FlTitlesData(
                                       show: true,
-                                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                      topTitles: const AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: false,
+                                        ),
+                                      ),
+                                      rightTitles: const AxisTitles(
+                                        sideTitles: SideTitles(
+                                          showTitles: false,
+                                        ),
+                                      ),
                                       bottomTitles: AxisTitles(
                                         sideTitles: SideTitles(
                                           showTitles: true,
                                           getTitlesWidget: (val, meta) {
                                             final idx = val.toInt();
-                                            if (idx < 0 || idx >= budgets.length) return Container();
+                                            if (idx < 0 ||
+                                                idx >= budgets.length)
+                                              return Container();
                                             return Padding(
-                                              padding: const EdgeInsets.only(top: 6),
+                                              padding: const EdgeInsets.only(
+                                                top: 6,
+                                              ),
                                               child: Text(
-                                                budgets[idx].category.substring(0, min(budgets[idx].category.length, 4)),
-                                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 9),
+                                                budgets[idx].category.substring(
+                                                  0,
+                                                  min(
+                                                    budgets[idx]
+                                                        .category
+                                                        .length,
+                                                    4,
+                                                  ),
+                                                ),
+                                                style: const TextStyle(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                  fontSize: 9,
+                                                ),
                                               ),
                                             );
                                           },
                                         ),
                                       ),
                                     ),
-                                    barGroups: List.generate(budgets.length, (idx) {
+                                    barGroups: List.generate(budgets.length, (
+                                      idx,
+                                    ) {
                                       final b = budgets[idx];
                                       return BarChartGroupData(
                                         x: idx,
@@ -250,13 +348,17 @@ class AnalyticsTab extends ConsumerWidget {
                                             toY: b.spentAmount,
                                             color: AppColors.primary,
                                             width: 8,
-                                            borderRadius: BorderRadius.circular(2),
+                                            borderRadius: BorderRadius.circular(
+                                              2,
+                                            ),
                                           ),
                                           BarChartRodData(
                                             toY: b.limitAmount,
                                             color: AppColors.border,
                                             width: 8,
-                                            borderRadius: BorderRadius.circular(2),
+                                            borderRadius: BorderRadius.circular(
+                                              2,
+                                            ),
                                           ),
                                         ],
                                       );
@@ -268,13 +370,31 @@ class AnalyticsTab extends ConsumerWidget {
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  CircleAvatar(radius: 4, backgroundColor: AppColors.primary),
+                                  CircleAvatar(
+                                    radius: 4,
+                                    backgroundColor: AppColors.primary,
+                                  ),
                                   SizedBox(width: 6),
-                                  Text('Spent', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                                  Text(
+                                    'Spent',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                   SizedBox(width: 16),
-                                  CircleAvatar(radius: 4, backgroundColor: AppColors.border),
+                                  CircleAvatar(
+                                    radius: 4,
+                                    backgroundColor: AppColors.border,
+                                  ),
                                   SizedBox(width: 6),
-                                  Text('Limit', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                                  Text(
+                                    'Limit',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -303,11 +423,24 @@ class AnalyticsTab extends ConsumerWidget {
           children: [
             CircleAvatar(radius: 4, backgroundColor: color),
             const SizedBox(width: 6),
-            Text(title, style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
+            ),
           ],
         ),
         AppSizes.h4,
-        Text(subtitle, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }

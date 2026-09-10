@@ -11,13 +11,11 @@ void main() async {
     await Firebase.initializeApp();
     debugPrint("Firebase successfully initialized.");
   } catch (e) {
-    debugPrint("Firebase initialization bypassed (No credentials found/Offline Mode): $e");
+    debugPrint(
+      "Firebase initialization bypassed (No credentials found/Offline Mode): $e",
+    );
     // SQLite databases are fully operational for offline Guest Mode operations
   }
 
-  runApp(
-    const ProviderScope(
-      child: FinFlowApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: FinFlowApp()));
 }

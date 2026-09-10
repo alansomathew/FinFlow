@@ -24,51 +24,87 @@ class MigrationService {
 
     try {
       // Load all data from the local database
-      final accounts = (await db.select(db.accounts).get()).map(AccountModel.fromRow).toList();
-      final transactions = (await db.select(db.transactions).get()).map(TransactionModel.fromRow).toList();
-      final budgets = (await db.select(db.budgets).get()).map(BudgetModel.fromRow).toList();
-      final loans = (await db.select(db.loans).get()).map(LoanModel.fromRow).toList();
-      final investments = (await db.select(db.investments).get()).map(InvestmentModel.fromRow).toList();
+      final accounts = (await db.select(db.accounts).get())
+          .map(AccountModel.fromRow)
+          .toList();
+      final transactions = (await db.select(db.transactions).get())
+          .map(TransactionModel.fromRow)
+          .toList();
+      final budgets = (await db.select(db.budgets).get())
+          .map(BudgetModel.fromRow)
+          .toList();
+      final loans = (await db.select(db.loans).get())
+          .map(LoanModel.fromRow)
+          .toList();
+      final investments = (await db.select(db.investments).get())
+          .map(InvestmentModel.fromRow)
+          .toList();
       final sms = await db.select(db.smsInbox).get();
 
-      debugPrint("Migration started for user $uid. Migrating ${accounts.length} accounts, ${transactions.length} transactions...");
+      debugPrint(
+        "Migration started for user $uid. Migrating ${accounts.length} accounts, ${transactions.length} transactions...",
+      );
 
       final fs = FirebaseFirestore.instance;
       final batch = fs.batch();
 
       // Migrate Accounts
       for (var account in accounts) {
-        final docRef = fs.collection('users').doc(uid).collection('accounts').doc(account.id);
+        final docRef = fs
+            .collection('users')
+            .doc(uid)
+            .collection('accounts')
+            .doc(account.id);
         batch.set(docRef, account.toMap());
       }
 
       // Migrate Transactions
       for (var tx in transactions) {
-        final docRef = fs.collection('users').doc(uid).collection('transactions').doc(tx.id);
+        final docRef = fs
+            .collection('users')
+            .doc(uid)
+            .collection('transactions')
+            .doc(tx.id);
         batch.set(docRef, tx.toMap());
       }
 
       // Migrate Budgets
       for (var budget in budgets) {
-        final docRef = fs.collection('users').doc(uid).collection('budgets').doc(budget.category);
+        final docRef = fs
+            .collection('users')
+            .doc(uid)
+            .collection('budgets')
+            .doc(budget.category);
         batch.set(docRef, budget.toMap());
       }
 
       // Migrate Loans
       for (var loan in loans) {
-        final docRef = fs.collection('users').doc(uid).collection('loans').doc(loan.id);
+        final docRef = fs
+            .collection('users')
+            .doc(uid)
+            .collection('loans')
+            .doc(loan.id);
         batch.set(docRef, loan.toMap());
       }
 
       // Migrate Investments
       for (var inv in investments) {
-        final docRef = fs.collection('users').doc(uid).collection('investments').doc(inv.id);
+        final docRef = fs
+            .collection('users')
+            .doc(uid)
+            .collection('investments')
+            .doc(inv.id);
         batch.set(docRef, inv.toMap());
       }
 
       // Migrate SMS
       for (var msg in sms) {
-        final docRef = fs.collection('users').doc(uid).collection('sms_inbox').doc(msg.id);
+        final docRef = fs
+            .collection('users')
+            .doc(uid)
+            .collection('sms_inbox')
+            .doc(msg.id);
         batch.set(docRef, {
           'id': msg.id,
           'message_body': msg.messageBody,

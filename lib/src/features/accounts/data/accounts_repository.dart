@@ -90,7 +90,9 @@ class AccountsRepository {
             .doc(user.uid)
             .collection('accounts')
             .get();
-        return querySnapshot.docs.map((doc) => AccountModel.fromMap(doc.data())).toList();
+        return querySnapshot.docs
+            .map((doc) => AccountModel.fromMap(doc.data()))
+            .toList();
       } catch (e) {
         return _getLocalAccounts();
       }
@@ -98,7 +100,9 @@ class AccountsRepository {
   }
 
   Future<List<AccountModel>> _getLocalAccounts() async {
-    final rows = await (_db.select(_db.accounts)..where((t) => t.deletedAt.isNull())).get();
+    final rows = await (_db.select(
+      _db.accounts,
+    )..where((t) => t.deletedAt.isNull())).get();
     return rows.map(AccountModel.fromRow).toList();
   }
 
@@ -164,7 +168,8 @@ final accountsRepositoryProvider = Provider<AccountsRepository>((ref) {
   return AccountsRepository(ref);
 });
 
-class AccountListNotifier extends StateNotifier<AsyncValue<List<AccountModel>>> {
+class AccountListNotifier
+    extends StateNotifier<AsyncValue<List<AccountModel>>> {
   final AccountsRepository _repo;
   AccountListNotifier(this._repo) : super(const AsyncValue.loading()) {
     refresh();
@@ -191,7 +196,10 @@ class AccountListNotifier extends StateNotifier<AsyncValue<List<AccountModel>>> 
   }
 }
 
-final accountListProvider = StateNotifierProvider<AccountListNotifier, AsyncValue<List<AccountModel>>>((ref) {
-  final repo = ref.watch(accountsRepositoryProvider);
-  return AccountListNotifier(repo);
-});
+final accountListProvider =
+    StateNotifierProvider<AccountListNotifier, AsyncValue<List<AccountModel>>>((
+      ref,
+    ) {
+      final repo = ref.watch(accountsRepositoryProvider);
+      return AccountListNotifier(repo);
+    });

@@ -90,7 +90,9 @@ class InvestmentsRepository {
             .doc(user.uid)
             .collection('investments')
             .get();
-        return querySnapshot.docs.map((doc) => InvestmentModel.fromMap(doc.data())).toList();
+        return querySnapshot.docs
+            .map((doc) => InvestmentModel.fromMap(doc.data()))
+            .toList();
       } catch (e) {
         return _getLocalInvestments();
       }
@@ -98,7 +100,9 @@ class InvestmentsRepository {
   }
 
   Future<List<InvestmentModel>> _getLocalInvestments() async {
-    final rows = await (_db.select(_db.investments)..where((t) => t.deletedAt.isNull())).get();
+    final rows = await (_db.select(
+      _db.investments,
+    )..where((t) => t.deletedAt.isNull())).get();
     return rows.map(InvestmentModel.fromRow).toList();
   }
 
@@ -122,7 +126,9 @@ class InvestmentsRepository {
   }
 
   Future<void> _upsertLocal(InvestmentModel investment) async {
-    await _db.into(_db.investments).insertOnConflictUpdate(investment.toCompanion());
+    await _db
+        .into(_db.investments)
+        .insertOnConflictUpdate(investment.toCompanion());
   }
 
   Future<void> deleteInvestment(String id) async {
@@ -153,7 +159,8 @@ final investmentsRepositoryProvider = Provider<InvestmentsRepository>((ref) {
   return InvestmentsRepository(ref);
 });
 
-class InvestmentListNotifier extends StateNotifier<AsyncValue<List<InvestmentModel>>> {
+class InvestmentListNotifier
+    extends StateNotifier<AsyncValue<List<InvestmentModel>>> {
   final InvestmentsRepository _repo;
   InvestmentListNotifier(this._repo) : super(const AsyncValue.loading()) {
     refresh();
@@ -180,7 +187,11 @@ class InvestmentListNotifier extends StateNotifier<AsyncValue<List<InvestmentMod
   }
 }
 
-final investmentListProvider = StateNotifierProvider<InvestmentListNotifier, AsyncValue<List<InvestmentModel>>>((ref) {
-  final repo = ref.watch(investmentsRepositoryProvider);
-  return InvestmentListNotifier(repo);
-});
+final investmentListProvider =
+    StateNotifierProvider<
+      InvestmentListNotifier,
+      AsyncValue<List<InvestmentModel>>
+    >((ref) {
+      final repo = ref.watch(investmentsRepositoryProvider);
+      return InvestmentListNotifier(repo);
+    });

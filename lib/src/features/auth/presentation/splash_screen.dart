@@ -22,7 +22,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _checkAuth() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    
+
     final user = ref.read(authProvider);
     if (user != null) {
       context.go('/home');
@@ -35,9 +35,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-        ),
+        decoration: const BoxDecoration(color: AppColors.background),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -54,7 +52,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                       color: AppColors.primary.withOpacity(0.4),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
-                    )
+                    ),
                   ],
                 ),
                 child: const Icon(
@@ -90,7 +88,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   strokeWidth: 2.5,
                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                 ),
-              )
+              ),
             ],
           ),
         ),

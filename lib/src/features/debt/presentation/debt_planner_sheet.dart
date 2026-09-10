@@ -9,7 +9,11 @@ class DebtPlannerSheet extends ConsumerWidget {
   const DebtPlannerSheet({super.key});
 
   String _formatCurrency(double amount) {
-    return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   @override
@@ -19,7 +23,10 @@ class DebtPlannerSheet extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Debt Payoff Planner', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Debt Payoff Planner',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppColors.surface,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded, color: Colors.white),
@@ -31,7 +38,10 @@ class DebtPlannerSheet extends ConsumerWidget {
           data: (loans) {
             if (loans.isEmpty) {
               return const Center(
-                child: Text('No active loans tracked. Add loans to view planner.', style: TextStyle(color: AppColors.textSecondary)),
+                child: Text(
+                  'No active loans tracked. Add loans to view planner.',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
               );
             }
 
@@ -43,18 +53,19 @@ class DebtPlannerSheet extends ConsumerWidget {
             // Calculate simulated interest for visualization:
             double totalInterestAvalanche = 0.0;
             double totalInterestSnowball = 0.0;
-            
+
             for (var l in loans) {
               // Simulated interest calculations based on rate and tenure
               final totalRepayable = l.emiAmount * l.tenureMonths;
               final interest = totalRepayable - l.loanAmount;
-              
+
               // Avalanche saves slightly more due to quicker principal reduction on high interest
-              totalInterestAvalanche += interest * 0.95; 
+              totalInterestAvalanche += interest * 0.95;
               totalInterestSnowball += interest * 0.98;
             }
 
-            final interestSavings = (totalInterestSnowball - totalInterestAvalanche).abs();
+            final interestSavings =
+                (totalInterestSnowball - totalInterestAvalanche).abs();
 
             return SingleChildScrollView(
               padding: const EdgeInsets.all(AppSizes.md),
@@ -67,22 +78,42 @@ class DebtPlannerSheet extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: AppColors.cardBg,
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      border: Border.all(
+                        color: AppColors.error.withOpacity(0.3),
+                      ),
                     ),
                     child: Column(
                       children: [
-                        const Text('TOTAL DEBT PORTFOLIO', style: TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'TOTAL DEBT PORTFOLIO',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         AppSizes.h8,
                         Text(
                           _formatCurrency(totalDebt),
-                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   AppSizes.h16,
 
-                  const Text('Active Loan Breakdown', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Active Loan Breakdown',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   AppSizes.h8,
 
                   // Active Loan cards
@@ -93,27 +124,60 @@ class DebtPlannerSheet extends ConsumerWidget {
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppColors.error.withOpacity(0.15),
-                          child: const Icon(Icons.credit_score_rounded, color: AppColors.error),
+                          child: const Icon(
+                            Icons.credit_score_rounded,
+                            color: AppColors.error,
+                          ),
                         ),
-                        title: Text(l.lenderName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        title: Text(
+                          l.lenderName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                         subtitle: Text(
                           'Rate: ${l.interestRate}% • Tenure: ${l.tenureMonths} mos',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 11,
+                          ),
                         ),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(_formatCurrency(l.loanAmount), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                            Text('EMI: ${_formatCurrency(l.emiAmount)}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                            Text(
+                              _formatCurrency(l.loanAmount),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            Text(
+                              'EMI: ${_formatCurrency(l.emiAmount)}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     );
                   }),
-                  
+
                   AppSizes.h16,
-                  const Text('Payoff Method Analysis', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Payoff Method Analysis',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   AppSizes.h8,
 
                   // Snowball Method Comparison Card
@@ -127,11 +191,31 @@ class DebtPlannerSheet extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Snowball Method', style: TextStyle(color: AppColors.wants, fontWeight: FontWeight.bold, fontSize: 13)),
+                                const Text(
+                                  'Snowball Method',
+                                  style: TextStyle(
+                                    color: AppColors.wants,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
                                 AppSizes.h8,
-                                const Text('Priority: Smallest balance first', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                                const Text(
+                                  'Priority: Smallest balance first',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
                                 AppSizes.h12,
-                                Text('Interest: ${_formatCurrency(totalInterestSnowball)}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                Text(
+                                  'Interest: ${_formatCurrency(totalInterestSnowball)}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -146,11 +230,31 @@ class DebtPlannerSheet extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Avalanche Method', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.bold, fontSize: 13)),
+                                const Text(
+                                  'Avalanche Method',
+                                  style: TextStyle(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
                                 AppSizes.h8,
-                                const Text('Priority: Highest interest first', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                                const Text(
+                                  'Priority: Highest interest first',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 10,
+                                  ),
+                                ),
                                 AppSizes.h12,
-                                Text('Interest: ${_formatCurrency(totalInterestAvalanche)}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                Text(
+                                  'Interest: ${_formatCurrency(totalInterestAvalanche)}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -166,12 +270,18 @@ class DebtPlannerSheet extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: AppColors.success.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      border: Border.all(color: AppColors.success.withOpacity(0.2)),
+                      border: Border.all(
+                        color: AppColors.success.withOpacity(0.2),
+                      ),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.insights_rounded, color: AppColors.success, size: 24),
+                        const Icon(
+                          Icons.insights_rounded,
+                          color: AppColors.success,
+                          size: 24,
+                        ),
                         AppSizes.w12,
                         Expanded(
                           child: Column(
@@ -179,12 +289,20 @@ class DebtPlannerSheet extends ConsumerWidget {
                             children: [
                               const Text(
                                 'AI recommendation:',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                               ),
                               AppSizes.h4,
                               Text(
                                 'The Avalanche Method is recommended. It saves ${_formatCurrency(interestSavings)} in lifetime interest payments and pays off your debt portfolio 3 months faster compared to Snowball.',
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, height: 1.4),
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                  height: 1.4,
+                                ),
                               ),
                             ],
                           ),

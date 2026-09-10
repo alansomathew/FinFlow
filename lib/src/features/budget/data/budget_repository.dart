@@ -72,7 +72,9 @@ class BudgetRepository {
             .doc(user.uid)
             .collection('budgets')
             .get();
-        return querySnapshot.docs.map((doc) => BudgetModel.fromMap(doc.data())).toList();
+        return querySnapshot.docs
+            .map((doc) => BudgetModel.fromMap(doc.data()))
+            .toList();
       } catch (e) {
         return _getLocalBudgets();
       }
@@ -80,7 +82,9 @@ class BudgetRepository {
   }
 
   Future<List<BudgetModel>> _getLocalBudgets() async {
-    final rows = await (_db.select(_db.budgets)..where((t) => t.deletedAt.isNull())).get();
+    final rows = await (_db.select(
+      _db.budgets,
+    )..where((t) => t.deletedAt.isNull())).get();
     return rows.map(BudgetModel.fromRow).toList();
   }
 
@@ -128,14 +132,27 @@ class BudgetListNotifier extends StateNotifier<AsyncValue<List<BudgetModel>>> {
     }
   }
 
-  Future<void> setLimit(String category, double limit, double spent, String monthYear) async {
-    final budget = BudgetModel(category: category, limitAmount: limit, spentAmount: spent, monthYear: monthYear);
+  Future<void> setLimit(
+    String category,
+    double limit,
+    double spent,
+    String monthYear,
+  ) async {
+    final budget = BudgetModel(
+      category: category,
+      limitAmount: limit,
+      spentAmount: spent,
+      monthYear: monthYear,
+    );
     await _repo.saveBudget(budget);
     await refresh();
   }
 }
 
-final budgetListProvider = StateNotifierProvider<BudgetListNotifier, AsyncValue<List<BudgetModel>>>((ref) {
-  final repo = ref.watch(budgetRepositoryProvider);
-  return BudgetListNotifier(repo);
-});
+final budgetListProvider =
+    StateNotifierProvider<BudgetListNotifier, AsyncValue<List<BudgetModel>>>((
+      ref,
+    ) {
+      final repo = ref.watch(budgetRepositoryProvider);
+      return BudgetListNotifier(repo);
+    });

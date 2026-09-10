@@ -49,42 +49,126 @@ class TransactionCategory {
   static const List<TransactionCategory> presets = [
     // Needs
     TransactionCategory(name: 'Rent', icon: '🏠', bucket: BudgetBucket.needs),
-    TransactionCategory(name: 'Groceries', icon: '🛒', bucket: BudgetBucket.needs),
-    TransactionCategory(name: 'Utilities', icon: '⚡', bucket: BudgetBucket.needs),
+    TransactionCategory(
+      name: 'Groceries',
+      icon: '🛒',
+      bucket: BudgetBucket.needs,
+    ),
+    TransactionCategory(
+      name: 'Utilities',
+      icon: '⚡',
+      bucket: BudgetBucket.needs,
+    ),
     TransactionCategory(name: 'EMI', icon: '💳', bucket: BudgetBucket.needs),
-    TransactionCategory(name: 'Insurance', icon: '🛡️', bucket: BudgetBucket.needs),
-    TransactionCategory(name: 'Transport', icon: '🚗', bucket: BudgetBucket.needs),
-    TransactionCategory(name: 'Education', icon: '🎓', bucket: BudgetBucket.needs),
-    TransactionCategory(name: 'Healthcare', icon: '🏥', bucket: BudgetBucket.needs),
+    TransactionCategory(
+      name: 'Insurance',
+      icon: '🛡️',
+      bucket: BudgetBucket.needs,
+    ),
+    TransactionCategory(
+      name: 'Transport',
+      icon: '🚗',
+      bucket: BudgetBucket.needs,
+    ),
+    TransactionCategory(
+      name: 'Education',
+      icon: '🎓',
+      bucket: BudgetBucket.needs,
+    ),
+    TransactionCategory(
+      name: 'Healthcare',
+      icon: '🏥',
+      bucket: BudgetBucket.needs,
+    ),
 
     // Wants
-    TransactionCategory(name: 'Dining Out', icon: '🍔', bucket: BudgetBucket.wants),
-    TransactionCategory(name: 'Shopping', icon: '🛍️', bucket: BudgetBucket.wants),
-    TransactionCategory(name: 'Entertainment', icon: '🎬', bucket: BudgetBucket.wants),
-    TransactionCategory(name: 'Subscriptions', icon: '📺', bucket: BudgetBucket.wants),
+    TransactionCategory(
+      name: 'Dining Out',
+      icon: '🍔',
+      bucket: BudgetBucket.wants,
+    ),
+    TransactionCategory(
+      name: 'Shopping',
+      icon: '🛍️',
+      bucket: BudgetBucket.wants,
+    ),
+    TransactionCategory(
+      name: 'Entertainment',
+      icon: '🎬',
+      bucket: BudgetBucket.wants,
+    ),
+    TransactionCategory(
+      name: 'Subscriptions',
+      icon: '📺',
+      bucket: BudgetBucket.wants,
+    ),
     TransactionCategory(name: 'Travel', icon: '✈️', bucket: BudgetBucket.wants),
-    TransactionCategory(name: 'Personal Care', icon: '🧴', bucket: BudgetBucket.wants),
-    TransactionCategory(name: 'Hobbies', icon: '🎨', bucket: BudgetBucket.wants),
+    TransactionCategory(
+      name: 'Personal Care',
+      icon: '🧴',
+      bucket: BudgetBucket.wants,
+    ),
+    TransactionCategory(
+      name: 'Hobbies',
+      icon: '🎨',
+      bucket: BudgetBucket.wants,
+    ),
 
     // Savings
     TransactionCategory(name: 'SIP', icon: '📈', bucket: BudgetBucket.savings),
-    TransactionCategory(name: 'Stocks', icon: '📊', bucket: BudgetBucket.savings),
-    TransactionCategory(name: 'Savings Goals', icon: '🎯', bucket: BudgetBucket.savings),
+    TransactionCategory(
+      name: 'Stocks',
+      icon: '📊',
+      bucket: BudgetBucket.savings,
+    ),
+    TransactionCategory(
+      name: 'Savings Goals',
+      icon: '🎯',
+      bucket: BudgetBucket.savings,
+    ),
     TransactionCategory(name: 'Gold', icon: '🪙', bucket: BudgetBucket.savings),
-    TransactionCategory(name: 'Emergency Fund', icon: '🚨', bucket: BudgetBucket.savings),
-    TransactionCategory(name: 'FD / RD', icon: '🔒', bucket: BudgetBucket.savings),
+    TransactionCategory(
+      name: 'Emergency Fund',
+      icon: '🚨',
+      bucket: BudgetBucket.savings,
+    ),
+    TransactionCategory(
+      name: 'FD / RD',
+      icon: '🔒',
+      bucket: BudgetBucket.savings,
+    ),
 
     // Income
-    TransactionCategory(name: 'Salary', icon: '💰', bucket: BudgetBucket.income),
-    TransactionCategory(name: 'Freelance', icon: '💻', bucket: BudgetBucket.income),
-    TransactionCategory(name: 'Investments Return', icon: '💵', bucket: BudgetBucket.income),
-    TransactionCategory(name: 'Other Income', icon: '🏷️', bucket: BudgetBucket.income),
+    TransactionCategory(
+      name: 'Salary',
+      icon: '💰',
+      bucket: BudgetBucket.income,
+    ),
+    TransactionCategory(
+      name: 'Freelance',
+      icon: '💻',
+      bucket: BudgetBucket.income,
+    ),
+    TransactionCategory(
+      name: 'Investments Return',
+      icon: '💵',
+      bucket: BudgetBucket.income,
+    ),
+    TransactionCategory(
+      name: 'Other Income',
+      icon: '🏷️',
+      bucket: BudgetBucket.income,
+    ),
   ];
 
   static TransactionCategory getByName(String name) {
     return presets.firstWhere(
       (cat) => cat.name.toLowerCase() == name.toLowerCase(),
-      orElse: () => TransactionCategory(name: name, icon: '📝', bucket: BudgetBucket.wants),
+      orElse: () => TransactionCategory(
+        name: name,
+        icon: '📝',
+        bucket: BudgetBucket.wants,
+      ),
     );
   }
 }

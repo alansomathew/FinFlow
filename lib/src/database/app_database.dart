@@ -15,7 +15,9 @@ import 'tables/transactions_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Accounts, Transactions, Budgets, Loans, Investments, SmsInbox])
+@DriftDatabase(
+  tables: [Accounts, Transactions, Budgets, Loans, Investments, SmsInbox],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -30,21 +32,21 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          await m.createAll();
-          // Indexes for the query patterns the app actually runs: filtering
-          // a single account's history and date-range/category reporting.
-          await customStatement(
-            'CREATE INDEX idx_transactions_account_date ON transactions (account_id, date);',
-          );
-          await customStatement(
-            'CREATE INDEX idx_transactions_category ON transactions (category);',
-          );
-        },
-        beforeOpen: (details) async {
-          await customStatement('PRAGMA foreign_keys = ON;');
-        },
+    onCreate: (m) async {
+      await m.createAll();
+      // Indexes for the query patterns the app actually runs: filtering
+      // a single account's history and date-range/category reporting.
+      await customStatement(
+        'CREATE INDEX idx_transactions_account_date ON transactions (account_id, date);',
       );
+      await customStatement(
+        'CREATE INDEX idx_transactions_category ON transactions (category);',
+      );
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON;');
+    },
+  );
 
   /// Wipes every table, e.g. after a verified guest->cloud migration or a
   /// guest "start fresh" choice. Deletes children before parents so the

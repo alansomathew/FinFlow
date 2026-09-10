@@ -15,8 +15,10 @@ class Transactions extends Table {
   TextColumn get refId => text().nullable()();
   TextColumn get currency => text().withDefault(const Constant('INR'))();
 
-  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
-  DateTimeColumn get updatedAt => dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override

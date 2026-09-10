@@ -96,7 +96,9 @@ class DebtRepository {
             .doc(user.uid)
             .collection('loans')
             .get();
-        return querySnapshot.docs.map((doc) => LoanModel.fromMap(doc.data())).toList();
+        return querySnapshot.docs
+            .map((doc) => LoanModel.fromMap(doc.data()))
+            .toList();
       } catch (e) {
         return _getLocalLoans();
       }
@@ -104,7 +106,9 @@ class DebtRepository {
   }
 
   Future<List<LoanModel>> _getLocalLoans() async {
-    final rows = await (_db.select(_db.loans)..where((t) => t.deletedAt.isNull())).get();
+    final rows = await (_db.select(
+      _db.loans,
+    )..where((t) => t.deletedAt.isNull())).get();
     return rows.map(LoanModel.fromRow).toList();
   }
 
@@ -186,7 +190,8 @@ class LoanListNotifier extends StateNotifier<AsyncValue<List<LoanModel>>> {
   }
 }
 
-final loanListProvider = StateNotifierProvider<LoanListNotifier, AsyncValue<List<LoanModel>>>((ref) {
-  final repo = ref.watch(debtRepositoryProvider);
-  return LoanListNotifier(repo);
-});
+final loanListProvider =
+    StateNotifierProvider<LoanListNotifier, AsyncValue<List<LoanModel>>>((ref) {
+      final repo = ref.watch(debtRepositoryProvider);
+      return LoanListNotifier(repo);
+    });

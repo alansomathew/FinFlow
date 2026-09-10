@@ -8,8 +8,10 @@ class SmsInbox extends Table {
   BoolColumn get isParsed => boolean().withDefault(const Constant(false))();
   BoolColumn get isSkipped => boolean().withDefault(const Constant(false))();
 
-  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
-  DateTimeColumn get updatedAt => dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(() => DateTime.now())();
   DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
