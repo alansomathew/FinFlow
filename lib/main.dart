@@ -12,10 +12,14 @@ void main() async {
   // — but it's a real failure now that the project is actually configured,
   // not the "no credentials yet" case this used to silently paper over.
   try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     debugPrint("Firebase successfully initialized.");
   } catch (e) {
-    debugPrint("Firebase initialization failed, continuing in offline/guest mode: $e");
+    debugPrint(
+      "Firebase initialization failed, continuing in offline/guest mode: $e",
+    );
   }
 
   runApp(const ProviderScope(child: FinFlowApp()));

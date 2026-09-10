@@ -12,6 +12,7 @@ import '../../investments/presentation/investments_tab.dart';
 import '../../analytics/presentation/analytics_tab.dart';
 import '../../sms/presentation/sms_sandbox_sheet.dart';
 import '../../debt/presentation/debt_planner_sheet.dart';
+import '../../../services/pro_tier_service.dart';
 
 final activeTabProvider = StateProvider<int>((ref) => 0);
 
@@ -188,6 +189,31 @@ class HomeScreen extends ConsumerWidget {
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (context) => const DebtPlannerSheet(),
+                  );
+                },
+              ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final isPro = ref.watch(isProProvider).valueOrNull ?? false;
+                  return SwitchListTile(
+                    secondary: const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: AppColors.warning,
+                    ),
+                    title: const Text(
+                      'Pro Tier (Debug Toggle)',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
+                    subtitle: const Text(
+                      'No billing yet -- for testing Pro-gated features',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    value: isPro,
+                    activeThumbColor: AppColors.warning,
+                    onChanged: (value) => setProTierForTesting(value),
                   );
                 },
               ),

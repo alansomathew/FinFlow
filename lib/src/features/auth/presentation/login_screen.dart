@@ -85,7 +85,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               password: password,
               displayName: _nameController.text.trim(),
             )
-          : await notifier.signInWithEmailPassword(email: email, password: password);
+          : await notifier.signInWithEmailPassword(
+              email: email,
+              password: password,
+            );
       await _afterAuthenticated(profile.uid);
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -122,15 +125,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _sendPasswordReset() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(() => _errorMessage = 'Enter your email above first, then tap "Forgot password?".');
+      setState(
+        () => _errorMessage =
+            'Enter your email above first, then tap "Forgot password?".',
+      );
       return;
     }
     try {
       await ref.read(authProvider.notifier).sendPasswordResetEmail(email);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Password reset email sent to $email.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Password reset email sent to $email.')),
+      );
     } on FirebaseAuthException catch (e) {
       setState(() => _errorMessage = _messageForAuthError(e));
     }
@@ -140,7 +146,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   /// `uid` is known. Only now can we check for local guest data and, if
   /// found, offer to migrate it to this real account.
   Future<void> _afterAuthenticated(String uid) async {
-    final localTx = await AppDatabase.instance.select(AppDatabase.instance.transactions).get();
+    final localTx = await AppDatabase.instance
+        .select(AppDatabase.instance.transactions)
+        .get();
 
     if (localTx.isEmpty) {
       setState(() => _isLoading = false);
@@ -156,14 +164,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
         title: const Row(
           children: [
             Icon(Icons.cloud_upload_rounded, color: AppColors.primary),
             SizedBox(width: 10),
             Text(
               'Migrate Guest Data?',
-              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -174,15 +187,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Start Fresh', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Start Fresh',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+              ),
             ),
-            child: const Text('Yes, Migrate Data', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Yes, Migrate Data',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -198,10 +219,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: AppColors.surface,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
             title: const Text(
               'Cloud Backup Failed',
-              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             content: const Text(
               "We couldn't back up your data to the cloud right now. Your local data is safe and untouched — you can retry from Settings later.",
@@ -210,7 +236,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                child: const Text(
+                  'OK',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
             ],
           ),
@@ -235,7 +264,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.vertical,
+              minHeight:
+                  MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.vertical,
             ),
             child: IntrinsicHeight(
               child: Column(
@@ -252,7 +283,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           height: 72,
                           decoration: BoxDecoration(
                             gradient: AppColors.accentGradient,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusLg,
+                            ),
                           ),
                           child: const Icon(
                             Icons.account_balance_wallet_rounded,
@@ -273,7 +306,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const Text(
                           'Take control of your financial flow',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
@@ -283,7 +319,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   if (_isLoading)
                     const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
                       ),
                     )
                   else
@@ -295,12 +333,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             padding: const EdgeInsets.all(AppSizes.sm),
                             decoration: BoxDecoration(
                               color: AppColors.error.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusSm,
+                              ),
                               border: Border.all(color: AppColors.error),
                             ),
                             child: Text(
                               _errorMessage!,
-                              style: const TextStyle(color: AppColors.error, fontSize: 12),
+                              style: const TextStyle(
+                                color: AppColors.error,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                           AppSizes.h12,
@@ -335,7 +378,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               onPressed: _sendPasswordReset,
                               child: const Text(
                                 'Forgot password?',
-                                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -345,11 +391,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusMd,
+                                ),
                               ),
                             ),
                             child: Text(
-                              _authMode == _AuthMode.register ? 'Create Account' : 'Sign In',
+                              _authMode == _AuthMode.register
+                                  ? 'Create Account'
+                                  : 'Sign In',
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -369,7 +419,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               _authMode == _AuthMode.register
                                   ? 'Already have an account? Sign In'
                                   : "Don't have an account? Create one",
-                              style: const TextStyle(color: AppColors.primaryLight, fontSize: 13),
+                              style: const TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                           AppSizes.h8,
@@ -394,7 +447,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               backgroundColor: const Color(0xFF4285F4),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusMd,
+                                ),
                               ),
                             ),
                           ),
@@ -408,7 +463,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               side: const BorderSide(color: AppColors.border),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusMd,
+                                ),
                               ),
                             ),
                             child: const Text(
@@ -430,7 +487,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             side: const BorderSide(color: AppColors.border),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                              borderRadius: BorderRadius.circular(
+                                AppSizes.radiusMd,
+                              ),
                             ),
                           ),
                           child: const Text(
@@ -449,7 +508,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const Center(
                     child: Text(
                       'By continuing, you agree to our Terms & Privacy Policy',
-                      style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                   AppSizes.h16,
@@ -474,7 +536,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
         borderSide: const BorderSide(color: AppColors.primary),
       ),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSm)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+      ),
     );
   }
 }

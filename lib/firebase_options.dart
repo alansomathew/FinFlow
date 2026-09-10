@@ -63,8 +63,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '836907422627',
     projectId: 'finflow-3ae88',
     storageBucket: 'finflow-3ae88.firebasestorage.app',
-    androidClientId: '836907422627-d1g0k7n7i9lubbe1pudh4bo82m58iv2f.apps.googleusercontent.com',
-    iosClientId: '836907422627-dd6c2lb8itilhmb7qip9r9bmhnm13eof.apps.googleusercontent.com',
+    androidClientId:
+        '836907422627-d1g0k7n7i9lubbe1pudh4bo82m58iv2f.apps.googleusercontent.com',
+    iosClientId:
+        '836907422627-dd6c2lb8itilhmb7qip9r9bmhnm13eof.apps.googleusercontent.com',
     iosBundleId: 'com.finflow.app',
   );
 }

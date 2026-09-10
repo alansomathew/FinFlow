@@ -3918,6 +3918,197 @@ class SmsInboxCompanion extends UpdateCompanion<SmsInboxData> {
   }
 }
 
+class $LocalSettingsTable extends LocalSettings
+    with TableInfo<$LocalSettingsTable, LocalSettingsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalSettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isProMeta = const VerificationMeta('isPro');
+  @override
+  late final GeneratedColumn<bool> isPro = GeneratedColumn<bool>(
+    'is_pro',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pro" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, isPro];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalSettingsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('is_pro')) {
+      context.handle(
+        _isProMeta,
+        isPro.isAcceptableOrUnknown(data['is_pro']!, _isProMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalSettingsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalSettingsRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      isPro: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pro'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalSettingsTable createAlias(String alias) {
+    return $LocalSettingsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalSettingsRow extends DataClass
+    implements Insertable<LocalSettingsRow> {
+  final int id;
+  final bool isPro;
+  const LocalSettingsRow({required this.id, required this.isPro});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['is_pro'] = Variable<bool>(isPro);
+    return map;
+  }
+
+  LocalSettingsCompanion toCompanion(bool nullToAbsent) {
+    return LocalSettingsCompanion(id: Value(id), isPro: Value(isPro));
+  }
+
+  factory LocalSettingsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalSettingsRow(
+      id: serializer.fromJson<int>(json['id']),
+      isPro: serializer.fromJson<bool>(json['isPro']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'isPro': serializer.toJson<bool>(isPro),
+    };
+  }
+
+  LocalSettingsRow copyWith({int? id, bool? isPro}) =>
+      LocalSettingsRow(id: id ?? this.id, isPro: isPro ?? this.isPro);
+  LocalSettingsRow copyWithCompanion(LocalSettingsCompanion data) {
+    return LocalSettingsRow(
+      id: data.id.present ? data.id.value : this.id,
+      isPro: data.isPro.present ? data.isPro.value : this.isPro,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalSettingsRow(')
+          ..write('id: $id, ')
+          ..write('isPro: $isPro')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, isPro);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalSettingsRow &&
+          other.id == this.id &&
+          other.isPro == this.isPro);
+}
+
+class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
+  final Value<int> id;
+  final Value<bool> isPro;
+  const LocalSettingsCompanion({
+    this.id = const Value.absent(),
+    this.isPro = const Value.absent(),
+  });
+  LocalSettingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.isPro = const Value.absent(),
+  });
+  static Insertable<LocalSettingsRow> custom({
+    Expression<int>? id,
+    Expression<bool>? isPro,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (isPro != null) 'is_pro': isPro,
+    });
+  }
+
+  LocalSettingsCompanion copyWith({Value<int>? id, Value<bool>? isPro}) {
+    return LocalSettingsCompanion(
+      id: id ?? this.id,
+      isPro: isPro ?? this.isPro,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (isPro.present) {
+      map['is_pro'] = Variable<bool>(isPro.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalSettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('isPro: $isPro')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3927,6 +4118,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LoansTable loans = $LoansTable(this);
   late final $InvestmentsTable investments = $InvestmentsTable(this);
   late final $SmsInboxTable smsInbox = $SmsInboxTable(this);
+  late final $LocalSettingsTable localSettings = $LocalSettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3938,6 +4130,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     loans,
     investments,
     smsInbox,
+    localSettings,
   ];
 }
 
@@ -6285,6 +6478,144 @@ typedef $$SmsInboxTableProcessedTableManager =
       SmsInboxData,
       PrefetchHooks Function()
     >;
+typedef $$LocalSettingsTableCreateCompanionBuilder =
+    LocalSettingsCompanion Function({Value<int> id, Value<bool> isPro});
+typedef $$LocalSettingsTableUpdateCompanionBuilder =
+    LocalSettingsCompanion Function({Value<int> id, Value<bool> isPro});
+
+class $$LocalSettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalSettingsTable> {
+  $$LocalSettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPro => $composableBuilder(
+    column: $table.isPro,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalSettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalSettingsTable> {
+  $$LocalSettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPro => $composableBuilder(
+    column: $table.isPro,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalSettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalSettingsTable> {
+  $$LocalSettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPro =>
+      $composableBuilder(column: $table.isPro, builder: (column) => column);
+}
+
+class $$LocalSettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalSettingsTable,
+          LocalSettingsRow,
+          $$LocalSettingsTableFilterComposer,
+          $$LocalSettingsTableOrderingComposer,
+          $$LocalSettingsTableAnnotationComposer,
+          $$LocalSettingsTableCreateCompanionBuilder,
+          $$LocalSettingsTableUpdateCompanionBuilder,
+          (
+            LocalSettingsRow,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalSettingsTable,
+              LocalSettingsRow
+            >,
+          ),
+          LocalSettingsRow,
+          PrefetchHooks Function()
+        > {
+  $$LocalSettingsTableTableManager(_$AppDatabase db, $LocalSettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalSettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalSettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalSettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> isPro = const Value.absent(),
+              }) => LocalSettingsCompanion(id: id, isPro: isPro),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> isPro = const Value.absent(),
+              }) => LocalSettingsCompanion.insert(id: id, isPro: isPro),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LocalSettingsTable, LocalSettingsRow>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalSettingsTable,
+                    LocalSettingsRow
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalSettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalSettingsTable,
+      LocalSettingsRow,
+      $$LocalSettingsTableFilterComposer,
+      $$LocalSettingsTableOrderingComposer,
+      $$LocalSettingsTableAnnotationComposer,
+      $$LocalSettingsTableCreateCompanionBuilder,
+      $$LocalSettingsTableUpdateCompanionBuilder,
+      (
+        LocalSettingsRow,
+        BaseReferences<_$AppDatabase, $LocalSettingsTable, LocalSettingsRow>,
+      ),
+      LocalSettingsRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6301,4 +6632,6 @@ class $AppDatabaseManager {
       $$InvestmentsTableTableManager(_db, _db.investments);
   $$SmsInboxTableTableManager get smsInbox =>
       $$SmsInboxTableTableManager(_db, _db.smsInbox);
+  $$LocalSettingsTableTableManager get localSettings =>
+      $$LocalSettingsTableTableManager(_db, _db.localSettings);
 }

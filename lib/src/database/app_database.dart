@@ -10,13 +10,24 @@ import 'tables/accounts_table.dart';
 import 'tables/budgets_table.dart';
 import 'tables/investments_table.dart';
 import 'tables/loans_table.dart';
+import 'tables/local_settings_table.dart';
 import 'tables/sms_inbox_table.dart';
 import 'tables/transactions_table.dart';
 
 part 'app_database.g.dart';
 
+const _singletonSettingsId = 0;
+
 @DriftDatabase(
-  tables: [Accounts, Transactions, Budgets, Loans, Investments, SmsInbox],
+  tables: [
+    Accounts,
+    Transactions,
+    Budgets,
+    Loans,
+    Investments,
+    SmsInbox,
+    LocalSettings,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -28,7 +39,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -42,11 +53,38 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX idx_transactions_category ON transactions (category);',
       );
+      await _seedLocalSettings();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(localSettings);
+        await _seedLocalSettings();
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
     },
   );
+
+  Future<void> _seedLocalSettings() async {
+    await into(
+      localSettings,
+    ).insert(const LocalSettingsCompanion(id: Value(_singletonSettingsId)));
+  }
+
+  /// The one-row local settings record, created on first launch by
+  /// [migration]'s onCreate/onUpgrade.
+  Stream<LocalSettingsRow> watchLocalSettings() {
+    return (select(
+      localSettings,
+    )..where((t) => t.id.equals(_singletonSettingsId))).watchSingle();
+  }
+
+  Future<void> setPro(bool isPro) async {
+    await (update(localSettings)
+          ..where((t) => t.id.equals(_singletonSettingsId)))
+        .write(LocalSettingsCompanion(isPro: Value(isPro)));
+  }
 
   /// Wipes every table, e.g. after a verified guest->cloud migration or a
   /// guest "start fresh" choice. Deletes children before parents so the

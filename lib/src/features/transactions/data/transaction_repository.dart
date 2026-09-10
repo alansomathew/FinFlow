@@ -66,25 +66,47 @@ class TransactionRepository {
   Future<void> _upsertLocal(TransactionModel tx) async {
     await _db.transaction(() async {
       await _db.into(_db.transactions).insertOnConflictUpdate(tx.toCompanion());
+      await _applyBalanceDelta(tx.accountId, tx.bucket, tx.amount);
+    });
+  }
 
-      final account = await (_db.select(
-        _db.accounts,
-      )..where((a) => a.id.equals(tx.accountId))).getSingleOrNull();
-      if (account != null) {
-        // Income increases the balance; every other bucket is a spend.
-        final isCredit = tx.bucket == BudgetBucket.income;
-        final newBalance = isCredit
-            ? account.balance + tx.amount
-            : account.balance - tx.amount;
-        await (_db.update(
-          _db.accounts,
-        )..where((a) => a.id.equals(tx.accountId))).write(
-          AccountsCompanion(
-            balance: Value(newBalance),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
+  Future<void> updateTransaction(
+    TransactionModel oldTx,
+    TransactionModel newTx,
+  ) async {
+    final user = _ref.read(authProvider);
+    if (user == null || user.isGuest) {
+      await _updateLocal(oldTx, newTx);
+    } else {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('transactions')
+            .doc(newTx.id)
+            .set(newTx.toMap());
+        await _updateLocal(oldTx, newTx);
+      } catch (e) {
+        await _updateLocal(oldTx, newTx);
       }
+    }
+  }
+
+  /// Reverses [oldTx]'s balance impact, applies [newTx]'s, then writes the
+  /// new row -- all inside one Drift transaction. The two adjustment calls
+  /// are sequential selects-then-writes against the same connection, so they
+  /// compound correctly even when the account didn't change (the second call
+  /// reads the balance the first one just wrote).
+  Future<void> _updateLocal(
+    TransactionModel oldTx,
+    TransactionModel newTx,
+  ) async {
+    await _db.transaction(() async {
+      await _reverseBalanceDelta(oldTx.accountId, oldTx.bucket, oldTx.amount);
+      await _applyBalanceDelta(newTx.accountId, newTx.bucket, newTx.amount);
+      await (_db.update(
+        _db.transactions,
+      )..where((t) => t.id.equals(newTx.id))).write(newTx.toCompanion());
     });
   }
 
@@ -114,27 +136,48 @@ class TransactionRepository {
       )..where((t) => t.id.equals(id))).getSingleOrNull();
       if (tx == null) return;
 
-      // Reverse the balance adjustment applied when this transaction was added.
-      final account = await (_db.select(
-        _db.accounts,
-      )..where((a) => a.id.equals(tx.accountId))).getSingleOrNull();
-      if (account != null) {
-        final wasCredit = tx.bucket == BudgetBucket.income.name;
-        final newBalance = wasCredit
-            ? account.balance - tx.amount
-            : account.balance + tx.amount;
-        await (_db.update(
-          _db.accounts,
-        )..where((a) => a.id.equals(tx.accountId))).write(
-          AccountsCompanion(
-            balance: Value(newBalance),
-            updatedAt: Value(DateTime.now()),
-          ),
-        );
-      }
-
+      await _reverseBalanceDelta(
+        tx.accountId,
+        BudgetBucket.values.firstWhere((b) => b.name == tx.bucket),
+        tx.amount,
+      );
       await (_db.delete(_db.transactions)..where((t) => t.id.equals(id))).go();
     });
+  }
+
+  /// Income adds to the account balance; every other bucket subtracts.
+  Future<void> _applyBalanceDelta(
+    String accountId,
+    BudgetBucket bucket,
+    double amount,
+  ) {
+    final isCredit = bucket == BudgetBucket.income;
+    return _adjustBalance(accountId, isCredit ? amount : -amount);
+  }
+
+  /// Undoes a previously-applied delta for the same bucket/amount.
+  Future<void> _reverseBalanceDelta(
+    String accountId,
+    BudgetBucket bucket,
+    double amount,
+  ) {
+    final isCredit = bucket == BudgetBucket.income;
+    return _adjustBalance(accountId, isCredit ? -amount : amount);
+  }
+
+  Future<void> _adjustBalance(String accountId, double delta) async {
+    final account = await (_db.select(
+      _db.accounts,
+    )..where((a) => a.id.equals(accountId))).getSingleOrNull();
+    if (account == null) return;
+    await (_db.update(
+      _db.accounts,
+    )..where((a) => a.id.equals(accountId))).write(
+      AccountsCompanion(
+        balance: Value(account.balance + delta),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 }
 
@@ -161,6 +204,11 @@ class TransactionListNotifier
 
   Future<void> add(TransactionModel tx) async {
     await _repo.addTransaction(tx);
+    await refresh();
+  }
+
+  Future<void> update(TransactionModel oldTx, TransactionModel newTx) async {
+    await _repo.updateTransaction(oldTx, newTx);
     await refresh();
   }
 

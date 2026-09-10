@@ -132,7 +132,8 @@ class AuthNotifier extends StateNotifier<UserProfile?> {
 
     final idToken = googleUser.authentication.idToken;
     final credential = fb_auth.GoogleAuthProvider.credential(idToken: idToken);
-    final userCredential = await fb_auth.FirebaseAuth.instance.signInWithCredential(credential);
+    final userCredential = await fb_auth.FirebaseAuth.instance
+        .signInWithCredential(credential);
 
     // authStateChanges() will also update `state` asynchronously, but
     // returning the profile directly lets the caller proceed immediately
@@ -145,26 +146,24 @@ class AuthNotifier extends StateNotifier<UserProfile?> {
     required String password,
     required String displayName,
   }) async {
-    final credential = await fb_auth.FirebaseAuth.instance.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    final credential = await fb_auth.FirebaseAuth.instance
+        .createUserWithEmailAndPassword(email: email, password: password);
     final user = credential.user!;
     if (displayName.isNotEmpty) {
       await user.updateDisplayName(displayName);
       await user.reload();
     }
-    return UserProfile.fromFirebaseUser(fb_auth.FirebaseAuth.instance.currentUser ?? user);
+    return UserProfile.fromFirebaseUser(
+      fb_auth.FirebaseAuth.instance.currentUser ?? user,
+    );
   }
 
   Future<UserProfile> signInWithEmailPassword({
     required String email,
     required String password,
   }) async {
-    final credential = await fb_auth.FirebaseAuth.instance.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    final credential = await fb_auth.FirebaseAuth.instance
+        .signInWithEmailAndPassword(email: email, password: password);
     return UserProfile.fromFirebaseUser(credential.user!);
   }
 

@@ -105,4 +105,16 @@ void main() {
       expect(await db.select(db.transactions).get(), isEmpty);
     },
   );
+
+  test(
+    'local settings row is seeded on create and isPro is toggleable',
+    () async {
+      final initial = await db.watchLocalSettings().first;
+      expect(initial.isPro, isFalse);
+
+      await db.setPro(true);
+      final updated = await db.watchLocalSettings().first;
+      expect(updated.isPro, isTrue);
+    },
+  );
 }
