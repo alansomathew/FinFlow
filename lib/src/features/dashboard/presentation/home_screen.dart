@@ -10,14 +10,73 @@ import '../../transactions/presentation/transactions_tab.dart';
 import '../../budget/presentation/budget_tab.dart';
 import '../../investments/presentation/investments_tab.dart';
 import '../../analytics/presentation/analytics_tab.dart';
+import '../../sms/data/sms_device_service.dart';
+import '../../sms/data/sms_repository.dart';
+import '../../sms/presentation/sms_review_sheet.dart';
 import '../../sms/presentation/sms_sandbox_sheet.dart';
 import '../../debt/presentation/debt_planner_sheet.dart';
 import '../../../services/pro_tier_service.dart';
 
 final activeTabProvider = StateProvider<int>((ref) => 0);
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
+  bool _reviewSheetShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkSmsReview());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkSmsReview();
+    }
+  }
+
+  /// Auto-surfaces the SMS review sheet on app open/resume, but only once
+  /// SMS detection has already been enabled (has real pending items to
+  /// show) -- a permission this sensitive shouldn't be repeatedly prompted
+  /// for on every resume. First-time enabling happens via the profile menu.
+  Future<void> _checkSmsReview() async {
+    if (!mounted || _reviewSheetShowing) return;
+    final user = ref.read(authProvider);
+    if (user == null) return;
+
+    final device = ref.read(smsDeviceServiceProvider);
+    if (!await device.hasPermission()) return;
+
+    await device.scanInbox();
+    device.startForegroundListening();
+
+    final pending = await ref.read(smsRepositoryProvider).getPendingInbox();
+    if (!mounted || pending.isEmpty || _reviewSheetShowing) return;
+
+    _reviewSheetShowing = true;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const SmsReviewSheet(),
+    );
+    _reviewSheetShowing = false;
+  }
 
   void _showAddTransaction(BuildContext context) {
     showModalBottomSheet(
@@ -142,6 +201,32 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ListTile(
                 leading: const Icon(
+                  Icons.mark_email_read_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text(
+                  'SMS Auto-Detection',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                subtitle: const Text(
+                  'Detect transactions from real bank/UPI SMS on this device',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const SmsReviewSheet(),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
                   Icons.sms_rounded,
                   color: AppColors.secondary,
                 ),
@@ -245,7 +330,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final activeTab = ref.watch(activeTabProvider);
     final user = ref.watch(authProvider);
 

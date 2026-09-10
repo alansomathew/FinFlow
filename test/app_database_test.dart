@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show InsertMode, Value;
 import 'package:drift/native.dart';
 import 'package:finflow/src/database/app_database.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -115,6 +116,73 @@ void main() {
       await db.setPro(true);
       final updated = await db.watchLocalSettings().first;
       expect(updated.isPro, isTrue);
+    },
+  );
+
+  test(
+    'sms parse counter accumulates within a month and reads as zero for a stale month',
+    () async {
+      expect(await db.smsParsesThisMonth(), 0);
+
+      await db.recordSmsParsed();
+      await db.recordSmsParsed();
+      expect(await db.smsParsesThisMonth(), 2);
+
+      // Simulate a stale stored month (e.g. the app wasn't opened last month)
+      // by writing one directly -- the counter should read as reset without
+      // needing an explicit reset write.
+      await (db.update(db.localSettings)..where((t) => t.id.equals(0))).write(
+        const LocalSettingsCompanion(smsParseMonth: Value('2000-01')),
+      );
+      expect(await db.smsParsesThisMonth(), 0);
+
+      // The next recordSmsParsed() call re-establishes the current month at 1,
+      // not 3 -- confirming it doesn't just increment the stale count.
+      await db.recordSmsParsed();
+      expect(await db.smsParsesThisMonth(), 1);
+    },
+  );
+
+  test(
+    'insertOrIgnore does not reset SQLite last_insert_rowid on conflict '
+    '(documents why insertSms checks existence explicitly instead)',
+    () async {
+      final firstInsert = await db
+          .into(db.smsInbox)
+          .insert(
+            SmsInboxCompanion.insert(
+              id: 'sms1',
+              messageBody: 'first',
+              sender: 'AD-HDFCBK',
+              date: DateTime(2026, 1, 1),
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+
+      final secondInsert = await db
+          .into(db.smsInbox)
+          .insert(
+            SmsInboxCompanion.insert(
+              id: 'sms1',
+              messageBody: 'duplicate scan of the same message',
+              sender: 'AD-HDFCBK',
+              date: DateTime(2026, 1, 1),
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+
+      // Both calls report the same rowid -- the ignored insert does NOT
+      // return 0, it returns the previous successful insert's rowid. A
+      // caller relying on "return value != 0" to detect a new row would be
+      // wrong every time.
+      expect(secondInsert, firstInsert);
+
+      final rows = await db.select(db.smsInbox).get();
+      expect(rows, hasLength(1));
+      expect(
+        rows.single.messageBody,
+        'first',
+      ); // untouched by the ignored insert
     },
   );
 }

@@ -41,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +65,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 3) {
         await m.createTable(recurringRules);
       }
+      if (from < 4) {
+        await m.addColumn(localSettings, localSettings.smsParseCount);
+        await m.addColumn(localSettings, localSettings.smsParseMonth);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
@@ -85,10 +89,44 @@ class AppDatabase extends _$AppDatabase {
     )..where((t) => t.id.equals(_singletonSettingsId))).watchSingle();
   }
 
+  Future<LocalSettingsRow> _getSettings() {
+    return (select(
+      localSettings,
+    )..where((t) => t.id.equals(_singletonSettingsId))).getSingle();
+  }
+
   Future<void> setPro(bool isPro) async {
     await (update(localSettings)
           ..where((t) => t.id.equals(_singletonSettingsId)))
         .write(LocalSettingsCompanion(isPro: Value(isPro)));
+  }
+
+  String _currentMonthKey(DateTime now) =>
+      '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+  /// How many SMS have been parsed-to-ledger this calendar month. Resets
+  /// implicitly: a stored month that doesn't match the current one reads as
+  /// zero without needing an explicit reset write.
+  Future<int> smsParsesThisMonth() async {
+    final settings = await _getSettings();
+    if (settings.smsParseMonth != _currentMonthKey(DateTime.now())) return 0;
+    return settings.smsParseCount;
+  }
+
+  Future<void> recordSmsParsed() async {
+    final settings = await _getSettings();
+    final currentMonth = _currentMonthKey(DateTime.now());
+    final newCount = settings.smsParseMonth == currentMonth
+        ? settings.smsParseCount + 1
+        : 1;
+    await (update(
+      localSettings,
+    )..where((t) => t.id.equals(_singletonSettingsId))).write(
+      LocalSettingsCompanion(
+        smsParseCount: Value(newCount),
+        smsParseMonth: Value(currentMonth),
+      ),
+    );
   }
 
   /// Wipes every table, e.g. after a verified guest->cloud migration or a

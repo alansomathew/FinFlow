@@ -3946,8 +3946,36 @@ class $LocalSettingsTable extends LocalSettings
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _smsParseCountMeta = const VerificationMeta(
+    'smsParseCount',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, isPro];
+  late final GeneratedColumn<int> smsParseCount = GeneratedColumn<int>(
+    'sms_parse_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _smsParseMonthMeta = const VerificationMeta(
+    'smsParseMonth',
+  );
+  @override
+  late final GeneratedColumn<String> smsParseMonth = GeneratedColumn<String>(
+    'sms_parse_month',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    isPro,
+    smsParseCount,
+    smsParseMonth,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3969,6 +3997,24 @@ class $LocalSettingsTable extends LocalSettings
         isPro.isAcceptableOrUnknown(data['is_pro']!, _isProMeta),
       );
     }
+    if (data.containsKey('sms_parse_count')) {
+      context.handle(
+        _smsParseCountMeta,
+        smsParseCount.isAcceptableOrUnknown(
+          data['sms_parse_count']!,
+          _smsParseCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sms_parse_month')) {
+      context.handle(
+        _smsParseMonthMeta,
+        smsParseMonth.isAcceptableOrUnknown(
+          data['sms_parse_month']!,
+          _smsParseMonthMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3986,6 +4032,14 @@ class $LocalSettingsTable extends LocalSettings
         DriftSqlType.bool,
         data['${effectivePrefix}is_pro'],
       )!,
+      smsParseCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sms_parse_count'],
+      )!,
+      smsParseMonth: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sms_parse_month'],
+      ),
     );
   }
 
@@ -3999,17 +4053,40 @@ class LocalSettingsRow extends DataClass
     implements Insertable<LocalSettingsRow> {
   final int id;
   final bool isPro;
-  const LocalSettingsRow({required this.id, required this.isPro});
+
+  /// Free-tier SMS-parse counter: how many parses have happened in
+  /// [smsParseMonth] ('YYYY-MM'). Reset client-side whenever the current
+  /// month no longer matches; consolidates into a proper scheduled reset
+  /// once Phase 4 stands up Cloud Functions infra.
+  final int smsParseCount;
+  final String? smsParseMonth;
+  const LocalSettingsRow({
+    required this.id,
+    required this.isPro,
+    required this.smsParseCount,
+    this.smsParseMonth,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['is_pro'] = Variable<bool>(isPro);
+    map['sms_parse_count'] = Variable<int>(smsParseCount);
+    if (!nullToAbsent || smsParseMonth != null) {
+      map['sms_parse_month'] = Variable<String>(smsParseMonth);
+    }
     return map;
   }
 
   LocalSettingsCompanion toCompanion(bool nullToAbsent) {
-    return LocalSettingsCompanion(id: Value(id), isPro: Value(isPro));
+    return LocalSettingsCompanion(
+      id: Value(id),
+      isPro: Value(isPro),
+      smsParseCount: Value(smsParseCount),
+      smsParseMonth: smsParseMonth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(smsParseMonth),
+    );
   }
 
   factory LocalSettingsRow.fromJson(
@@ -4020,6 +4097,8 @@ class LocalSettingsRow extends DataClass
     return LocalSettingsRow(
       id: serializer.fromJson<int>(json['id']),
       isPro: serializer.fromJson<bool>(json['isPro']),
+      smsParseCount: serializer.fromJson<int>(json['smsParseCount']),
+      smsParseMonth: serializer.fromJson<String?>(json['smsParseMonth']),
     );
   }
   @override
@@ -4028,15 +4107,34 @@ class LocalSettingsRow extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'isPro': serializer.toJson<bool>(isPro),
+      'smsParseCount': serializer.toJson<int>(smsParseCount),
+      'smsParseMonth': serializer.toJson<String?>(smsParseMonth),
     };
   }
 
-  LocalSettingsRow copyWith({int? id, bool? isPro}) =>
-      LocalSettingsRow(id: id ?? this.id, isPro: isPro ?? this.isPro);
+  LocalSettingsRow copyWith({
+    int? id,
+    bool? isPro,
+    int? smsParseCount,
+    Value<String?> smsParseMonth = const Value.absent(),
+  }) => LocalSettingsRow(
+    id: id ?? this.id,
+    isPro: isPro ?? this.isPro,
+    smsParseCount: smsParseCount ?? this.smsParseCount,
+    smsParseMonth: smsParseMonth.present
+        ? smsParseMonth.value
+        : this.smsParseMonth,
+  );
   LocalSettingsRow copyWithCompanion(LocalSettingsCompanion data) {
     return LocalSettingsRow(
       id: data.id.present ? data.id.value : this.id,
       isPro: data.isPro.present ? data.isPro.value : this.isPro,
+      smsParseCount: data.smsParseCount.present
+          ? data.smsParseCount.value
+          : this.smsParseCount,
+      smsParseMonth: data.smsParseMonth.present
+          ? data.smsParseMonth.value
+          : this.smsParseMonth,
     );
   }
 
@@ -4044,46 +4142,67 @@ class LocalSettingsRow extends DataClass
   String toString() {
     return (StringBuffer('LocalSettingsRow(')
           ..write('id: $id, ')
-          ..write('isPro: $isPro')
+          ..write('isPro: $isPro, ')
+          ..write('smsParseCount: $smsParseCount, ')
+          ..write('smsParseMonth: $smsParseMonth')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, isPro);
+  int get hashCode => Object.hash(id, isPro, smsParseCount, smsParseMonth);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is LocalSettingsRow &&
           other.id == this.id &&
-          other.isPro == this.isPro);
+          other.isPro == this.isPro &&
+          other.smsParseCount == this.smsParseCount &&
+          other.smsParseMonth == this.smsParseMonth);
 }
 
 class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
   final Value<int> id;
   final Value<bool> isPro;
+  final Value<int> smsParseCount;
+  final Value<String?> smsParseMonth;
   const LocalSettingsCompanion({
     this.id = const Value.absent(),
     this.isPro = const Value.absent(),
+    this.smsParseCount = const Value.absent(),
+    this.smsParseMonth = const Value.absent(),
   });
   LocalSettingsCompanion.insert({
     this.id = const Value.absent(),
     this.isPro = const Value.absent(),
+    this.smsParseCount = const Value.absent(),
+    this.smsParseMonth = const Value.absent(),
   });
   static Insertable<LocalSettingsRow> custom({
     Expression<int>? id,
     Expression<bool>? isPro,
+    Expression<int>? smsParseCount,
+    Expression<String>? smsParseMonth,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (isPro != null) 'is_pro': isPro,
+      if (smsParseCount != null) 'sms_parse_count': smsParseCount,
+      if (smsParseMonth != null) 'sms_parse_month': smsParseMonth,
     });
   }
 
-  LocalSettingsCompanion copyWith({Value<int>? id, Value<bool>? isPro}) {
+  LocalSettingsCompanion copyWith({
+    Value<int>? id,
+    Value<bool>? isPro,
+    Value<int>? smsParseCount,
+    Value<String?>? smsParseMonth,
+  }) {
     return LocalSettingsCompanion(
       id: id ?? this.id,
       isPro: isPro ?? this.isPro,
+      smsParseCount: smsParseCount ?? this.smsParseCount,
+      smsParseMonth: smsParseMonth ?? this.smsParseMonth,
     );
   }
 
@@ -4096,6 +4215,12 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
     if (isPro.present) {
       map['is_pro'] = Variable<bool>(isPro.value);
     }
+    if (smsParseCount.present) {
+      map['sms_parse_count'] = Variable<int>(smsParseCount.value);
+    }
+    if (smsParseMonth.present) {
+      map['sms_parse_month'] = Variable<String>(smsParseMonth.value);
+    }
     return map;
   }
 
@@ -4103,7 +4228,9 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
   String toString() {
     return (StringBuffer('LocalSettingsCompanion(')
           ..write('id: $id, ')
-          ..write('isPro: $isPro')
+          ..write('isPro: $isPro, ')
+          ..write('smsParseCount: $smsParseCount, ')
+          ..write('smsParseMonth: $smsParseMonth')
           ..write(')'))
         .toString();
   }
@@ -7285,9 +7412,19 @@ typedef $$SmsInboxTableProcessedTableManager =
       PrefetchHooks Function()
     >;
 typedef $$LocalSettingsTableCreateCompanionBuilder =
-    LocalSettingsCompanion Function({Value<int> id, Value<bool> isPro});
+    LocalSettingsCompanion Function({
+      Value<int> id,
+      Value<bool> isPro,
+      Value<int> smsParseCount,
+      Value<String?> smsParseMonth,
+    });
 typedef $$LocalSettingsTableUpdateCompanionBuilder =
-    LocalSettingsCompanion Function({Value<int> id, Value<bool> isPro});
+    LocalSettingsCompanion Function({
+      Value<int> id,
+      Value<bool> isPro,
+      Value<int> smsParseCount,
+      Value<String?> smsParseMonth,
+    });
 
 class $$LocalSettingsTableFilterComposer
     extends Composer<_$AppDatabase, $LocalSettingsTable> {
@@ -7305,6 +7442,16 @@ class $$LocalSettingsTableFilterComposer
 
   ColumnFilters<bool> get isPro => $composableBuilder(
     column: $table.isPro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get smsParseCount => $composableBuilder(
+    column: $table.smsParseCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get smsParseMonth => $composableBuilder(
+    column: $table.smsParseMonth,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7327,6 +7474,16 @@ class $$LocalSettingsTableOrderingComposer
     column: $table.isPro,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get smsParseCount => $composableBuilder(
+    column: $table.smsParseCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get smsParseMonth => $composableBuilder(
+    column: $table.smsParseMonth,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalSettingsTableAnnotationComposer
@@ -7343,6 +7500,16 @@ class $$LocalSettingsTableAnnotationComposer
 
   GeneratedColumn<bool> get isPro =>
       $composableBuilder(column: $table.isPro, builder: (column) => column);
+
+  GeneratedColumn<int> get smsParseCount => $composableBuilder(
+    column: $table.smsParseCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get smsParseMonth => $composableBuilder(
+    column: $table.smsParseMonth,
+    builder: (column) => column,
+  );
 }
 
 class $$LocalSettingsTableTableManager
@@ -7382,12 +7549,26 @@ class $$LocalSettingsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<bool> isPro = const Value.absent(),
-              }) => LocalSettingsCompanion(id: id, isPro: isPro),
+                Value<int> smsParseCount = const Value.absent(),
+                Value<String?> smsParseMonth = const Value.absent(),
+              }) => LocalSettingsCompanion(
+                id: id,
+                isPro: isPro,
+                smsParseCount: smsParseCount,
+                smsParseMonth: smsParseMonth,
+              ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<bool> isPro = const Value.absent(),
-              }) => LocalSettingsCompanion.insert(id: id, isPro: isPro),
+                Value<int> smsParseCount = const Value.absent(),
+                Value<String?> smsParseMonth = const Value.absent(),
+              }) => LocalSettingsCompanion.insert(
+                id: id,
+                isPro: isPro,
+                smsParseCount: smsParseCount,
+                smsParseMonth: smsParseMonth,
+              ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (

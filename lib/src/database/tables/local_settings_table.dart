@@ -10,6 +10,13 @@ class LocalSettings extends Table {
   IntColumn get id => integer()();
   BoolColumn get isPro => boolean().withDefault(const Constant(false))();
 
+  /// Free-tier SMS-parse counter: how many parses have happened in
+  /// [smsParseMonth] ('YYYY-MM'). Reset client-side whenever the current
+  /// month no longer matches; consolidates into a proper scheduled reset
+  /// once Phase 4 stands up Cloud Functions infra.
+  IntColumn get smsParseCount => integer().withDefault(const Constant(0))();
+  TextColumn get smsParseMonth => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

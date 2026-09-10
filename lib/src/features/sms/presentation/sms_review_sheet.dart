@@ -1,0 +1,473 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:uuid/uuid.dart';
+import '../../../constants/app_colors.dart';
+import '../../../constants/app_sizes.dart';
+import '../../../database/app_database.dart';
+import '../../../utils/sms_parser.dart';
+import '../../accounts/data/accounts_repository.dart';
+import '../../transactions/data/transaction_repository.dart';
+import '../../transactions/domain/transaction.dart';
+import '../data/sms_device_service.dart';
+import '../data/sms_repository.dart';
+import '../domain/sms_duplicate_detector.dart';
+
+/// Confidence threshold above which "Add All" auto-accepts a parsed SMS
+/// without individual review, per the SRS: parses below 70% confidence are
+/// always left for manual review.
+const _autoAcceptConfidence = 70;
+
+/// The real, device-driven counterpart to the manual-paste SMS Sandbox:
+/// shows whatever the device's actual SMS inbox has staged for review,
+/// requests the SMS permission if not yet granted, and offers per-item
+/// Add/Skip plus a batch "Add All" for high-confidence, non-duplicate items.
+/// Triggered automatically on app foreground/resume (see home_screen.dart).
+class SmsReviewSheet extends ConsumerStatefulWidget {
+  const SmsReviewSheet({super.key});
+
+  @override
+  ConsumerState<SmsReviewSheet> createState() => _SmsReviewSheetState();
+}
+
+class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
+  bool _loading = true;
+  bool _hasPermission = false;
+  bool _permanentlyDenied = false;
+  List<SmsInboxData> _queue = [];
+  int _remainingThisMonth = kFreeSmsParseLimit;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _loading = true);
+    final device = ref.read(smsDeviceServiceProvider);
+    final smsRepo = ref.read(smsRepositoryProvider);
+
+    final hasPermission = await device.hasPermission();
+    if (hasPermission) {
+      await device.scanInbox();
+      device.startForegroundListening();
+    }
+    final permanentlyDenied =
+        !hasPermission && await device.isPermanentlyDenied();
+    final queue = await smsRepo.getPendingInbox();
+    final remaining = await smsRepo.parsesRemainingThisMonth();
+
+    if (!mounted) return;
+    setState(() {
+      _hasPermission = hasPermission;
+      _permanentlyDenied = permanentlyDenied;
+      _queue = queue;
+      _remainingThisMonth = remaining;
+      _loading = false;
+    });
+  }
+
+  Future<void> _requestPermission() async {
+    final status = await ref.read(smsDeviceServiceProvider).requestPermission();
+    if (status.isPermanentlyDenied) {
+      if (!mounted) return;
+      setState(() => _permanentlyDenied = true);
+      return;
+    }
+    await _refresh();
+  }
+
+  Future<bool> _addSingle(SmsInboxData sms, ParsedSms parsed) async {
+    final smsRepo = ref.read(smsRepositoryProvider);
+    if (!await smsRepo.canParseMoreThisMonth()) return false;
+
+    final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
+    final account = SmsDuplicateDetector.resolveAccount(
+      accounts,
+      parsed.accountLast4,
+    );
+    if (account == null) return false;
+
+    final category = TransactionCategory.getByName(parsed.payee);
+    final tx = TransactionModel(
+      id: const Uuid().v4(),
+      amount: parsed.amount,
+      category: category.name,
+      bucket: parsed.type == 'credit' ? BudgetBucket.income : category.bucket,
+      accountId: account.id,
+      date: sms.date,
+      payee: parsed.payee,
+      note: 'Auto-parsed from SMS alert',
+      refId: parsed.refId,
+    );
+    await ref.read(transactionListProvider.notifier).add(tx);
+    await smsRepo.markParsed(sms.id);
+    return true;
+  }
+
+  Future<void> _addItem(SmsInboxData sms) async {
+    final parsed = SmsParser.parse(sms.messageBody);
+    if (parsed == null) {
+      await ref.read(smsRepositoryProvider).markSkipped(sms.id);
+      await _refresh();
+      return;
+    }
+
+    final added = await _addSingle(sms, parsed);
+    await ref.read(accountListProvider.notifier).refresh();
+    if (!mounted) return;
+
+    if (!added) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Free tier allows up to $kFreeSmsParseLimit SMS parses per month. Upgrade to Pro for unlimited.',
+          ),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+    }
+    await _refresh();
+  }
+
+  Future<void> _skipItem(SmsInboxData sms) async {
+    await ref.read(smsRepositoryProvider).markSkipped(sms.id);
+    await _refresh();
+  }
+
+  Future<void> _addAllHighConfidence() async {
+    final txs = await ref.read(transactionRepositoryProvider).getTransactions();
+    final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
+    var added = 0;
+    var capped = false;
+
+    for (final sms in List.of(_queue)) {
+      final parsed = SmsParser.parse(sms.messageBody);
+      if (parsed == null || parsed.confidenceScore < _autoAcceptConfidence)
+        continue;
+
+      final account = SmsDuplicateDetector.resolveAccount(
+        accounts,
+        parsed.accountLast4,
+      );
+      if (account == null) continue;
+
+      final isDuplicate = SmsDuplicateDetector.isDuplicate(
+        parsed: parsed,
+        smsDate: sms.date,
+        resolvedAccountId: account.id,
+        existingTransactions: txs,
+      );
+      if (isDuplicate)
+        continue; // leave ambiguous/duplicate ones for manual review
+
+      final ok = await _addSingle(sms, parsed);
+      if (!ok) {
+        capped = true;
+        break;
+      }
+      added++;
+    }
+
+    await ref.read(accountListProvider.notifier).refresh();
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          capped
+              ? 'Added $added transactions, then hit the free-tier monthly limit.'
+              : added == 0
+              ? 'Nothing high-confidence enough to auto-add -- review the rest manually below.'
+              : 'Added $added transactions.',
+        ),
+        backgroundColor: AppColors.success,
+      ),
+    );
+    await _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSizes.radiusLg),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSizes.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              AppSizes.h12,
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Review Bank SMS',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$_remainingThisMonth/$kFreeSmsParseLimit left this month',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              AppSizes.h16,
+              if (_loading)
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (!_hasPermission)
+                Expanded(child: _buildPermissionRequest())
+              else
+                Expanded(child: _buildQueue()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPermissionRequest() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.sms_rounded,
+            color: AppColors.primaryLight,
+            size: 48,
+          ),
+          AppSizes.h16,
+          const Text(
+            'Detect transactions automatically',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          AppSizes.h8,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
+            child: Text(
+              _permanentlyDenied
+                  ? 'SMS permission was denied. You can still add transactions manually, or enable it from system settings.'
+                  : 'FinFlow can read bank and UPI SMS alerts on this device to suggest transactions -- nothing is sent anywhere; parsing happens entirely on your device. You can always add transactions manually instead.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+          AppSizes.h24,
+          ElevatedButton(
+            onPressed: _permanentlyDenied
+                ? openAppSettings
+                : _requestPermission,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+            ),
+            child: Text(
+              _permanentlyDenied ? 'Open Settings' : 'Enable SMS Detection',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          AppSizes.h8,
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "I'll add transactions manually",
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQueue() {
+    if (_queue.isEmpty) {
+      return const Center(
+        child: Text(
+          "You're all caught up.\nNo pending SMS to review.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          onPressed: _addAllHighConfidence,
+          icon: const Icon(
+            Icons.playlist_add_check_rounded,
+            color: Colors.white,
+          ),
+          label: Text('Add All High-Confidence (${_queue.length} pending)'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.success,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
+          ),
+        ),
+        AppSizes.h12,
+        Expanded(
+          child: ListView.builder(
+            itemCount: _queue.length,
+            itemBuilder: (context, index) {
+              final sms = _queue[index];
+              final parsed = SmsParser.parse(sms.messageBody);
+              return Card(
+                color: AppColors.cardBg,
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            sms.sender,
+                            style: const TextStyle(
+                              color: AppColors.primaryLight,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            DateFormat('dd MMM hh:mm a').format(sms.date),
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                      AppSizes.h8,
+                      Text(
+                        sms.messageBody,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                      ),
+                      if (parsed != null) ...[
+                        AppSizes.h8,
+                        Text(
+                          '₹${parsed.amount.toStringAsFixed(2)} · ${parsed.payee} · Confidence: ${parsed.confidenceScore}%',
+                          style: TextStyle(
+                            color:
+                                parsed.confidenceScore >= _autoAcceptConfidence
+                                ? AppColors.success
+                                : AppColors.warning,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else ...[
+                        AppSizes.h8,
+                        const Text(
+                          "Couldn't parse this message automatically.",
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                      AppSizes.h12,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => _skipItem(sms),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.border),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusSm,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Skip',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                          AppSizes.w8,
+                          ElevatedButton(
+                            onPressed: parsed != null
+                                ? () => _addItem(sms)
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusSm,
+                                ),
+                              ),
+                            ),
+                            child: const Text(
+                              'Add',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}

@@ -10,6 +10,7 @@ import '../../accounts/data/accounts_repository.dart';
 import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
 import '../data/sms_repository.dart';
+import '../domain/sms_duplicate_detector.dart';
 
 class SmsSandboxSheet extends ConsumerStatefulWidget {
   const SmsSandboxSheet({super.key});
@@ -37,7 +38,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   }
 
   Future<void> _loadQueue() async {
-    final list = await smsRepository.getPendingInbox();
+    final list = await ref.read(smsRepositoryProvider).getPendingInbox();
     setState(() {
       _smsQueue = list;
     });
@@ -65,23 +66,20 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
 
   Future<void> _checkDuplicate(ParsedSms parsed) async {
     final txs = await ref.read(transactionRepositoryProvider).getTransactions();
-    // Duplicate detection: Same amount + same day OR same reference ID
-    bool dup = false;
-    for (var tx in txs) {
-      if (parsed.refId.isNotEmpty && tx.refId == parsed.refId) {
-        dup = true;
-        break;
-      }
-      // Check amount and same day
-      final isSameDay =
-          tx.date.day == DateTime.now().day &&
-          tx.date.month == DateTime.now().month &&
-          tx.date.year == DateTime.now().year;
-      if (tx.amount == parsed.amount && isSameDay) {
-        dup = true;
-        break;
-      }
-    }
+    final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
+    final resolvedAccount = SmsDuplicateDetector.resolveAccount(
+      accounts,
+      parsed.accountLast4,
+    );
+
+    final dup = resolvedAccount != null
+        ? SmsDuplicateDetector.isDuplicate(
+            parsed: parsed,
+            smsDate: DateTime.now(),
+            resolvedAccountId: resolvedAccount.id,
+            existingTransactions: txs,
+          )
+        : false;
 
     setState(() {
       _parsedResult = parsed;
@@ -90,21 +88,33 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   }
 
   Future<void> _addParsedToLedger(ParsedSms parsed, String smsId) async {
+    final smsRepo = ref.read(smsRepositoryProvider);
+    if (!await smsRepo.canParseMoreThisMonth()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Free tier allows up to $kFreeSmsParseLimit SMS parses per month. Upgrade to Pro for unlimited.',
+          ),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
     final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
     if (accounts.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please create an account first')),
       );
       return;
     }
 
-    // Match bank by last 4 digits, fallback to first account
-    final matchingAccount = accounts.firstWhere(
-      (a) =>
-          a.name.contains(parsed.accountLast4) ||
-          a.id.contains(parsed.accountLast4),
-      orElse: () => accounts.first,
-    );
+    final matchingAccount = SmsDuplicateDetector.resolveAccount(
+      accounts,
+      parsed.accountLast4,
+    )!;
 
     // Auto-map category
     final category = TransactionCategory.getByName(parsed.payee);
@@ -125,11 +135,13 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
     await ref.read(transactionListProvider.notifier).add(tx);
     await ref.read(accountListProvider.notifier).refresh();
 
-    // Mark SMS as parsed without touching its original message content
-    await smsRepository.markParsed(smsId);
+    // Mark SMS as parsed without touching its original message content;
+    // also counts toward the free-tier monthly cap.
+    await smsRepo.markParsed(smsId);
 
     _loadQueue();
 
+    if (!mounted) return;
     setState(() {
       _parsedResult = null;
       _textController.clear();
@@ -146,7 +158,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
   }
 
   Future<void> _skipSms(String smsId) async {
-    await smsRepository.markSkipped(smsId);
+    await ref.read(smsRepositoryProvider).markSkipped(smsId);
     _loadQueue();
   }
 
