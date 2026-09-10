@@ -18,6 +18,7 @@ class TransactionsTab extends ConsumerStatefulWidget {
 class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   String _searchQuery = '';
   BudgetBucket? _selectedBucket;
+  DateTimeRange? _dateRange;
 
   // Format currency
   String _formatCurrency(double amount) {
@@ -26,6 +27,44 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
       symbol: '₹',
       decimalDigits: 0,
     ).format(amount);
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      initialDateRange: _dateRange,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: AppColors.surface,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _dateRange = picked);
+    }
+  }
+
+  bool _inSelectedRange(DateTime date) {
+    final range = _dateRange;
+    if (range == null) return true;
+    final day = DateTime(date.year, date.month, date.day);
+    final start = DateTime(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
+    final end = DateTime(range.end.year, range.end.month, range.end.day);
+    return !day.isBefore(start) && !day.isAfter(end);
   }
 
   @override
@@ -118,6 +157,36 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         ),
                       );
                     }),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: _dateRange != null,
+                        avatar: const Icon(
+                          Icons.date_range_rounded,
+                          size: 16,
+                          color: AppColors.textSecondary,
+                        ),
+                        label: Text(
+                          _dateRange == null
+                              ? 'Date Range'
+                              : '${DateFormat('dd MMM').format(_dateRange!.start)} - ${DateFormat('dd MMM').format(_dateRange!.end)}',
+                        ),
+                        labelStyle: TextStyle(
+                          color: _dateRange != null
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.cardBg,
+                        checkmarkColor: Colors.white,
+                        onSelected: (_) => _pickDateRange(),
+                        onDeleted: _dateRange != null
+                            ? () => setState(() => _dateRange = null)
+                            : null,
+                        deleteIconColor: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -133,6 +202,11 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
               final filtered = transactions.where((t) {
                 // Filter by bucket
                 if (_selectedBucket != null && t.bucket != _selectedBucket) {
+                  return false;
+                }
+
+                // Filter by date range
+                if (!_inSelectedRange(t.date)) {
                   return false;
                 }
 
@@ -157,7 +231,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
               if (filtered.isEmpty) {
                 return const Center(
                   child: Text(
-                    'No transactions match your search.',
+                    'No transactions match your filters.',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 );

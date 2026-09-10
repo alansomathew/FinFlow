@@ -11,7 +11,7 @@
 | Phase | Status | Notes |
 |---|---|---|
 | 1 — Foundation & Auth | ✅ Done | Git/CI, Drift migration, real Firebase (Auth: Google + Email/Password, Firestore), migration data-loss bug fixed, app branding |
-| 2 — Core Transactions | 🚧 In progress | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
+| 2 — Core Transactions | ✅ Done | Edit flow, detail screen, date-range filter, recurring transactions, `isPro` stub |
 | 3 — SMS Parsing | ⬜ Not started | |
 | 4 — Budgeting | ⬜ Not started | |
 | 5 — Accounts & Cards | ⬜ Not started | |
@@ -126,32 +126,48 @@ com.finflow.app`.
 
 ---
 
-## Phase 2 — Core Transactions 🚧
+## Phase 2 — Core Transactions ✅
 
-**Verify/keep:** manual entry via `add_transaction_sheet.dart`, 50/30/20
-bucket tagging, account-balance auto-adjust on insert/delete, offline-first
-writes.
+**Verify/keep:** manual entry, 50/30/20 bucket tagging, account-balance
+auto-adjust on insert/delete, offline-first writes.
 
-**Fix:**
+**Fixed:**
 - No edit-transaction flow anywhere — the single biggest CRUD gap in the app.
-- `is_recurring` flag exists in the schema but nothing acts on it.
+- `is_recurring` flag existed in the schema but nothing acted on it.
 - No date-range filters, no tap-through/detail view.
+- Found while touching this code: swipe-to-delete in the ledger never
+  refreshed `accountListProvider`, leaving the account balance stale
+  elsewhere in the app until something else happened to refresh it.
 
-**Net-new:**
-1. `updateTransaction` (repository + UI) — generalize `add_transaction_sheet.dart`
-   into add/edit mode; reverse-then-reapply the balance adjustment on edit.
-2. Transaction detail screen (tap-through from list/dashboard) with edit/delete actions.
-3. Date-range filter on the transactions list.
-4. Recurring-transactions data model with client-side materialization on
-   app-open for now; reliable app-closed execution moves to a Cloud Function
-   once Phase 4 stands up Cloud Functions infra.
-5. `isPro` stub field so every later free/Pro gate has a real field to read
-   from day one instead of being invented ad hoc per phase.
-6. Free-tier gate: recurring transactions capped at 5.
+**Net-new (all done):**
+1. `updateTransaction` (repository + UI): reverses the old transaction's
+   balance impact and applies the new one inside one Drift transaction,
+   correctly compounding even when amount/bucket/account all change
+   together. `add_transaction_sheet.dart` renamed to
+   `transaction_form_sheet.dart` and generalized into add/edit mode.
+2. `TransactionDetailScreen` (tap-through from ledger + dashboard) with
+   Edit/Delete actions; reads live from the provider so edits/deletes made
+   while it's open are reflected immediately.
+3. Date-range filter chip on the transactions list (`showDateRangePicker`),
+   composable with the existing bucket filter and search.
+4. `RecurringRules` table (schema v3) + `RecurringRepository`:
+   `materializeDueRules()` runs on app-open (wired into `splash_screen.dart`),
+   catching up every due occurrence — including multiple periods missed
+   while the app was closed — into a real transaction. Reliable app-closed
+   execution moves to a Cloud Function once Phase 4 stands up that infra.
+   The transaction form's "Repeat this transaction" toggle (add mode only)
+   creates the rule alongside the first occurrence.
+5. `LocalSettings` table (schema v2) + `isProProvider`: a real field every
+   later free/Pro gate reads from day one, manually toggleable via a debug
+   switch in the profile menu until Phase 11 wires up real billing.
+6. Free-tier gate: recurring transactions capped at 5 active rules
+   (`kFreeRecurringLimit`), enforced in `RecurringRepository.canAddRule()`.
 
 **Key files:** `lib/src/features/transactions/data/transaction_repository.dart`,
-`add_transaction_sheet.dart`, new `transaction_detail_screen.dart`, new
-`lib/src/database/tables/recurring_rules_table.dart`.
+`lib/src/features/transactions/data/recurring_repository.dart`,
+`transaction_form_sheet.dart`, `transaction_detail_screen.dart`,
+`lib/src/database/tables/recurring_rules_table.dart`,
+`lib/src/database/tables/local_settings_table.dart`.
 
 ---
 
