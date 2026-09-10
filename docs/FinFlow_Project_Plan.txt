@@ -1,0 +1,381 @@
+
+FinFlow
+Smart Personal Finance Manager
+Flutter Application — Project Plan
+
+
+Version 1.0  |  May 2026  |  Confidential
+
+
+1. Executive Summary
+FinFlow is a comprehensive, cross-platform personal finance application built with Flutter. It combines daily expense tracking, smart budgeting, loan & EMI management, investment portfolio tracking (SIP, Mutual Funds, Stocks), and AI-powered financial insights into a single, beautifully designed app.
+
+The application is designed primarily for the Indian market with full support for UPI, bank SMS parsing, INR multi-currency, and India-specific investment instruments, while remaining globally usable.
+
+Attribute
+Value
+App Name
+FinFlow
+Platform
+Flutter (iOS, Android, Web)
+Primary Market
+India (INR-first, UPI, SMS parsing)
+Authentication
+Google Sign-In + Biometric + Guest Mode
+Monetization
+Freemium (Basic Free / Pro Subscription)
+Backend
+Firebase (Auth, Firestore, Cloud Functions, FCM)
+State Management
+Riverpod / BLoC
+Target Launch
+Q1 2027 (MVP)
+
+2. Vision & Goals
+2.1 Product Vision
+"Empower every individual to understand, control, and grow their wealth — effortlessly — in one app."
+
+2.2 Strategic Goals
+Eliminate financial blind spots via automated SMS & bank-sync transaction capture
+Make budgeting intuitive through the 50/30/20 rule and envelope system
+Track investments (SIP, MF, Stocks) alongside daily expenses in one dashboard
+Reduce debt stress with automated EMI scheduling and payoff strategies
+Drive user retention through AI-powered tips, gamification, and milestone celebrations
+
+2.3 Target User Personas
+
+Persona
+Description
+Primary Need
+The Salaried Professional
+25–40 yr, monthly salary, multiple cards & loans
+Budget control, EMI tracking
+The Young Investor
+22–32 yr, starting SIPs, tracking portfolio
+Investment dashboard, SIP reminders
+The Family CFO
+30–45 yr, managing household + joint expenses
+Joint wallet, category limits
+The Freelancer
+Variable income, tax planning
+Income tracking, export reports
+The Debt Warrior
+Active EMI load, wants payoff strategy
+Loan tracker, payoff planner
+
+3. Feature Overview & Modules
+3.1 Module Map
+Module 1: Onboarding & Authentication
+Module 2: Dashboard & Home
+Module 3: Transaction Management
+Module 4: SMS & Bank Message Parsing
+Module 5: Budgeting (50/30/20 + Envelope)
+Module 6: Savings Goals
+Module 7: Bank Accounts, Credit Cards & Wallets
+Module 8: Loans, EMIs & Debt Management
+Module 9: Investments (SIP / MF / Stocks)
+Module 10: Analytics & Reports
+Module 11: AI Financial Tips & Insights
+Module 12: Settings, Security & Export
+
+3.2 Basic vs. Pro Feature Tiers
+
+Feature
+Basic (Free)
+Pro
+Manual expense entry
+✅ Unlimited
+✅ Unlimited
+SMS/message transaction parsing
+✅ Up to 100/month
+✅ Unlimited
+Duplicate detection for SMS
+✅
+✅
+Accounts (Bank/Card)
+Up to 3
+Unlimited
+Budgeting (50/30/20 categories)
+✅
+✅
+Monthly budget auto-reset
+✅
+✅
+Savings goals
+Up to 3
+Unlimited
+Loans & EMI tracker
+Up to 2 loans
+Unlimited
+Recurring transactions
+Up to 5
+Unlimited
+Receipt OCR scanning
+❌
+✅
+Investment tracking (SIP/MF/Stocks)
+❌
+✅
+AI auto-categorization
+Basic (rule-based)
+AI-powered (learning)
+Analytics & charts
+3 basic charts
+12+ advanced charts
+Multi-currency support
+❌
+✅
+Joint wallet / shared accounts
+❌
+✅
+Export (PDF, CSV, Excel)
+CSV only
+PDF + CSV + Excel
+Bank API sync (Plaid/Account Aggregator)
+❌
+✅
+Net worth tracker
+❌
+✅
+AI financial tips & coaching
+3 tips/week
+Unlimited, personalized
+Debt payoff strategies (Snowball/Avalanche)
+❌
+✅
+Push notifications & smart alerts
+Basic
+Advanced + custom rules
+Dark mode & custom themes
+2 themes
+Unlimited themes
+Cloud sync & multi-device
+✅
+✅ Priority sync
+Biometric lock
+✅
+✅
+Guest/Demo mode
+✅
+✅
+Ad-free
+❌ (minimal ads)
+✅
+Price
+Free
+₹149/month or ₹999/year
+
+4. Technical Architecture
+4.1 Tech Stack
+
+Layer
+Technology
+Reason
+Frontend
+Flutter 3.x (Dart)
+Cross-platform, rich UI, single codebase
+State Management
+Riverpod 2.x + BLoC
+Reactive, testable, scalable
+Local DB
+Drift (SQLite) + Hive
+Offline-first, fast queries
+Auth
+Firebase Auth + Google Sign-In
+Secure, easy OAuth
+Cloud DB
+Cloud Firestore
+Real-time sync, offline support
+Cloud Functions
+Firebase Functions (Node.js)
+AI tips, push triggers, bank sync
+Notifications
+Firebase Cloud Messaging (FCM)
+Cross-platform push
+Analytics (Internal)
+Firebase Analytics + Mixpanel
+User behavior, funnel tracking
+SMS Parsing
+flutter_sms_inbox + custom regex
+Bank/UPI message extraction
+OCR
+google_ml_kit (On-device)
+Receipt scanning, no cloud cost
+Investment APIs
+NSE India API / RapidAPI MF
+Live stock & MF NAV data
+Bank Sync (India)
+Account Aggregator (AA Framework)
+RBI-approved, consent-based
+Bank Sync (Global)
+Plaid / Salt Edge
+International bank connectivity
+Export
+pdf (flutter) + excel / csv packages
+Report generation
+Security
+AES-256 (flutter_secure_storage)
+Encrypted local storage
+Charts
+fl_chart + syncfusion_flutter_charts
+Rich data visualization
+
+4.2 SMS Parsing & Duplicate Detection
+Bank transaction SMS messages follow semi-standard formats. FinFlow implements:
+Regex-based parser library covering 30+ Indian bank formats (SBI, HDFC, ICICI, Axis, Kotak, etc.)
+Extracts: amount, merchant/payee, transaction type (debit/credit), date, account last 4 digits, reference number
+Duplicate detection using a composite key: amount + date (±2 min window) + account + reference number hash
+If two messages arrive for the same transaction (common with UPI — one from bank, one from UPI app), system shows only ONE prompt with confidence score
+User sees a bottom sheet on app open: 'New transaction detected — Add or Skip'
+Batch review mode if multiple SMS arrived while app was closed
+
+4.3 Security Model
+AES-256 encryption for all locally stored financial data
+SSL/TLS for all network traffic
+Biometric authentication (Fingerprint / Face ID) as secondary lock
+Optional 2FA via Firebase Auth
+No plain-text storage of account numbers — stored as last-4-digit masked references
+Auto-lock after configurable idle timeout (default: 2 minutes)
+
+5. UX & Design Philosophy
+5.1 Core Design Principles
+One-Tap Entry: FAB always visible; expense logged in under 3 taps
+Progressive Disclosure: Basic users see simple UI; Pro features elegantly revealed
+50/30/20 Visual Language: Color-coded categories (Needs = Blue, Wants = Amber, Savings = Green)
+Dark Mode First: Designed dark-mode-first, light mode as secondary
+Celebration Moments: Animated confetti when goals are hit, budgets maintained
+
+5.2 Navigation Structure
+Bottom Nav Bar: Home | Transactions | Budget | Invest | Analytics
+FAB (+): Persistent, opens quick-add sheet with amount-first entry
+Swipe Gestures: Left-swipe to delete, right-swipe to edit on transaction list
+Search: Global search across transactions, goals, accounts
+
+5.3 Onboarding Flow
+Step 1: Splash + Guest Mode option (try without login)
+Step 2: Google Sign-In (one tap)
+Step 3: Currency & region selection
+Step 4: Add first bank account or card (optional, skippable)
+Step 5: Set monthly income & first budget
+Step 6: Enable SMS permission for auto-parsing (optional, skippable)
+Step 7: Home dashboard with sample data overlay for first-time users
+
+6. Budget Reset & Period Logic
+Monthly budgets are a cornerstone feature. FinFlow handles resets with precision:
+
+Budgets reset on the 1st of each month by default (configurable to any date, e.g., salary date)
+Reset is automatic via Cloud Function scheduled trigger at midnight on the reset date
+Previous month data is archived — never deleted — viewable in the Analytics > Monthly History tab
+Users receive a 'Month Ended' summary notification with total spend, savings rate, and top category
+Rollover option (Pro): Unspent budget in a category can optionally roll over to next month
+Weekly budgets are also supported as a toggle — resets every Monday
+Budget progress bar turns amber at 80%, red at 100% (push notification sent at both thresholds)
+Envelope system: each category has a dedicated 'envelope' — overspend from one does NOT auto-borrow from another
+
+7. Development Roadmap
+
+Phase
+Milestone
+Duration
+Key Deliverables
+Phase 1
+Foundation & Auth
+4 weeks
+Project setup, Firebase, Google Auth, Guest mode, DB schema
+Phase 2
+Core Transactions
+5 weeks
+Manual entry, categories, recurring, local DB, offline mode
+Phase 3
+SMS Parsing
+3 weeks
+SMS reader, regex parsers, duplicate detection, review sheet
+Phase 4
+Budgeting
+4 weeks
+50/30/20 system, envelope, monthly reset, budget alerts
+Phase 5
+Accounts & Cards
+3 weeks
+Bank/card/wallet addition, balance tracking, credit limit
+Phase 6
+Loans & EMI
+3 weeks
+Loan entry, EMI schedule, auto-expense, payoff strategies
+Phase 7
+Savings Goals
+2 weeks
+Goal creation, progress tracking, contributions
+Phase 8
+Investments
+5 weeks
+SIP/MF/Stock dashboard, live NAV, portfolio P&L
+Phase 9
+Analytics
+4 weeks
+All chart types, monthly history, insights, export
+Phase 10
+AI & Tips
+3 weeks
+Auto-categorize, financial tips engine, coaching nudges
+Phase 11
+Pro Features
+3 weeks
+OCR, multi-currency, joint wallet, bank API sync
+Phase 12
+Polish & Launch
+4 weeks
+Beta testing, Play Store / App Store submission, monitoring
+
+Total estimated development timeline: 43 weeks (~11 months) for full feature set. MVP (Phases 1–7) can ship in ~24 weeks.
+
+8. Monetization Strategy
+8.1 Pricing
+Basic: Free forever — ad-supported (non-intrusive banner only)
+Pro Monthly: ₹149/month
+Pro Annual: ₹999/year (save 44%)
+Family Plan (future): ₹1,499/year for up to 5 members
+
+8.2 Conversion Strategy
+Feature gates shown contextually (e.g., 'You've used 3/3 loans — Upgrade to add more')
+30-day free Pro trial on registration
+Annual plan promoted prominently (better value)
+Referral program: Invite a friend → both get 2 months Pro free
+
+9. Risk Register
+
+Risk
+Probability
+Impact
+Mitigation
+SMS permission denied by user
+High
+Medium
+Provide manual entry fallback; explain value clearly
+Bank API / AA Framework changes
+Medium
+High
+Abstract behind adapter layer; support manual CSV import
+Duplicate SMS detection failure
+Medium
+Medium
+Composite key + time window + user confirmation review
+Data breach / security incident
+Low
+Critical
+AES-256, zero plain-text account numbers, pen testing
+Investment API rate limits
+Medium
+Low
+Cache NAV data with 15-min TTL; batch requests
+App Store / Play Store rejection
+Low
+High
+Follow guidelines strictly; avoid financial advice framing
+User churn after free trial
+High
+Medium
+Onboarding quality, habit loops, weekly insight emails
+
+
+FinFlow Project Plan v1.0 — Confidential — May 2026

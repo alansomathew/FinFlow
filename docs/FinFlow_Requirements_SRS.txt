@@ -1,0 +1,465 @@
+
+FinFlow
+Smart Personal Finance Manager
+Software Requirements Specification (SRS)
+
+
+Version 1.0  |  May 2026  |  Flutter Application
+
+
+FR-01: Onboarding & Authentication
+FR-01.1 Guest Mode
+App must launch a fully functional demo environment without requiring account creation
+Guest data stored locally only; user prompted to sign in before data is lost
+Demo mode uses pre-seeded sample transactions, budgets, and investment data
+
+FR-01.2 Google Sign-In
+One-tap Google OAuth 2.0 sign-in via firebase_auth
+User profile (name, photo, email) fetched and stored in Firestore on first login
+Existing guest data offered for migration to cloud account on sign-in
+
+FR-01.3 Biometric & 2FA
+Biometric lock (Fingerprint / Face ID) available as secondary app-open guard
+Optional 2FA via OTP (SMS or Authenticator app) for Pro users
+Auto-lock configurable: Never / 1 min / 2 min / 5 min / 10 min
+
+FR-01.4 Onboarding Wizard
+5-step wizard: Currency → Add Account (optional) → Set Income → Set Budget → Enable SMS (optional)
+All steps skippable; wizard re-accessible from Settings > Setup Wizard
+First-run home screen shows guided tooltips with Lottie animation overlays
+
+FR-02: Home Dashboard
+Single-page overview: Net Worth, Monthly Spent, Budget remaining, Top categories
+Animated donut chart showing 50/30/20 split of current month's spending
+Recent transactions list (last 5) with quick-edit tap
+Savings goals progress bars (top 2 active goals)
+Investment portfolio summary card (total value, today's P&L)
+'Money left to spend today' daily budget chip based on remaining monthly budget ÷ days left
+Quick-stats: Largest expense this month, most frequent merchant, average daily spend
+Greeting card with AI-generated daily financial tip
+Upcoming bills/EMIs widget (next 7 days)
+Net Worth trend mini-chart (last 6 months, sparkline)
+
+FR-03: Transaction Management
+FR-03.1 Manual Entry (One-Tap FAB)
+FAB launches bottom sheet; default focus on amount field with numeric keypad
+Fields: Amount | Category | Account | Date | Note | Payee | Receipt Photo
+Category auto-suggested based on payee name (AI-powered for Pro, rule-based for Basic)
+Smart date: defaults to today; calendar picker for past dates
+Split transaction: one amount split across multiple categories
+Entry completed in < 3 taps for standard expense
+
+FR-03.2 Categories & 50/30/20 Rule
+All categories are tagged to one of three 50/30/20 buckets:
+
+Bucket
+Color
+Limit
+Default Categories
+Needs (50%)
+Blue #1A56DB
+50% of income
+Rent, Groceries, Utilities, EMI, Insurance, Transport, Education, Healthcare
+Wants (30%)
+Amber #D97706
+30% of income
+Dining Out, Shopping, Entertainment, Subscriptions, Travel, Personal Care, Hobbies
+Savings & Investments (20%)
+Green #059669
+20% of income
+Emergency Fund, SIP, Stocks, Gold, FD, Savings Goals, Loan Prepayment
+
+User can create custom categories, assigned to a bucket
+Categories have emoji icons + custom color; 80+ preset icons available
+Category spending chart visible per category with month-over-month trend
+
+FR-03.3 Recurring Transactions
+Set any transaction as recurring: Daily / Weekly / Monthly / Custom interval
+Recurring transactions auto-posted on due date (Cloud Function + local notification)
+7-day advance reminder for large recurring bills
+Basic: 5 recurring slots; Pro: unlimited
+
+FR-03.4 Receipt OCR (Pro)
+Camera or gallery image upload within transaction entry
+Google ML Kit extracts: merchant name, total amount, date
+Extracted fields auto-populated in transaction form; user reviews before saving
+Original receipt image stored in Firebase Storage, linked to transaction
+
+FR-03.5 Search & Filter
+Full-text search across: payee, note, category, amount
+Filters: Date range, Category, Account, Amount range, Transaction type (Debit/Credit)
+Sort: Date (newest/oldest), Amount (high/low), Category A-Z
+Saved filter presets (Pro)
+
+FR-04: Bank SMS & Message Parsing
+FR-04.1 SMS Reading
+App requests READ_SMS permission (Android); clearly explains benefit to user
+SMS inbox scanned on app open + background listener for new messages
+Parser covers 35+ Indian bank formats: SBI, HDFC, ICICI, Axis, Kotak, PNB, BOB, YES Bank, IndusInd, IDFC, Federal, UCO, Canara, Union, RBL, AU Small Finance, and major UPI apps
+
+FR-04.2 Transaction Extraction
+Extracts: Amount, Transaction Type (Dr/Cr), Date & Time, Merchant/Payee, Account (last 4 digits), Reference/UPI ID, Balance (if present)
+Confidence score (0–100%) assigned to each parsed transaction
+Low-confidence (<70%) transactions flagged for manual review
+
+FR-04.3 Duplicate Detection
+Duplicate detection uses a multi-factor composite key:
+Primary key: Amount + Account (last 4) + Transaction Type + Date (same calendar day)
+Secondary check: Reference number / UPI transaction ID exact match → immediate deduplicate
+Time window: Two messages within ±5 minutes for the same amount + account are considered duplicates
+Common duplicate scenario: Bank debit SMS + UPI app confirmation SMS for same transaction → only ONE add prompt shown
+Deduplication log viewable in Settings > SMS History for transparency
+User can override and mark any auto-deduplicated transaction as 'Not a Duplicate'
+
+FR-04.4 Add Transaction Prompt
+On app open: bottom sheet slides up showing pending parsed transactions
+Each card shows: Amount, Merchant, Date, Suggested Category (editable)
+Actions per card: Add Transaction | Edit & Add | Skip | Mark as Duplicate
+Batch mode: 'Add All' button if multiple messages arrived
+Prompt auto-dismissed after 48 hours if not actioned (with notification)
+
+FR-04.5 iOS Limitation Handling
+iOS does not allow SMS reading; app displays clear explanation with alternative options
+iOS alternative: Share extension — user can share bank notification to FinFlow
+Account Aggregator (AA) framework recommended as primary sync method on iOS
+
+FR-05: Budgeting & Envelope System
+FR-05.1 Budget Setup
+User sets monthly income; app auto-calculates 50/30/20 recommended amounts
+User can override individual category limits freely
+Category budgets displayed as progress bars: white (0–60%), amber (60–80%), red (80%+)
+
+FR-05.2 Monthly Reset Logic
+Budget period: Monthly (default), configurable to any date (e.g., 15th for mid-month salary)
+Auto-reset via Firebase Cloud Function at 00:01 on reset date
+Previous month archived to 'Budget History' — never deleted
+Month-end summary push notification: Total spent, amount saved, budget adherence score
+Rollover option (Pro): Unused category budget carries over to next month
+Weekly budget mode (Pro): Allocate weekly instead of monthly
+
+FR-05.3 Alerts & Notifications
+Push notification at 80% category usage: 'You've used ₹1,600 of ₹2,000 Food budget'
+Push notification at 100%: 'Food budget exceeded by ₹250'
+Daily 9 PM soft nudge if no expenses logged that day (configurable off)
+Weekly Sunday summary: Spend this week vs. last week per category
+
+FR-05.4 Envelope System
+Each category acts as an isolated envelope — overspend shown as negative, does NOT borrow from others
+User can manually transfer budget between categories within the same 50/30/20 bucket
+Cross-bucket transfer allowed but flagged with a warning (e.g., moving Savings budget to Wants)
+
+FR-06: Bank Accounts, Credit Cards & Wallets
+FR-06.1 Account Types Supported
+Savings Account (bank)
+Current Account
+Credit Card
+Prepaid / Digital Wallet (Paytm, PhonePe, Amazon Pay, etc.)
+Cash (physical cash tracking)
+UPI-linked account
+Fixed Deposit / RD (for net worth tracking)
+
+FR-06.2 Account Entry Fields
+Account Name (custom label, e.g., 'HDFC Salary Account')
+Bank / Institution Name
+Account Type (dropdown)
+Opening / Current Balance
+Account number — stored as masked last 4 digits only
+Credit Limit (for credit cards)
+Statement date and due date (for credit cards)
+Interest rate (for credit cards / overdraft)
+Icon / Color (customizable)
+
+FR-06.3 Credit Card Specific Features
+Available credit = Credit Limit − Current Unpaid Balance
+Statement due date reminder: 7 days, 3 days, 1 day before due
+Minimum due vs. full due display
+Interest calculator: Shows projected interest if only minimum is paid
+Credit utilization ratio shown (goal: keep below 30% for good CIBIL score)
+
+FR-06.4 Multi-Account Dashboard
+Accounts screen shows all accounts with current balance, color-coded
+Total assets vs. total liabilities displayed as Net Worth summary
+Account-level transaction filter: tap an account to see only its transactions
+Basic: 3 accounts; Pro: unlimited
+
+FR-07: Loans, EMIs & Debt Management
+FR-07.1 Loan Entry
+Loan types: Home Loan, Car Loan, Personal Loan, Education Loan, Gold Loan, Credit Card EMI, Buy Now Pay Later (BNPL), Custom
+Fields: Lender Name, Loan Amount, Interest Rate (%), Tenure (months), Start Date, EMI Amount, Account to debit
+App auto-calculates EMI using reducing balance formula if user provides principal + rate + tenure
+Option to mark a loan as 'Is this an EMI?' — if yes, prompts for EMI amount and tenure
+
+FR-07.2 Credit Card EMI Conversion
+When adding a credit card transaction, option: 'Convert to EMI?'
+If yes: user enters EMI amount per month and tenure
+Total transaction amount = EMI × tenure (auto-calculated and shown)
+Monthly EMI automatically added as a recurring expense under 'Needs' category
+Original transaction logged as full amount; EMI schedule shown on transaction detail
+
+FR-07.3 EMI Auto-Expense
+Each EMI is auto-posted as an expense on the due date (Firebase scheduled function + local reminder)
+EMI appears in transaction list tagged as 'EMI — [Loan Name]'
+Linked back to loan tracker so outstanding principal updates automatically
+Prepayment option: user can log partial prepayment, app recalculates tenure/EMI
+
+FR-07.4 Debt Payoff Strategies (Pro)
+Snowball Method: Pay minimum on all debts, attack smallest balance first
+Avalanche Method: Pay minimum on all, attack highest interest rate first
+Comparison view: Shows total interest paid and payoff date under each strategy
+Monthly payoff plan calendar showing how much extra to pay each month
+
+FR-07.5 Loan Dashboard
+All active loans listed with: outstanding principal, next EMI date, EMI amount, interest paid to date
+Total debt vs. assets ratio (Debt-to-Asset ratio displayed)
+Loan payoff countdown: 'X months remaining on Home Loan'
+Basic: 2 loans; Pro: unlimited
+
+FR-08: Savings Goals
+Goal fields: Name, Target Amount, Target Date, Linked Account, Icon/Color
+Progress bar: Amount saved / Target amount with percentage and days remaining
+Contribution modes: Manual add, Auto-deduct monthly, Round-up spare change (Pro)
+Goal categories: Emergency Fund, Vacation, Gadget, Education, Wedding, Down Payment, Custom
+AI tip: 'To hit ₹1,00,000 by December, save ₹8,334/month'
+Milestone celebrations: 25%, 50%, 75%, 100% reached — animated Lottie celebration
+Goal pausing and resuming without data loss
+Basic: 3 goals; Pro: unlimited
+
+FR-09: Investment Tracking (SIP / Mutual Funds / Stocks)
+FR-09.1 SIP Tracker
+Add SIP: Fund name, AMC, SIP amount, frequency (monthly/weekly/quarterly), start date
+Auto-reminder on SIP debit date: 'SIP of ₹5,000 due today'
+Track cumulative invested amount vs. current NAV value
+XIRR (extended internal rate of return) calculation for each SIP
+Step-up SIP support: annual SIP amount increase by X%
+Pause / modify / stop SIP logging
+
+FR-09.2 Mutual Fund Portfolio
+Add funds: Fund name (searchable from 10,000+ Indian MF database), units held, purchase NAV
+Live NAV fetched daily (AMFI data source for India)
+P&L per fund: Invested vs. Current Value, Absolute Return %, XIRR %
+Portfolio allocation pie chart: Equity / Debt / Hybrid / ELSS / International
+Tax status: STCG (< 1 year) vs. LTCG (> 1 year) for each fund
+CAS (Consolidated Account Statement) import for portfolio consolidation (Pro)
+
+FR-09.3 Stock Portfolio
+Add stocks: Ticker symbol (NSE/BSE), quantity, purchase price, purchase date
+Live price fetch (NSE India data, 15-min delay for free / real-time for Pro via RapidAPI)
+P&L per stock: Invested vs. Market Value, Return %, Day's gain
+Portfolio analytics: Sector allocation, Top gainers/losers, Dividend tracker
+52-week high/low indicator per stock
+
+FR-09.4 Investment Dashboard
+Total portfolio value (MF + Stocks + FD) with day-over-day change
+Asset allocation donut: Equity, Debt, Gold, FD, Cash
+Monthly investment vs. expense ratio (shows savings discipline)
+'Pro tip: Your equity allocation is 85% — consider rebalancing to reduce risk'
+
+FR-10: Analytics & Reports
+FR-10.1 Chart Library
+
+Chart
+Description
+Tier
+Monthly Spend Donut
+50/30/20 breakdown of current month's expenses
+Basic
+Category Bar Chart
+Side-by-side monthly comparison of top 5 categories
+Basic
+Daily Spend Line Chart
+Spending trend over the current month, day by day
+Basic
+Income vs. Expense Bar
+Monthly income vs. total expenses, 6-month view
+Pro
+Net Worth Line Chart
+Net worth growth over 12 months
+Pro
+Savings Rate Chart
+Monthly savings rate % over time with target line
+Pro
+Category Heatmap
+Calendar heatmap showing daily spend intensity
+Pro
+Top Merchants Horizontal Bar
+Top 10 merchants by total spend this month
+Pro
+Budget Adherence Radar
+Category-level budget vs. actual spider chart
+Pro
+Debt Payoff Timeline
+Projected loan payoff under current payment rate
+Pro
+Investment Growth Area Chart
+Portfolio value over time (stacked by asset class)
+Pro
+Cash Flow Waterfall
+Monthly income → categories → savings waterfall
+Pro
+Recurring Expense Treemap
+Visual size map of all recurring expenses
+Pro
+Expense Forecast Line
+AI-predicted next-month spend based on 3-month history
+Pro
+
+FR-10.2 Monthly History
+Each past month stored with full transaction list, category totals, budget adherence score
+Month-over-month comparison: current vs. previous month per category
+Year-to-date (YTD) summary by quarter
+
+FR-10.3 Export Options
+Basic: Export transactions as CSV (current month)
+Pro: Export PDF report (with charts), CSV, Excel (.xlsx)
+Date range selector for export (any custom period)
+Report includes: Summary stats, category breakdown, transaction list, savings rate
+Email export option: sends report PDF to registered email
+Tax-ready export: Capital gains statement from investment module (Pro)
+
+FR-11: AI Financial Tips & Insights
+Daily tip on home screen: personalized based on user's spending pattern (not generic advice)
+Example tips based on data:
+'You spent ₹4,200 on Dining Out this month — 40% more than last month. Try cooking at home 2 days/week to save ~₹1,400'
+'Your SIP of ₹5,000/month for 20 years at 12% CAGR will grow to ₹49.9 Lakhs'
+'Your emergency fund covers only 1.2 months of expenses. Aim for 6 months.'
+'Zomato is your top merchant — ₹6,800 this month. Consider a meal plan subscription instead.'
+Tips engine powered by Firebase Functions + Claude API (rule templates + LLM blend)
+Basic: 3 tips/week (pre-templated); Pro: unlimited, fully personalized with LLM
+In-app financial education: glossary of terms (SIP, XIRR, CIBIL, CAGR, etc.) accessible in-line
+'Financial Health Score' (0–100) shown monthly, based on: savings rate, budget adherence, emergency fund, debt-to-income ratio, investment consistency
+
+FR-12: Multi-Currency Support (Pro)
+User can set home currency (default: INR)
+Foreign currency transactions entered in original currency, auto-converted to home currency
+Exchange rates fetched daily from Open Exchange Rates API
+Travel mode: quick-switch home currency temporarily for a trip
+Historical exchange rate used for past transactions (not live rate)
+
+FR-13: Joint Wallet / Shared Accounts (Pro)
+Create a shared wallet with up to 5 members (partners, roommates, family)
+Invite via email or share link
+All members can add expenses to the shared wallet
+Split expenses: Equal split, percentage split, or custom amount per person
+Settlement view: Who owes whom, with one-tap UPI deep link to settle
+Joint budget with shared category limits
+Individual contribution chart: Who spent how much in the shared wallet
+
+NFR-01: Non-Functional Requirements
+
+Requirement
+Specification
+Performance
+App cold start < 2 seconds; transaction list scroll at 60 FPS; chart render < 1 second
+Offline Mode
+All core features (entry, view, edit) work without internet; background sync on reconnect
+Data Encryption
+AES-256 for local storage (flutter_secure_storage); TLS 1.3 for all network traffic
+Authentication Security
+JWT tokens with 1-hour expiry; refresh token rotation; revocable sessions
+Backup & Recovery
+Cloud Firestore real-time sync; point-in-time recovery for Pro users
+Accessibility
+WCAG 2.1 AA compliant; screen reader support (TalkBack / VoiceOver); min font 14pt
+Localization
+English + Hindi at launch; framework ready for 8 additional Indian languages
+Platform Support
+Android 8.0+ (API 26+); iOS 14+; Web (Progressive Web App)
+Crash Rate
+< 0.5% crash-free sessions target (Firebase Crashlytics monitoring)
+Data Retention
+User data retained for 90 days after account deletion (legal compliance)
+Privacy
+No selling of user financial data; GDPR & DPDP Act 2023 (India) compliant
+SMS Compliance
+SMS reading only for personal finance parsing; data never shared with third parties
+
+NFR-02: Notification Requirements
+
+Notification
+Trigger
+Channel
+Dismissible
+SMS transaction detected
+New bank SMS received
+In-app bottom sheet
+Yes
+Budget 80% alert
+Category reaches 80% of limit
+Push + In-app badge
+Yes
+Budget exceeded
+Category reaches 100% of limit
+Push + In-app banner
+Yes
+EMI due reminder
+3 days before EMI date
+Push notification
+Yes
+SIP debit reminder
+Day of SIP
+Push notification
+Yes
+Credit card due date
+7, 3, 1 day before
+Push notification
+Yes
+Monthly budget reset
+1st of month (or custom date)
+Push notification
+Yes
+Month-end summary
+Last day of month, 8 PM
+Push notification
+Yes
+Savings goal milestone
+25%, 50%, 75%, 100%
+In-app celebration
+No
+Daily log reminder
+9 PM if no expense logged
+Push (configurable off)
+Yes
+Investment NAV alert
+Stock/MF moves ±5% in a day
+Push (Pro)
+Yes
+Duplicate SMS flagged
+Potential duplicate detected
+In-app info card
+Yes
+
+Appendix A: Glossary
+
+Term
+Definition
+50/30/20 Rule
+Budgeting principle: 50% income to Needs, 30% to Wants, 20% to Savings/Investments
+Envelope System
+Allocating a fixed budget to each category; spending is limited to that 'envelope'
+SIP
+Systematic Investment Plan — recurring investment in a mutual fund
+NAV
+Net Asset Value — price per unit of a mutual fund
+XIRR
+Extended Internal Rate of Return — annualized return accounting for irregular cash flows
+CAGR
+Compound Annual Growth Rate
+CIBIL Score
+India's credit score (300–900); higher is better
+AA Framework
+Account Aggregator — RBI-regulated framework for consented financial data sharing
+CAS
+Consolidated Account Statement — official MF holdings statement from NSDL/CDSL
+EMI
+Equated Monthly Installment — fixed monthly loan repayment amount
+BNPL
+Buy Now Pay Later — short-term credit product
+STCG/LTCG
+Short-Term / Long-Term Capital Gains — tax categories for investment profits
+OCR
+Optical Character Recognition — extracting text from receipt images
+FAB
+Floating Action Button — the persistent + button for quick expense entry
+
+
+FinFlow SRS v1.0 — Confidential — May 2026
