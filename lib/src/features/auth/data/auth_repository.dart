@@ -1,6 +1,10 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProfile {
   final String uid;
@@ -36,19 +40,66 @@ class UserProfile {
       isGuest: map['isGuest'] ?? false,
     );
   }
+
+  factory UserProfile.fromFirebaseUser(fb_auth.User user) {
+    return UserProfile(
+      uid: user.uid,
+      email: user.email ?? '',
+      displayName: user.displayName?.isNotEmpty == true
+          ? user.displayName!
+          : (user.email ?? 'User'),
+      photoUrl: user.photoURL ?? '',
+      isGuest: false,
+    );
+  }
 }
 
+/// Thrown by [AuthNotifier.signInWithGoogle] when the user dismisses the
+/// account picker rather than a real sign-in failure, so callers can ignore
+/// it instead of surfacing an error.
+class GoogleSignInCancelled implements Exception {}
+
+const _guestProfileKey = 'guest_profile';
+
 class AuthNotifier extends StateNotifier<UserProfile?> {
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  StreamSubscription<fb_auth.User?>? _authSub;
+  bool _googleSignInReady = false;
+
   AuthNotifier() : super(null) {
-    _loadUser();
+    _init();
   }
 
-  Future<void> _loadUser() async {
+  Future<void> _init() async {
+    // Fire-and-forget: initialize() must be called before authenticate(),
+    // but a slow/failed init shouldn't block reading the existing auth
+    // state (e.g. a returning signed-in user) on app start.
+    unawaited(_ensureGoogleSignInReady());
+
+    // Firebase's auth state is the source of truth for real accounts. Guest
+    // mode is a purely local, app-invented concept Firebase has no notion
+    // of, so it's only consulted when there's no real Firebase session.
+    _authSub = fb_auth.FirebaseAuth.instance.authStateChanges().listen((
+      user,
+    ) async {
+      if (user != null) {
+        state = UserProfile.fromFirebaseUser(user);
+      } else {
+        await _loadGuestState();
+      }
+    });
+  }
+
+  Future<void> _ensureGoogleSignInReady() async {
+    if (_googleSignInReady) return;
+    await _googleSignIn.initialize();
+    _googleSignInReady = true;
+  }
+
+  Future<void> _loadGuestState() async {
     final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('user_profile');
-    if (userJson != null) {
-      state = UserProfile.fromMap(jsonDecode(userJson));
-    }
+    final userJson = prefs.getString(_guestProfileKey);
+    state = userJson != null ? UserProfile.fromMap(jsonDecode(userJson)) : null;
   }
 
   Future<void> signInAsGuest() async {
@@ -60,32 +111,85 @@ class AuthNotifier extends StateNotifier<UserProfile?> {
       photoUrl: '',
       isGuest: true,
     );
-    await prefs.setString('user_profile', jsonEncode(guest.toMap()));
+    await prefs.setString(_guestProfileKey, jsonEncode(guest.toMap()));
     state = guest;
   }
 
-  Future<void> signInWithGoogle({
-    required String uid,
+  /// Throws [GoogleSignInCancelled] if the user dismisses the account
+  /// picker; any other thrown exception is a genuine sign-in failure.
+  Future<UserProfile> signInWithGoogle() async {
+    await _ensureGoogleSignInReady();
+
+    final GoogleSignInAccount googleUser;
+    try {
+      googleUser = await _googleSignIn.authenticate();
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        throw GoogleSignInCancelled();
+      }
+      rethrow;
+    }
+
+    final idToken = googleUser.authentication.idToken;
+    final credential = fb_auth.GoogleAuthProvider.credential(idToken: idToken);
+    final userCredential = await fb_auth.FirebaseAuth.instance.signInWithCredential(credential);
+
+    // authStateChanges() will also update `state` asynchronously, but
+    // returning the profile directly lets the caller proceed immediately
+    // rather than waiting on the stream to fire.
+    return UserProfile.fromFirebaseUser(userCredential.user!);
+  }
+
+  Future<UserProfile> registerWithEmailPassword({
     required String email,
+    required String password,
     required String displayName,
-    required String photoUrl,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final user = UserProfile(
-      uid: uid,
+    final credential = await fb_auth.FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: email,
-      displayName: displayName,
-      photoUrl: photoUrl,
-      isGuest: false,
+      password: password,
     );
-    await prefs.setString('user_profile', jsonEncode(user.toMap()));
-    state = user;
+    final user = credential.user!;
+    if (displayName.isNotEmpty) {
+      await user.updateDisplayName(displayName);
+      await user.reload();
+    }
+    return UserProfile.fromFirebaseUser(fb_auth.FirebaseAuth.instance.currentUser ?? user);
+  }
+
+  Future<UserProfile> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await fb_auth.FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return UserProfile.fromFirebaseUser(credential.user!);
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    await fb_auth.FirebaseAuth.instance.sendPasswordResetEmail(email: email);
   }
 
   Future<void> signOut() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_profile');
+    await prefs.remove(_guestProfileKey);
+
+    if (fb_auth.FirebaseAuth.instance.currentUser != null) {
+      if (_googleSignInReady) {
+        await _googleSignIn.signOut();
+      }
+      await fb_auth.FirebaseAuth.instance.signOut();
+    }
+
     state = null;
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 }
 

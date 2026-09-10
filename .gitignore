@@ -44,10 +44,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase / secrets — never commit real credentials
-**/google-services.json
-**/GoogleService-Info.plist
-lib/firebase_options.dart
+# Firebase app config (google-services.json / GoogleService-Info.plist /
+# firebase_options.dart) is intentionally NOT excluded here — per Firebase's
+# own guidance these contain no secrets (they're safe to ship inside the
+# compiled app itself); the real security boundary is Firestore rules + App
+# Check. CI needs them present to build. Only genuine secrets are excluded:
 *.jks
 *.keystore
 key.properties
@@ -62,6 +63,9 @@ serviceAccountKey*.json
 # Local tooling state
 .claude/
 .qodo/
+# Vendored copy of agent-skills docs fetched by `npx skills add` -- a local
+# cache of skills-lock.json's declared skills, not project source.
+.agents/
 
 # Desktop/web platforms dropped from this project (Android-only) — Flutter
 # tooling occasionally regenerates ephemeral scaffolding for them on

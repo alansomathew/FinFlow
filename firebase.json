@@ -1,0 +1,35 @@
+{
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "FinFlow",
+        "supportEmail": "alansomathew10@gmail.com"
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "finflow-3ae88",
+          "appId": "1:836907422627:android:6688bbb2bdc2b2a5280016",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "finflow-3ae88",
+          "configurations": {
+            "android": "1:836907422627:android:6688bbb2bdc2b2a5280016",
+            "ios": "1:836907422627:ios:09e6db8acfaebab9280016"
+          }
+        }
+      }
+    }
+  }
+}

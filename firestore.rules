@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // FinFlow strictly scopes all user financial data under the user's UID:
+    // /users/{userId} -> User profile metadata
+    // /users/{userId}/accounts/{accountId} -> User bank / card accounts
+    // /users/{userId}/transactions/{transactionId} -> Income & expense transactions
+    // /users/{userId}/budgets/{budgetId} -> Monthly budget limits
+    // /users/{userId}/loans/{loanId} -> EMI / debt trackers
+    // /users/{userId}/investments/{investmentId} -> Investment portfolio records
+    // /users/{userId}/sms_inbox/{smsId} -> Locally parsed financial SMS records
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User Profile
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Scoped Subcollections: accounts, transactions, budgets, loans, investments, sms_inbox
+      match /{subcollection}/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Default deny all unmatched collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
