@@ -16,7 +16,7 @@
 | 4 — Budgeting | ✅ Done (client-side) | Derived spend, monthly history, create/edit/delete UI, cross-bucket warning. Scheduled reset + push alerts deliberately deferred until Blaze is worth adopting for multiple phases at once |
 | 5 — Accounts & Cards | ✅ Done | Full accounts UI built from scratch (list/add/edit/detail/close), credit utilization + due-date banner, 3-account free-tier gate |
 | 6 — Loans & EMI | ✅ Done (client-side) | Real AmortizationEngine (unit-tested) replaces fudge-factor debt math, loan CRUD UI built from scratch, 2-loan free-tier gate, Pro-gated Snowball/Avalanche. EMI auto-posting deferred with the rest of the Cloud Functions work |
-| 7 — Savings Goals | ⬜ Not started | |
+| 7 — Savings Goals | ✅ Done | Fully net-new module built from scratch: goals table/repo/UI, confetti milestone celebration, 3-goal free-tier gate, dashboard preview |
 | 8 — Investments | ⬜ Not started | |
 | 9 — Analytics | ⬜ Not started | |
 | 10 — AI & Tips | ⬜ Not started | |
@@ -361,17 +361,33 @@ once Cloud Functions are worth standing up for multiple features at once.
 
 ---
 
-## Phase 7 — Savings Goals *(zero code today — fully net-new)*
+## Phase 7 — Savings Goals *(zero code before this phase — fully net-new)*
 
-1. New `goals` table (name, target_amount, current_amount, target_date,
-   icon/color, optional linked account).
-2. Goal creation/edit UI, progress visualization, manual "contribute" action.
-3. Celebration animation at 25/50/75/100% milestones.
-4. Firestore sync via the established write-through pattern.
-5. Free-tier gate: 3 goals (free) / unlimited (Pro).
-6. Surface top 1–2 active goals on the dashboard.
+**Done:**
+1. `goals` table (schema v7): name, target amount, current amount, an
+   optional target date, icon/color, and an optional linked account
+   (purely informational -- contributions are always manual, never
+   auto-tracked from that account's transactions). Unlike budgets,
+   `currentAmount` is genuinely stored and mutated by a contribute action
+   rather than derived, since there's no natural transaction category that
+   maps 1:1 to a specific goal the way spending maps to a budget category.
+2. `GoalsListScreen` (add/edit/delete, progress bars, a "Contribute"
+   action per goal) and `GoalFormSheet`, reachable from a new "Savings
+   Goals" drawer item.
+3. Celebration animation at the 25/50/75/100% milestones: `contribute()`
+   compares progress before and after the contribution and returns which
+   milestone (if any) was just crossed, so it fires exactly once, on the
+   contribution that crosses it -- not on every subsequent view. Uses the
+   `confetti` package.
+4. Firestore sync via the established write-through pattern (Firestore +
+   local for signed-in users, local-only for guests, Firestore-then-
+   local-fallback on read).
+5. Free-tier gate: `kFreeGoalLimit = 3`, unlimited on Pro.
+6. The dashboard now surfaces the two active goals furthest from
+   completion (most in need of attention), with a "View all" link to the
+   full list.
 
-**New dependencies:** a confetti/celebration package.
+**New dependencies:** `confetti`.
 
 ---
 

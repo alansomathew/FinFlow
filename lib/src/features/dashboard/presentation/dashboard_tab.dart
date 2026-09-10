@@ -9,6 +9,8 @@ import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
 import '../../budget/data/budget_repository.dart';
 import '../../debt/data/debt_repository.dart';
+import '../../goals/data/goals_repository.dart';
+import '../../goals/presentation/goals_list_screen.dart';
 import '../../investments/data/investments_repository.dart';
 import '../../transactions/presentation/transaction_detail_screen.dart';
 import 'home_screen.dart';
@@ -66,6 +68,7 @@ class DashboardTab extends ConsumerWidget {
     final budgetsAsync = ref.watch(budgetListProvider);
     final loansAsync = ref.watch(loanListProvider);
     final investmentsAsync = ref.watch(investmentListProvider);
+    final goalsAsync = ref.watch(goalListProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -74,6 +77,7 @@ class DashboardTab extends ConsumerWidget {
         ref.read(budgetListProvider.notifier).refresh();
         ref.read(loanListProvider.notifier).refresh();
         ref.read(investmentListProvider.notifier).refresh();
+        ref.read(goalListProvider.notifier).refresh();
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -361,6 +365,120 @@ class DashboardTab extends ConsumerWidget {
                 error: (_, __) => Container(),
               ),
               AppSizes.h16,
+
+              // Savings Goals preview (top 2 active, furthest from complete
+              // ones surfaced first since they need the most attention)
+              goalsAsync.when(
+                data: (goals) {
+                  if (goals.isEmpty) return const SizedBox.shrink();
+                  final active = goals.where((g) => g.progress < 1.0).toList()
+                    ..sort((a, b) => a.progress.compareTo(b.progress));
+                  final preview = active.take(2).toList();
+                  if (preview.isEmpty) return const SizedBox.shrink();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Savings Goals',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const GoalsListScreen(),
+                              ),
+                            ),
+                            child: const Text(
+                              'View all',
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      AppSizes.h8,
+                      ...preview.map((g) {
+                        final color = Color(
+                          int.parse(g.colorHex.substring(1), radix: 16) +
+                              0xFF000000,
+                        );
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(AppSizes.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBg,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: color.withOpacity(0.2),
+                                child: Text(
+                                  g.icon,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              AppSizes.w12,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      g.name,
+                                      style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    AppSizes.h4,
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(2),
+                                      child: LinearProgressIndicator(
+                                        value: g.progress,
+                                        backgroundColor: AppColors.border,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              color,
+                                            ),
+                                        minHeight: 5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              AppSizes.w12,
+                              Text(
+                                '${(g.progress * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  color: color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      AppSizes.h8,
+                    ],
+                  );
+                },
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
 
               // Financial Module Overview Widgets
               Row(

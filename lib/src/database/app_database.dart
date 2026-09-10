@@ -9,6 +9,7 @@ import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import '../utils/month_key.dart';
 import 'tables/accounts_table.dart';
 import 'tables/budgets_table.dart';
+import 'tables/goals_table.dart';
 import 'tables/investments_table.dart';
 import 'tables/loans_table.dart';
 import 'tables/local_settings_table.dart';
@@ -30,6 +31,7 @@ const _singletonSettingsId = 0;
     SmsInbox,
     LocalSettings,
     RecurringRules,
+    Goals,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -42,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,6 +85,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.addColumn(accounts, accounts.ownerUids);
+      }
+      if (from < 7) {
+        await m.createTable(goals);
       }
     },
     beforeOpen: (details) async {
@@ -152,6 +157,7 @@ class AppDatabase extends _$AppDatabase {
       await delete(loans).go();
       await delete(investments).go();
       await delete(budgets).go();
+      await delete(goals).go();
       await delete(smsInbox).go();
       await delete(accounts).go();
     });

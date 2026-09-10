@@ -5,6 +5,7 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
 import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../goals/presentation/goals_list_screen.dart';
 import '../../transactions/presentation/transaction_form_sheet.dart';
 import 'dashboard_tab.dart';
 import '../../transactions/presentation/transactions_tab.dart';
@@ -199,6 +200,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const AccountsListScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.savings_rounded,
+                  color: AppColors.savings,
+                ),
+                title: const Text(
+                  'Savings Goals',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                subtitle: const Text(
+                  'Track progress toward your savings targets',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const GoalsListScreen(),
                     ),
                   );
                 },
