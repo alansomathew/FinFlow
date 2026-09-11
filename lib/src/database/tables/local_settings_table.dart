@@ -17,6 +17,16 @@ class LocalSettings extends Table {
   IntColumn get smsParseCount => integer().withDefault(const Constant(0))();
   TextColumn get smsParseMonth => text().nullable()();
 
+  /// 'light', 'dark', or 'system'. Defaults to 'dark' to preserve the
+  /// app's original dark-first look for existing installs -- this wasn't a
+  /// user choice before this column existed, so it shouldn't silently
+  /// change on upgrade.
+  TextColumn get themeMode => text().withDefault(const Constant('dark'))();
+
+  /// ISO language code ('hi', 'ta', 'kn', 'mr', 'ml', ...), or null to
+  /// follow the device's system locale.
+  TextColumn get languageCode => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

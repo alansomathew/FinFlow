@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../data/investments_repository.dart';
 
 const _investmentTypes = ['Stock', 'Mutual Fund', 'SIP'];
@@ -72,13 +72,14 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
       builder: (context, child) {
+        final colors = context.colors;
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.primary,
               onPrimary: Colors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
           ),
           child: child!,
@@ -109,10 +110,11 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
   }
 
   InputDecoration _decoration(String label) {
+    final colors = context.colors;
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      fillColor: AppColors.cardBg,
+      labelStyle: TextStyle(color: colors.textSecondary),
+      fillColor: colors.cardBg,
       filled: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -123,12 +125,13 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
@@ -148,7 +151,7 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: colors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -156,20 +159,17 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                   AppSizes.h12,
                   Text(
                     _isEditing ? 'Edit Investment' : 'Add Investment',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   AppSizes.h16,
 
-                  const Text(
+                  Text(
                     'Type',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                   AppSizes.h8,
                   Wrap(
@@ -181,10 +181,10 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                         onSelected: (_) => setState(() => _selectedType = t),
                         label: Text(t),
                         labelStyle: TextStyle(
-                          color: selected ? Colors.white : AppColors.textSecondary,
+                          color: selected ? Colors.white : colors.textSecondary,
                         ),
-                        selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.cardBg,
+                        selectedColor: colors.primary,
+                        backgroundColor: colors.cardBg,
                       );
                     }).toList(),
                   ),
@@ -194,8 +194,9 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                     controller: _nameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: _decoration('Name'),
-                    validator: (val) =>
-                        val == null || val.trim().isEmpty ? 'Enter a name' : null,
+                    validator: (val) => val == null || val.trim().isEmpty
+                        ? 'Enter a name'
+                        : null,
                   ),
                   AppSizes.h16,
 
@@ -250,9 +251,9 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                     ],
                   ),
                   AppSizes.h4,
-                  const Text(
+                  Text(
                     'Live price feeds are on the roadmap; update this manually for now.',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                    style: TextStyle(color: colors.textMuted, fontSize: 11),
                   ),
                   AppSizes.h16,
 
@@ -265,14 +266,14 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.event_rounded,
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             size: 20,
                           ),
                           AppSizes.w12,
@@ -289,7 +290,7 @@ class _InvestmentFormSheetState extends ConsumerState<InvestmentFormSheet> {
                   ElevatedButton(
                     onPressed: _saving ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),

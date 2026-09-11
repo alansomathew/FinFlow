@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../data/accounts_repository.dart';
 import 'account_detail_screen.dart';
 import 'account_form_sheet.dart';
@@ -47,21 +47,22 @@ class AccountsListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final accountsAsync = ref.watch(accountListProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Accounts & Cards',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: colors.primary,
         onPressed: () => _showAddSheet(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -72,15 +73,15 @@ class AccountsListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: AppColors.textSecondary,
+                    color: colors.textSecondary,
                     size: 40,
                   ),
                   AppSizes.h12,
-                  const Text(
+                  Text(
                     'No accounts yet.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                   AppSizes.h12,
                   ElevatedButton.icon(
@@ -91,7 +92,7 @@ class AccountsListScreen extends ConsumerWidget {
                       style: TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                     ),
                   ),
                 ],
@@ -110,7 +111,7 @@ class AccountsListScreen extends ConsumerWidget {
                   : 0.0;
 
               return Card(
-                color: AppColors.cardBg,
+                color: colors.cardBg,
                 margin: const EdgeInsets.only(bottom: 10),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -147,16 +148,16 @@ class AccountsListScreen extends ConsumerWidget {
                                 children: [
                                   Text(
                                     a.name,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
                                   ),
                                   Text(
                                     _typeLabels[a.type] ?? a.type,
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -167,8 +168,8 @@ class AccountsListScreen extends ConsumerWidget {
                               _formatCurrency(a.balance),
                               style: TextStyle(
                                 color: a.balance < 0
-                                    ? AppColors.error
-                                    : AppColors.textPrimary,
+                                    ? colors.error
+                                    : colors.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -181,13 +182,13 @@ class AccountsListScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(2),
                             child: LinearProgressIndicator(
                               value: utilization,
-                              backgroundColor: AppColors.border,
+                              backgroundColor: colors.border,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 utilization >= 1.0
-                                    ? AppColors.error
+                                    ? colors.error
                                     : utilization >= 0.8
-                                    ? AppColors.warning
-                                    : AppColors.success,
+                                    ? colors.warning
+                                    : colors.success,
                               ),
                               minHeight: 4,
                             ),
@@ -195,8 +196,8 @@ class AccountsListScreen extends ConsumerWidget {
                           AppSizes.h4,
                           Text(
                             '${(utilization * 100).toStringAsFixed(0)}% utilized',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: colors.textSecondary,
                               fontSize: 10,
                             ),
                           ),

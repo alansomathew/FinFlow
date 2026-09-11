@@ -46,7 +46,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -94,6 +94,10 @@ class AppDatabase extends _$AppDatabase {
       if (from < 8) {
         await m.createTable(netWorthSnapshots);
       }
+      if (from < 9) {
+        await m.addColumn(localSettings, localSettings.themeMode);
+        await m.addColumn(localSettings, localSettings.languageCode);
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON;');
@@ -124,6 +128,19 @@ class AppDatabase extends _$AppDatabase {
     await (update(localSettings)
           ..where((t) => t.id.equals(_singletonSettingsId)))
         .write(LocalSettingsCompanion(isPro: Value(isPro)));
+  }
+
+  Future<void> setThemeMode(String mode) async {
+    await (update(localSettings)
+          ..where((t) => t.id.equals(_singletonSettingsId)))
+        .write(LocalSettingsCompanion(themeMode: Value(mode)));
+  }
+
+  /// Pass null to follow the device's system locale.
+  Future<void> setLanguageCode(String? code) async {
+    await (update(localSettings)
+          ..where((t) => t.id.equals(_singletonSettingsId)))
+        .write(LocalSettingsCompanion(languageCode: Value(code)));
   }
 
   /// How many SMS have been parsed-to-ledger this calendar month. Resets

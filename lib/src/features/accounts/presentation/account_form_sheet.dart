@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../data/accounts_repository.dart';
 
 const _accountTypes = [
@@ -77,6 +77,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
   }
 
   Future<void> _pickDueDate() async {
+    final colors = context.colors;
     final picked = await showDatePicker(
       context: context,
       initialDate: _dueDate ?? DateTime.now(),
@@ -85,11 +86,11 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.primary,
               onPrimary: Colors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
           ),
           child: child!,
@@ -131,10 +132,9 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
       creditLimit: _selectedType == 'credit_card'
           ? (double.tryParse(_creditLimitController.text) ?? 0.0)
           : 0.0,
-      cardDueDate:
-          _selectedType == 'credit_card' && _dueDate != null
-              ? DateFormat('yyyy-MM-dd').format(_dueDate!)
-              : '',
+      cardDueDate: _selectedType == 'credit_card' && _dueDate != null
+          ? DateFormat('yyyy-MM-dd').format(_dueDate!)
+          : '',
       colorHex: _selectedColor,
     );
 
@@ -144,15 +144,16 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final isCreditCard = _selectedType == 'credit_card';
 
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
       ),
@@ -171,7 +172,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: colors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -179,8 +180,8 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                   AppSizes.h12,
                   Text(
                     _isEditing ? 'Edit Account' : 'Add Account',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -193,30 +194,24 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Account Name',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
                     ),
-                    validator: (val) =>
-                        val == null || val.trim().isEmpty
-                            ? 'Enter an account name'
-                            : null,
+                    validator: (val) => val == null || val.trim().isEmpty
+                        ? 'Enter an account name'
+                        : null,
                   ),
                   AppSizes.h16,
 
                   // Type Selector
-                  const Text(
+                  Text(
                     'Type',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                   AppSizes.h8,
                   Wrap(
@@ -232,14 +227,14 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                         avatar: Icon(
                           icon,
                           size: 16,
-                          color: selected ? Colors.white : AppColors.textSecondary,
+                          color: selected ? Colors.white : colors.textSecondary,
                         ),
                         label: Text(label),
                         labelStyle: TextStyle(
-                          color: selected ? Colors.white : AppColors.textSecondary,
+                          color: selected ? Colors.white : colors.textSecondary,
                         ),
-                        selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.cardBg,
+                        selectedColor: colors.primary,
+                        backgroundColor: colors.cardBg,
                       );
                     }).toList(),
                   ),
@@ -257,18 +252,16 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                       labelText: isCreditCard
                           ? 'Outstanding Balance (negative)'
                           : 'Balance',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.currency_rupee_rounded,
-                        color: AppColors.primaryLight,
+                        color: colors.primaryLight,
                       ),
                     ),
                     validator: (val) {
@@ -290,10 +283,8 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
                         labelText: 'Credit Limit',
-                        labelStyle: const TextStyle(
-                          color: AppColors.textSecondary,
-                        ),
-                        fillColor: AppColors.cardBg,
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                        fillColor: colors.cardBg,
                         filled: true,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(
@@ -322,16 +313,16 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.cardBg,
+                          color: colors.cardBg,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMd,
                           ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.event_rounded,
-                              color: AppColors.textSecondary,
+                              color: colors.textSecondary,
                               size: 20,
                             ),
                             AppSizes.w12,
@@ -349,12 +340,9 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                   AppSizes.h16,
 
                   // Color Picker
-                  const Text(
+                  Text(
                     'Color',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                   AppSizes.h8,
                   Wrap(
@@ -393,7 +381,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                   ElevatedButton(
                     onPressed: _saving ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),

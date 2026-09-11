@@ -2,8 +2,8 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../data/goals_repository.dart';
 import 'goal_form_sheet.dart';
 
@@ -64,33 +64,36 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
   Future<void> _confirmDelete(GoalModel goal) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        ),
-        title: const Text(
-          'Delete Goal?',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        content: Text(
-          'This removes "${goal.name}" and its saved progress.',
-          style: const TextStyle(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+      builder: (context) {
+        final colors = context.colors;
+        return AlertDialog(
+          backgroundColor: colors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          ),
+          title: Text(
+            'Delete Goal?',
+            style: TextStyle(color: colors.textPrimary),
+          ),
+          content: Text(
+            'This removes "${goal.name}" and its saved progress.',
+            style: TextStyle(color: colors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: colors.textSecondary),
+              ),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Delete', style: TextStyle(color: colors.error)),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed == true) {
       await ref.read(goalListProvider.notifier).remove(goal.id);
@@ -103,15 +106,16 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
     showDialog(
       context: context,
       builder: (context) {
+        final colors = context.colors;
         return AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: colors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
           title: Text(
             'Contribute to ${goal.name}',
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: TextStyle(
+              color: colors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -122,25 +126,25 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: 'Amount',
-              labelStyle: const TextStyle(color: AppColors.textSecondary),
-              fillColor: AppColors.cardBg,
+              labelStyle: TextStyle(color: colors.textSecondary),
+              fillColor: colors.cardBg,
               filled: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                 borderSide: BorderSide.none,
               ),
-              prefixIcon: const Icon(
+              prefixIcon: Icon(
                 Icons.currency_rupee_rounded,
-                color: AppColors.primaryLight,
+                color: colors.primaryLight,
               ),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 'Cancel',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: colors.textSecondary),
               ),
             ),
             ElevatedButton(
@@ -165,7 +169,7 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                   ScaffoldMessenger.of(screenContext).showSnackBar(
                     SnackBar(
                       content: Text('$label ${goal.name} is on track.'),
-                      backgroundColor: AppColors.success,
+                      backgroundColor: colors.success,
                     ),
                   );
                 } else {
@@ -178,7 +182,7 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
               child: const Text(
                 'Contribute',
                 style: TextStyle(color: Colors.white),
@@ -193,20 +197,21 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
   @override
   Widget build(BuildContext context) {
     final goalsAsync = ref.watch(goalListProvider);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Savings Goals',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
+        backgroundColor: colors.primary,
         onPressed: _showAddSheet,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -220,26 +225,29 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.savings_rounded,
-                        color: AppColors.textSecondary,
+                        color: colors.textSecondary,
                         size: 40,
                       ),
                       AppSizes.h12,
-                      const Text(
+                      Text(
                         'No savings goals yet.',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: colors.textSecondary),
                       ),
                       AppSizes.h12,
                       ElevatedButton.icon(
                         onPressed: _showAddSheet,
-                        icon: const Icon(Icons.add_rounded, color: Colors.white),
+                        icon: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                        ),
                         label: const Text(
                           'Create Goal',
                           style: TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: colors.primary,
                         ),
                       ),
                     ],
@@ -256,7 +264,7 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                   final progress = g.progress;
 
                   return Card(
-                    color: AppColors.cardBg,
+                    color: colors.cardBg,
                     margin: const EdgeInsets.only(bottom: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -282,12 +290,13 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                                 AppSizes.w12,
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         g.name,
-                                        style: const TextStyle(
-                                          color: AppColors.textPrimary,
+                                        style: TextStyle(
+                                          color: colors.textPrimary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
@@ -295,8 +304,8 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                                       if (g.targetDate != null)
                                         Text(
                                           'By ${DateFormat('MMM yyyy').format(g.targetDate!)}',
-                                          style: const TextStyle(
-                                            color: AppColors.textSecondary,
+                                          style: TextStyle(
+                                            color: colors.textSecondary,
                                             fontSize: 11,
                                           ),
                                         ),
@@ -318,16 +327,18 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                               borderRadius: BorderRadius.circular(3),
                               child: LinearProgressIndicator(
                                 value: progress,
-                                backgroundColor: AppColors.border,
-                                valueColor: AlwaysStoppedAnimation<Color>(color),
+                                backgroundColor: colors.border,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  color,
+                                ),
                                 minHeight: 6,
                               ),
                             ),
                             AppSizes.h4,
                             Text(
                               '${_formatCurrency(g.currentAmount)} of ${_formatCurrency(g.targetAmount)}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -336,14 +347,14 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
                               alignment: Alignment.centerRight,
                               child: TextButton.icon(
                                 onPressed: () => _showContributeDialog(g),
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.add_circle_outline_rounded,
                                   size: 16,
-                                  color: AppColors.primaryLight,
+                                  color: colors.primaryLight,
                                 ),
-                                label: const Text(
+                                label: Text(
                                   'Contribute',
-                                  style: TextStyle(color: AppColors.primaryLight),
+                                  style: TextStyle(color: colors.primaryLight),
                                 ),
                               ),
                             ),
@@ -366,11 +377,11 @@ class _GoalsListScreenState extends ConsumerState<GoalsListScreen> {
             maxBlastForce: 20,
             minBlastForce: 8,
             gravity: 0.3,
-            colors: const [
-              AppColors.primary,
-              AppColors.success,
-              AppColors.warning,
-              AppColors.secondary,
+            colors: [
+              colors.primary,
+              colors.success,
+              colors.warning,
+              colors.secondary,
             ],
           ),
         ],

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../data/debt_repository.dart';
 import '../domain/amortization_engine.dart';
@@ -38,9 +38,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _lenderController = TextEditingController(
-      text: existing?.lenderName ?? '',
-    );
+    _lenderController = TextEditingController(text: existing?.lenderName ?? '');
     _principalController = TextEditingController(
       text: existing != null ? existing.loanAmount.toString() : '',
     );
@@ -58,7 +56,11 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
         ? (DateTime.tryParse(existing.startDate) ?? DateTime.now())
         : DateTime.now();
 
-    for (final c in [_principalController, _rateController, _tenureController]) {
+    for (final c in [
+      _principalController,
+      _rateController,
+      _tenureController,
+    ]) {
       c.addListener(_recalculateEmi);
     }
   }
@@ -90,6 +92,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
   }
 
   Future<void> _pickStartDate() async {
+    final colors = context.colors;
     final picked = await showDatePicker(
       context: context,
       initialDate: _startDate,
@@ -98,11 +101,11 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.primary,
               onPrimary: Colors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
           ),
           child: child!,
@@ -159,10 +162,11 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
   }
 
   InputDecoration _decoration(String label) {
+    final colors = context.colors;
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      fillColor: AppColors.cardBg,
+      labelStyle: TextStyle(color: colors.textSecondary),
+      fillColor: colors.cardBg,
       filled: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -174,13 +178,14 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
   @override
   Widget build(BuildContext context) {
     final accountsAsync = ref.watch(accountListProvider);
+    final colors = context.colors;
 
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
@@ -200,7 +205,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: colors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -208,8 +213,8 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                   AppSizes.h12,
                   Text(
                     _isEditing ? 'Edit Loan' : 'Add Loan',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -220,10 +225,9 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                     controller: _lenderController,
                     style: const TextStyle(color: Colors.white),
                     decoration: _decoration('Lender Name'),
-                    validator: (val) =>
-                        val == null || val.trim().isEmpty
-                            ? 'Enter a lender name'
-                            : null,
+                    validator: (val) => val == null || val.trim().isEmpty
+                        ? 'Enter a lender name'
+                        : null,
                   ),
                   AppSizes.h16,
 
@@ -294,8 +298,8 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                     decoration: _decoration('Monthly EMI').copyWith(
                       helperText:
                           'Auto-calculated from amount/rate/tenure; edit to override',
-                      helperStyle: const TextStyle(
-                        color: AppColors.textMuted,
+                      helperStyle: TextStyle(
+                        color: colors.textMuted,
                         fontSize: 11,
                       ),
                     ),
@@ -319,14 +323,14 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.event_rounded,
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             size: 20,
                           ),
                           AppSizes.w12,
@@ -343,9 +347,9 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                   accountsAsync.when(
                     data: (accounts) {
                       if (accounts.isEmpty) {
-                        return const Text(
+                        return Text(
                           'Add an account first to link this loan.',
-                          style: TextStyle(color: AppColors.error),
+                          style: TextStyle(color: colors.error),
                         );
                       }
                       _selectedAccount ??= _isEditing
@@ -357,7 +361,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
 
                       return DropdownButtonFormField<AccountModel>(
                         initialValue: _selectedAccount,
-                        dropdownColor: AppColors.surface,
+                        dropdownColor: colors.surface,
                         style: const TextStyle(color: Colors.white),
                         decoration: _decoration('Debit Account'),
                         items: accounts.map((acc) {
@@ -371,9 +375,8 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                         },
                       );
                     },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Text('Error: $e'),
                   ),
                   AppSizes.h24,
@@ -381,7 +384,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                   ElevatedButton(
                     onPressed: _saving ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),

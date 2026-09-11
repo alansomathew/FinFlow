@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../data/transaction_repository.dart';
 import '../domain/transaction.dart';
@@ -30,6 +30,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   }
 
   Future<void> _pickDateRange() async {
+    final colors = context.colors;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
@@ -38,11 +39,11 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.primary,
               onPrimary: Colors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
           ),
           child: child!,
@@ -70,6 +71,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   @override
   Widget build(BuildContext context) {
     final transactionsAsync = ref.watch(transactionListProvider);
+    final colors = context.colors;
 
     return Column(
       children: [
@@ -88,12 +90,12 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Search merchant, note, amount...',
-                  hintStyle: const TextStyle(color: AppColors.textSecondary),
-                  prefixIcon: const Icon(
+                  hintStyle: TextStyle(color: colors.textSecondary),
+                  prefixIcon: Icon(
                     Icons.search_rounded,
-                    color: AppColors.textSecondary,
+                    color: colors.textSecondary,
                   ),
-                  fillColor: AppColors.cardBg,
+                  fillColor: colors.cardBg,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -118,11 +120,11 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         labelStyle: TextStyle(
                           color: _selectedBucket == null
                               ? Colors.white
-                              : AppColors.textSecondary,
+                              : colors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
-                        selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.cardBg,
+                        selectedColor: colors.primary,
+                        backgroundColor: colors.cardBg,
                         checkmarkColor: Colors.white,
                         onSelected: (selected) {
                           if (selected) {
@@ -143,11 +145,11 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                           labelStyle: TextStyle(
                             color: isSelected
                                 ? Colors.white
-                                : AppColors.textSecondary,
+                                : colors.textSecondary,
                             fontWeight: FontWeight.bold,
                           ),
                           selectedColor: bucket.color,
-                          backgroundColor: AppColors.cardBg,
+                          backgroundColor: colors.cardBg,
                           checkmarkColor: Colors.white,
                           onSelected: (selected) {
                             setState(() {
@@ -161,10 +163,10 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                       padding: const EdgeInsets.only(right: 8),
                       child: FilterChip(
                         selected: _dateRange != null,
-                        avatar: const Icon(
+                        avatar: Icon(
                           Icons.date_range_rounded,
                           size: 16,
-                          color: AppColors.textSecondary,
+                          color: colors.textSecondary,
                         ),
                         label: Text(
                           _dateRange == null
@@ -174,11 +176,11 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         labelStyle: TextStyle(
                           color: _dateRange != null
                               ? Colors.white
-                              : AppColors.textSecondary,
+                              : colors.textSecondary,
                           fontWeight: FontWeight.bold,
                         ),
-                        selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.cardBg,
+                        selectedColor: colors.primary,
+                        backgroundColor: colors.cardBg,
                         checkmarkColor: Colors.white,
                         onSelected: (_) => _pickDateRange(),
                         onDeleted: _dateRange != null
@@ -229,10 +231,10 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
               }).toList();
 
               if (filtered.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text(
                     'No transactions match your filters.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                 );
               }
@@ -256,7 +258,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 20),
                         decoration: BoxDecoration(
-                          color: AppColors.error,
+                          color: colors.error,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMd,
                           ),
@@ -274,12 +276,12 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                             content: Text(
                               '${t.payee.isNotEmpty ? t.payee : t.category} deleted',
                             ),
-                            backgroundColor: AppColors.error,
+                            backgroundColor: colors.error,
                           ),
                         );
                       },
                       child: Card(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         margin: const EdgeInsets.only(bottom: 8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
@@ -302,15 +304,15 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                           ),
                           title: Text(
                             t.payee.isNotEmpty ? t.payee : t.category,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              color: colors.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           subtitle: Text(
                             '${DateFormat('dd MMM yyyy').format(t.date)} ${t.note.isNotEmpty ? '• ${t.note}' : ''}',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: colors.textSecondary,
                               fontSize: 12,
                             ),
                             maxLines: 1,
@@ -320,8 +322,8 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                             '${isDebit ? "-" : "+"}${_formatCurrency(t.amount)}',
                             style: TextStyle(
                               color: isDebit
-                                  ? AppColors.textPrimary
-                                  : AppColors.success,
+                                  ? colors.textPrimary
+                                  : colors.success,
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
                             ),
@@ -335,10 +337,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(
-              child: Text(
-                'Error: $e',
-                style: const TextStyle(color: AppColors.error),
-              ),
+              child: Text('Error: $e', style: TextStyle(color: colors.error)),
             ),
           ),
         ),

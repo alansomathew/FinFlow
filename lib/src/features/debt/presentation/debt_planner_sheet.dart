@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../../services/pro_tier_service.dart';
 import '../data/debt_repository.dart';
 import '../domain/amortization_engine.dart';
@@ -42,32 +42,33 @@ class DebtPlannerSheet extends ConsumerWidget {
     WidgetRef ref,
     LoanModel loan,
   ) async {
+    final colors = context.colors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-        title: const Text(
+        title: Text(
           'Delete Loan?',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
         content: Text(
           'This removes "${loan.lenderName}" from your debt portfolio.',
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: Text('Delete', style: TextStyle(color: colors.error)),
           ),
         ],
       ),
@@ -81,15 +82,16 @@ class DebtPlannerSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loansAsync = ref.watch(loanListProvider);
     final isPro = ref.watch(isProProvider).valueOrNull ?? false;
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
         title: const Text(
           'Debt Payoff Planner',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
-        backgroundColor: AppColors.surface,
+        backgroundColor: colors.surface,
         leading: IconButton(
           icon: const Icon(Icons.close_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -110,9 +112,9 @@ class DebtPlannerSheet extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'No active loans tracked.',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: colors.textSecondary),
                     ),
                     AppSizes.h12,
                     ElevatedButton.icon(
@@ -123,7 +125,7 @@ class DebtPlannerSheet extends ConsumerWidget {
                         style: TextStyle(color: Colors.white),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: colors.primary,
                       ),
                     ),
                   ],
@@ -174,18 +176,18 @@ class DebtPlannerSheet extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSizes.md),
                     decoration: BoxDecoration(
-                      color: AppColors.cardBg,
+                      color: colors.cardBg,
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       border: Border.all(
-                        color: AppColors.error.withValues(alpha: 0.3),
+                        color: colors.error.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'TOTAL OUTSTANDING DEBT',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -218,18 +220,16 @@ class DebtPlannerSheet extends ConsumerWidget {
                     final l = loans[i];
                     final balance = snapshots[i].balance;
                     return Card(
-                      color: AppColors.cardBg,
+                      color: colors.cardBg,
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         onTap: () => _showEditSheet(context, l),
                         onLongPress: () => _confirmDelete(context, ref, l),
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.error.withValues(
-                            alpha: 0.15,
-                          ),
-                          child: const Icon(
+                          backgroundColor: colors.error.withValues(alpha: 0.15),
+                          child: Icon(
                             Icons.credit_score_rounded,
-                            color: AppColors.error,
+                            color: colors.error,
                           ),
                         ),
                         title: Text(
@@ -242,8 +242,8 @@ class DebtPlannerSheet extends ConsumerWidget {
                         ),
                         subtitle: Text(
                           'Rate: ${l.interestRate}% • Tenure: ${l.tenureMonths} mos',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
@@ -261,8 +261,8 @@ class DebtPlannerSheet extends ConsumerWidget {
                             ),
                             Text(
                               'EMI: ${_formatCurrency(l.emiAmount)}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontSize: 10,
                               ),
                             ),
@@ -287,24 +287,24 @@ class DebtPlannerSheet extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.all(AppSizes.md),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         border: Border.all(
-                          color: AppColors.warning.withValues(alpha: 0.3),
+                          color: colors.warning.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            children: const [
+                            children: [
                               Icon(
                                 Icons.workspace_premium_rounded,
-                                color: AppColors.warning,
+                                color: colors.warning,
                                 size: 20,
                               ),
-                              SizedBox(width: 8),
-                              Text(
+                              const SizedBox(width: 8),
+                              const Text(
                                 'Pro Feature',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -315,10 +315,10 @@ class DebtPlannerSheet extends ConsumerWidget {
                             ],
                           ),
                           AppSizes.h8,
-                          const Text(
+                          Text(
                             'Snowball vs Avalanche payoff simulation is a Pro feature. Upgrade to see which method saves you the most interest across your actual loan portfolio.',
                             style: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: colors.textSecondary,
                               fontSize: 12,
                               height: 1.4,
                             ),
@@ -333,7 +333,7 @@ class DebtPlannerSheet extends ConsumerWidget {
                           child: _PayoffMethodCard(
                             title: 'Snowball Method',
                             subtitle: 'Priority: Smallest balance first',
-                            color: AppColors.wants,
+                            color: colors.wants,
                             result: snowball,
                             formatCurrency: _formatCurrency,
                           ),
@@ -343,7 +343,7 @@ class DebtPlannerSheet extends ConsumerWidget {
                           child: _PayoffMethodCard(
                             title: 'Avalanche Method',
                             subtitle: 'Priority: Highest interest first',
-                            color: AppColors.success,
+                            color: colors.success,
                             result: avalanche,
                             formatCurrency: _formatCurrency,
                           ),
@@ -351,7 +351,7 @@ class DebtPlannerSheet extends ConsumerWidget {
                       ],
                     ),
                     AppSizes.h16,
-                    _buildRecommendation(snowball, avalanche),
+                    _buildRecommendation(colors, snowball, avalanche),
                   ],
                 ],
               ),
@@ -365,12 +365,14 @@ class DebtPlannerSheet extends ConsumerWidget {
   }
 
   Widget _buildRecommendation(
+    AppColorExtension colors,
     PayoffSimulationResult snowball,
     PayoffSimulationResult avalanche,
   ) {
     final interestDiff =
         (snowball.totalInterestPaid - avalanche.totalInterestPaid).abs();
-    final monthsDiff = (snowball.monthsToPayoff - avalanche.monthsToPayoff).abs();
+    final monthsDiff = (snowball.monthsToPayoff - avalanche.monthsToPayoff)
+        .abs();
 
     final String message;
     if (interestDiff < 1 && monthsDiff == 0) {
@@ -378,7 +380,8 @@ class DebtPlannerSheet extends ConsumerWidget {
           'Both methods produce the same result for your current loan mix -- '
           'there\'s no interest-rate spread wide enough for the order to matter.';
     } else {
-      final avalancheWins = avalanche.totalInterestPaid <= snowball.totalInterestPaid;
+      final avalancheWins =
+          avalanche.totalInterestPaid <= snowball.totalInterestPaid;
       final winner = avalancheWins ? 'Avalanche' : 'Snowball';
       final loser = avalancheWins ? 'Snowball' : 'Avalanche';
       message =
@@ -391,14 +394,14 @@ class DebtPlannerSheet extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        color: AppColors.success.withValues(alpha: 0.08),
+        color: colors.success.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+        border: Border.all(color: colors.success.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.insights_rounded, color: AppColors.success, size: 24),
+          Icon(Icons.insights_rounded, color: colors.success, size: 24),
           AppSizes.w12,
           Expanded(
             child: Column(
@@ -415,8 +418,8 @@ class DebtPlannerSheet extends ConsumerWidget {
                 AppSizes.h4,
                 Text(
                   message,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: colors.textSecondary,
                     fontSize: 11,
                     height: 1.4,
                   ),
@@ -447,8 +450,9 @@ class _PayoffMethodCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Card(
-      color: AppColors.cardBg,
+      color: colors.cardBg,
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.md),
         child: Column(
@@ -465,10 +469,7 @@ class _PayoffMethodCard extends StatelessWidget {
             AppSizes.h8,
             Text(
               subtitle,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 10,
-              ),
+              style: TextStyle(color: colors.textSecondary, fontSize: 10),
             ),
             AppSizes.h12,
             Text(
@@ -482,10 +483,7 @@ class _PayoffMethodCard extends StatelessWidget {
             AppSizes.h4,
             Text(
               'Debt-free in ${result.monthsToPayoff} months',
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 10,
-              ),
+              style: TextStyle(color: colors.textSecondary, fontSize: 10),
             ),
           ],
         ),

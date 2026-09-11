@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
 import '../../transactions/presentation/transaction_detail_screen.dart';
@@ -53,36 +53,34 @@ class AccountDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     AccountModel current,
   ) async {
+    final colors = context.colors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-        title: const Text(
+        title: Text(
           'Close Account?',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
         content: Text(
           '"${current.name}" will be hidden from your account list, but its '
           'transaction history is kept intact.',
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Close Account',
-              style: TextStyle(color: AppColors.error),
-            ),
+            child: Text('Close Account', style: TextStyle(color: colors.error)),
           ),
         ],
       ),
@@ -94,7 +92,7 @@ class AccountDetailScreen extends ConsumerWidget {
     if (context.mounted) Navigator.of(context).pop();
   }
 
-  Widget _buildDueDateBanner(String cardDueDate) {
+  Widget _buildDueDateBanner(AppColorExtension colors, String cardDueDate) {
     final due = DateTime.tryParse(cardDueDate);
     if (due == null) return const SizedBox.shrink();
 
@@ -106,24 +104,21 @@ class AccountDetailScreen extends ConsumerWidget {
     late Color color;
     if (daysLeft < 0) {
       text = 'Overdue by ${-daysLeft} day${-daysLeft == 1 ? '' : 's'}';
-      color = AppColors.error;
+      color = colors.error;
     } else if (daysLeft == 0) {
       text = 'Due today';
-      color = AppColors.error;
+      color = colors.error;
     } else if (daysLeft <= 7) {
       text = 'Due in $daysLeft day${daysLeft == 1 ? '' : 's'}';
-      color = AppColors.warning;
+      color = colors.warning;
     } else {
       text = 'Due ${DateFormat('dd MMM yyyy').format(due)}';
-      color = AppColors.success;
+      color = colors.success;
     }
 
     return Container(
       margin: const EdgeInsets.only(top: AppSizes.sm),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.sm,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.sm, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
@@ -135,7 +130,11 @@ class AccountDetailScreen extends ConsumerWidget {
           AppSizes.w8,
           Text(
             text,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -144,6 +143,7 @@ class AccountDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final accountsAsync = ref.watch(accountListProvider);
     final current =
         accountsAsync.valueOrNull
@@ -163,30 +163,27 @@ class AccountDetailScreen extends ConsumerWidget {
         ? (current.balance.abs() / current.creditLimit).clamp(0.0, 1.0)
         : 0.0;
     final utilizationColor = utilization >= 1.0
-        ? AppColors.error
+        ? colors.error
         : utilization >= 0.8
-        ? AppColors.warning
-        : AppColors.success;
+        ? colors.warning
+        : colors.success;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: Text(
-          current.name,
-          style: const TextStyle(color: AppColors.textPrimary),
-        ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        title: Text(current.name, style: TextStyle(color: colors.textPrimary)),
+        iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_rounded, color: AppColors.primaryLight),
+            icon: Icon(Icons.edit_rounded, color: colors.primaryLight),
             onPressed: () => _edit(context, current),
           ),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.remove_circle_outline_rounded,
-              color: AppColors.error,
+              color: colors.error,
             ),
             tooltip: 'Close Account',
             onPressed: () => _close(context, ref, current),
@@ -209,7 +206,8 @@ class AccountDetailScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Icon(
-                        _typeIcons[current.type] ?? Icons.account_balance_rounded,
+                        _typeIcons[current.type] ??
+                            Icons.account_balance_rounded,
                         color: Colors.white70,
                         size: 18,
                       ),
@@ -250,10 +248,13 @@ class AccountDetailScreen extends ConsumerWidget {
                     AppSizes.h4,
                     Text(
                       '${_formatCurrency(current.balance.abs())} of ${_formatCurrency(current.creditLimit)} used (${(utilization * 100).toStringAsFixed(0)}%)',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                     if (current.cardDueDate.isNotEmpty)
-                      _buildDueDateBanner(current.cardDueDate),
+                      _buildDueDateBanner(colors, current.cardDueDate),
                   ],
                 ],
               ),
@@ -276,12 +277,12 @@ class AccountDetailScreen extends ConsumerWidget {
                 ),
               )
             else if (linkedTransactions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSizes.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.lg),
                 child: Center(
                   child: Text(
                     'No transactions on this account yet.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                 ),
               )
@@ -290,7 +291,7 @@ class AccountDetailScreen extends ConsumerWidget {
                 final category = TransactionCategory.getByName(t.category);
                 final isDebit = t.bucket != BudgetBucket.income;
                 return Card(
-                  color: AppColors.cardBg,
+                  color: colors.cardBg,
                   margin: const EdgeInsets.only(bottom: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -311,22 +312,22 @@ class AccountDetailScreen extends ConsumerWidget {
                     ),
                     title: Text(
                       t.payee.isNotEmpty ? t.payee : t.category,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     subtitle: Text(
                       DateFormat('dd MMM yyyy').format(t.date),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontSize: 12,
                       ),
                     ),
                     trailing: Text(
                       '${isDebit ? "-" : "+"}${_formatCurrency(t.amount)}',
                       style: TextStyle(
-                        color: isDebit ? AppColors.textPrimary : AppColors.success,
+                        color: isDebit ? colors.textPrimary : colors.success,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

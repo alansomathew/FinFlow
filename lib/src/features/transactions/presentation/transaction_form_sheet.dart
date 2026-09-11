@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../data/recurring_repository.dart';
 import '../data/transaction_repository.dart';
@@ -63,6 +63,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final colors = context.colors;
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -71,11 +72,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.primary,
               onPrimary: Colors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
           ),
           child: child!,
@@ -176,13 +177,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   @override
   Widget build(BuildContext context) {
     final accountsAsync = ref.watch(accountListProvider);
+    final colors = context.colors;
 
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
@@ -203,7 +205,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: colors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -211,8 +213,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   AppSizes.h12,
                   Text(
                     _isEditing ? 'Edit Transaction' : 'Add Transaction',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -234,18 +236,18 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     decoration: InputDecoration(
                       hintText: '₹ 0.00',
                       hintStyle: TextStyle(
-                        color: AppColors.textMuted,
+                        color: colors.textMuted,
                         fontSize: 24,
                       ),
-                      fillColor: AppColors.cardBg,
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.currency_rupee_rounded,
-                        color: AppColors.primaryLight,
+                        color: colors.primaryLight,
                         size: 24,
                       ),
                     ),
@@ -266,18 +268,16 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Payee / Merchant',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.storefront_rounded,
-                        color: AppColors.textSecondary,
+                        color: colors.textSecondary,
                       ),
                     ),
                     validator: (val) =>
@@ -289,9 +289,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   accountsAsync.when(
                     data: (accounts) {
                       if (accounts.isEmpty) {
-                        return const Text(
+                        return Text(
                           'Create an account first in settings.',
-                          style: TextStyle(color: AppColors.error),
+                          style: TextStyle(color: colors.error),
                         );
                       }
 
@@ -305,20 +305,18 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: AppColors.cardBg,
+                          color: colors.cardBg,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMd,
                           ),
                         ),
                         child: DropdownButtonFormField<AccountModel>(
                           initialValue: _selectedAccount,
-                          dropdownColor: AppColors.surface,
-                          decoration: const InputDecoration(
+                          dropdownColor: colors.surface,
+                          decoration: InputDecoration(
                             border: InputBorder.none,
                             labelText: 'Debit/Credit Account',
-                            labelStyle: TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
+                            labelStyle: TextStyle(color: colors.textSecondary),
                           ),
                           style: const TextStyle(color: Colors.white),
                           items: accounts.map((acc) {
@@ -347,16 +345,16 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.cardBg,
+                      color: colors.cardBg,
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
                     child: DropdownButtonFormField<TransactionCategory>(
                       initialValue: _selectedCategory,
-                      dropdownColor: AppColors.surface,
-                      decoration: const InputDecoration(
+                      dropdownColor: colors.surface,
+                      decoration: InputDecoration(
                         border: InputBorder.none,
                         labelText: 'Category & Bucket',
-                        labelStyle: TextStyle(color: AppColors.textSecondary),
+                        labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                       style: const TextStyle(color: Colors.white),
                       items: TransactionCategory.presets.map((cat) {
@@ -387,14 +385,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         horizontal: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.calendar_month_rounded,
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             size: 20,
                           ),
                           AppSizes.w8,
@@ -414,18 +412,16 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Add optional note...',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.sticky_note_2_rounded,
-                        color: AppColors.textSecondary,
+                        color: colors.textSecondary,
                       ),
                     ),
                   ),
@@ -435,7 +431,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                       child: SwitchListTile(
@@ -445,13 +441,13 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         ),
                         subtitle: Text(
                           'Free tier: up to $kFreeRecurringLimit active recurring transactions',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
                         value: _isRecurring,
-                        activeThumbColor: AppColors.primary,
+                        activeThumbColor: colors.primary,
                         onChanged: (val) => setState(() => _isRecurring = val),
                       ),
                     ),
@@ -460,20 +456,18 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: AppColors.cardBg,
+                          color: colors.cardBg,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMd,
                           ),
                         ),
                         child: DropdownButtonFormField<String>(
                           initialValue: _frequency,
-                          dropdownColor: AppColors.surface,
-                          decoration: const InputDecoration(
+                          dropdownColor: colors.surface,
+                          decoration: InputDecoration(
                             border: InputBorder.none,
                             labelText: 'Frequency',
-                            labelStyle: TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
+                            labelStyle: TextStyle(color: colors.textSecondary),
                           ),
                           style: const TextStyle(color: Colors.white),
                           items: _frequencies
@@ -499,7 +493,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   ElevatedButton(
                     onPressed: _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),

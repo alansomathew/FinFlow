@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../transactions/domain/transaction.dart';
 import '../data/budget_repository.dart';
 
@@ -25,14 +25,16 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
 
   // Determine progress bar color
   Color _getProgressColor(double ratio) {
-    if (ratio >= 1.0) return AppColors.error;
-    if (ratio >= 0.8) return AppColors.warning;
-    return AppColors.success;
+    final colors = context.colors;
+    if (ratio >= 1.0) return colors.error;
+    if (ratio >= 0.8) return colors.warning;
+    return colors.success;
   }
 
   // Envelope Transfer Dialog
   void _showTransferDialog(BuildContext context, List<BudgetModel> budgets) {
     if (budgets.length < 2) return;
+    final colors = context.colors;
 
     BudgetModel source = budgets.first;
     BudgetModel destination = budgets[1];
@@ -48,7 +50,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                 TransactionCategory.getByName(destination.category).bucket;
 
             return AlertDialog(
-              backgroundColor: AppColors.surface,
+              backgroundColor: colors.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               ),
@@ -63,23 +65,20 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Move money from one budget envelope to another.',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                   AppSizes.h12,
 
                   // Source Dropdown
                   DropdownButtonFormField<BudgetModel>(
                     value: source,
-                    dropdownColor: AppColors.surface,
+                    dropdownColor: colors.surface,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'From (Source Envelope)',
-                      labelStyle: TextStyle(color: AppColors.textSecondary),
+                      labelStyle: TextStyle(color: colors.textSecondary),
                     ),
                     items: budgets.map((b) {
                       return DropdownMenuItem<BudgetModel>(
@@ -108,11 +107,11 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                   // Destination Dropdown
                   DropdownButtonFormField<BudgetModel>(
                     value: destination,
-                    dropdownColor: AppColors.surface,
+                    dropdownColor: colors.surface,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'To (Destination Envelope)',
-                      labelStyle: TextStyle(color: AppColors.textSecondary),
+                      labelStyle: TextStyle(color: colors.textSecondary),
                     ),
                     items: budgets
                         .where((b) => b.category != source.category)
@@ -140,10 +139,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Transfer Amount',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
@@ -157,17 +154,17 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     Container(
                       padding: const EdgeInsets.all(AppSizes.sm),
                       decoration: BoxDecoration(
-                        color: AppColors.warning.withValues(alpha: 0.12),
+                        color: colors.warning.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                         border: Border.all(
-                          color: AppColors.warning.withValues(alpha: 0.4),
+                          color: colors.warning.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.warning_amber_rounded,
-                            color: AppColors.warning,
+                            color: colors.warning,
                             size: 18,
                           ),
                           AppSizes.w8,
@@ -177,8 +174,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                               '${TransactionCategory.getByName(source.category).bucket.displayName} '
                               'into ${TransactionCategory.getByName(destination.category).bucket.displayName} '
                               'shifts your 50/30/20 split.',
-                              style: const TextStyle(
-                                color: AppColors.warning,
+                              style: TextStyle(
+                                color: colors.warning,
                                 fontSize: 11,
                               ),
                             ),
@@ -192,9 +189,9 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     'Cancel',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                 ),
                 ElevatedButton(
@@ -240,13 +237,13 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                           content: Text(
                             'Transferred ${_formatCurrency(transferAmount)} from ${source.category} to ${destination.category}',
                           ),
-                          backgroundColor: AppColors.success,
+                          backgroundColor: colors.success,
                         ),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: colors.primary,
                   ),
                   child: const Text(
                     'Transfer',
@@ -286,6 +283,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
     final monthYear = budgets.isNotEmpty
         ? budgets.first.monthYear
         : DateTime.now().toIso8601String().substring(0, 7);
+    final colors = context.colors;
 
     showDialog(
       context: context,
@@ -293,7 +291,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              backgroundColor: AppColors.surface,
+              backgroundColor: colors.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               ),
@@ -310,11 +308,11 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                 children: [
                   DropdownButtonFormField<TransactionCategory>(
                     value: selected,
-                    dropdownColor: AppColors.surface,
+                    dropdownColor: colors.surface,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Category',
-                      labelStyle: TextStyle(color: AppColors.textSecondary),
+                      labelStyle: TextStyle(color: colors.textSecondary),
                     ),
                     items: available.map((c) {
                       return DropdownMenuItem<TransactionCategory>(
@@ -335,10 +333,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Monthly Limit',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
@@ -351,9 +347,9 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text(
+                  child: Text(
                     'Cancel',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                 ),
                 ElevatedButton(
@@ -371,7 +367,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     if (context.mounted) Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: colors.primary,
                   ),
                   child: const Text(
                     'Create',
@@ -391,12 +387,13 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
     final limitController = TextEditingController(
       text: budget.limitAmount.toStringAsFixed(0),
     );
+    final colors = context.colors;
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: colors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
@@ -413,8 +410,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               labelText: 'Monthly Limit',
-              labelStyle: const TextStyle(color: AppColors.textSecondary),
-              fillColor: AppColors.cardBg,
+              labelStyle: TextStyle(color: colors.textSecondary),
+              fillColor: colors.cardBg,
               filled: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusSm),
@@ -430,16 +427,13 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     .read(budgetListProvider.notifier)
                     .remove(budget.category, budget.monthYear);
               },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: AppColors.error),
-              ),
+              child: Text('Delete', style: TextStyle(color: colors.error)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 'Cancel',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: colors.textSecondary),
               ),
             ),
             ElevatedButton(
@@ -461,7 +455,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     );
                 if (context.mounted) Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
               child: const Text('Save', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -474,72 +468,82 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
   void _showHistorySheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      // Transparent here, not colors.surface -- showModalBottomSheet's
+      // backgroundColor is fixed at call time, not re-evaluated inside
+      // builder, so it wouldn't track a live theme change. The Container
+      // below paints the real surface color reactively instead.
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusMd)),
-      ),
       builder: (context) {
-        return FutureBuilder<List<String>>(
-          future: ref.read(budgetRepositoryProvider).getAvailableMonths(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            final months = snapshot.data!;
-            if (months.isEmpty) {
-              return const SizedBox(
-                height: 120,
-                child: Center(
-                  child: Text(
-                    'No budget history yet.',
-                    style: TextStyle(color: AppColors.textSecondary),
+        final colors = context.colors;
+        return Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusMd),
+            ),
+          ),
+          child: FutureBuilder<List<String>>(
+            future: ref.read(budgetRepositoryProvider).getAvailableMonths(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox(
+                  height: 200,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final months = snapshot.data!;
+              if (months.isEmpty) {
+                return SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: Text(
+                      'No budget history yet.',
+                      style: TextStyle(color: colors.textSecondary),
+                    ),
                   ),
+                );
+              }
+              return SafeArea(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(AppSizes.md),
+                  itemCount: months.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return const Padding(
+                        padding: EdgeInsets.only(bottom: AppSizes.sm),
+                        child: Text(
+                          'Monthly History',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }
+                    final month = months[index - 1];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        month,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: colors.textSecondary,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showMonthDetailSheet(context, month);
+                      },
+                    );
+                  },
                 ),
               );
-            }
-            return SafeArea(
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(AppSizes.md),
-                itemCount: months.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return const Padding(
-                      padding: EdgeInsets.only(bottom: AppSizes.sm),
-                      child: Text(
-                        'Monthly History',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  }
-                  final month = months[index - 1];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      month,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    trailing: const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.textSecondary,
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showMonthDetailSheet(context, month);
-                    },
-                  );
-                },
-              ),
-            );
-          },
+            },
+          ),
         );
       },
     );
@@ -548,68 +552,78 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
   void _showMonthDetailSheet(BuildContext context, String monthYear) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      // Transparent here, not colors.surface -- see _showHistorySheet.
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusMd)),
-      ),
       builder: (context) {
-        return FutureBuilder<List<BudgetModel>>(
-          future: ref
-              .read(budgetRepositoryProvider)
-              .getBudgets(monthYear: monthYear),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            final budgets = snapshot.data!;
-            return SafeArea(
-              child: ListView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(AppSizes.md),
-                itemCount: budgets.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: AppSizes.sm),
-                      child: Text(
-                        monthYear,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+        final colors = context.colors;
+        return Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSizes.radiusMd),
+            ),
+          ),
+          child: FutureBuilder<List<BudgetModel>>(
+            future: ref
+                .read(budgetRepositoryProvider)
+                .getBudgets(monthYear: monthYear),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox(
+                  height: 200,
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              final budgets = snapshot.data!;
+              return SafeArea(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.all(AppSizes.md),
+                  itemCount: budgets.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSizes.sm),
+                        child: Text(
+                          monthYear,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      );
+                    }
+                    final b = budgets[index - 1];
+                    final cat = TransactionCategory.getByName(b.category);
+                    final ratio = b.limitAmount > 0
+                        ? (b.spentAmount / b.limitAmount)
+                        : 0.0;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Text(
+                        cat.icon,
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                      title: Text(
+                        b.category,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: Text(
+                        '${_formatCurrency(b.spentAmount)} / ${_formatCurrency(b.limitAmount)}',
+                        style: TextStyle(
+                          color: _getProgressColor(ratio),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     );
-                  }
-                  final b = budgets[index - 1];
-                  final cat = TransactionCategory.getByName(b.category);
-                  final ratio = b.limitAmount > 0
-                      ? (b.spentAmount / b.limitAmount)
-                      : 0.0;
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Text(cat.icon, style: const TextStyle(fontSize: 18)),
-                    title: Text(
-                      b.category,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    trailing: Text(
-                      '${_formatCurrency(b.spentAmount)} / ${_formatCurrency(b.limitAmount)}',
-                      style: TextStyle(
-                        color: _getProgressColor(ratio),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
+                  },
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -618,9 +632,10 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
   @override
   Widget build(BuildContext context) {
     final budgetsAsync = ref.watch(budgetListProvider);
+    final colors = context.colors;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: budgetsAsync.when(
         data: (budgets) {
           if (budgets.isEmpty) {
@@ -628,9 +643,9 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'No budgets defined.',
-                    style: TextStyle(color: AppColors.textSecondary),
+                    style: TextStyle(color: colors.textSecondary),
                   ),
                   AppSizes.h12,
                   ElevatedButton.icon(
@@ -641,7 +656,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                       style: TextStyle(color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                     ),
                   ),
                 ],
@@ -682,10 +697,10 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Total Budget Limit',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             fontSize: 11,
                           ),
                         ),
@@ -704,21 +719,23 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                         IconButton(
                           onPressed: () => _showHistorySheet(context),
                           tooltip: 'Monthly History',
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.history_rounded,
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                           ),
                         ),
                         IconButton(
-                          onPressed: () => _showAddBudgetDialog(context, budgets),
+                          onPressed: () =>
+                              _showAddBudgetDialog(context, budgets),
                           tooltip: 'Add Budget',
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.add_circle_outline_rounded,
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                           ),
                         ),
                         ElevatedButton.icon(
-                          onPressed: () => _showTransferDialog(context, budgets),
+                          onPressed: () =>
+                              _showTransferDialog(context, budgets),
                           icon: const Icon(
                             Icons.compare_arrows_rounded,
                             color: Colors.white,
@@ -729,7 +746,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                             style: TextStyle(color: Colors.white, fontSize: 12),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: colors.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
                                 AppSizes.radiusSm,
@@ -745,7 +762,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
 
                 // 50/30/20 Split Progress Row
                 Card(
-                  color: AppColors.cardBg,
+                  color: colors.cardBg,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                   ),
@@ -769,7 +786,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                           'Needs (50%)',
                           needsSpent,
                           needsLimit,
-                          AppColors.needs,
+                          colors.needs,
                         ),
                         AppSizes.h8,
                         // Wants Row (30%)
@@ -777,7 +794,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                           'Wants (30%)',
                           wantsSpent,
                           wantsLimit,
-                          AppColors.wants,
+                          colors.wants,
                         ),
                         AppSizes.h8,
                         // Savings Row (20%)
@@ -785,7 +802,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                           'Savings (20%)',
                           savingsSpent,
                           savingsLimit,
-                          AppColors.savings,
+                          colors.savings,
                         ),
                       ],
                     ),
@@ -816,10 +833,12 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                       final progressColor = _getProgressColor(ratio);
 
                       return Card(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         margin: const EdgeInsets.only(bottom: 8),
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
                           onTap: () => _showEditBudgetDialog(context, b),
                           child: Padding(
                             padding: const EdgeInsets.all(AppSizes.md),
@@ -844,8 +863,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                                     const Spacer(),
                                     Text(
                                       '${_formatCurrency(b.spentAmount)} / ${_formatCurrency(b.limitAmount)}',
-                                      style: const TextStyle(
-                                        color: AppColors.textPrimary,
+                                      style: TextStyle(
+                                        color: colors.textPrimary,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -858,7 +877,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                                   borderRadius: BorderRadius.circular(2),
                                   child: LinearProgressIndicator(
                                     value: ratio.clamp(0.0, 1.0),
-                                    backgroundColor: AppColors.border,
+                                    backgroundColor: colors.border,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       progressColor,
                                     ),
@@ -884,8 +903,8 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                                           : '₹${(b.limitAmount - b.spentAmount).toStringAsFixed(0)} left',
                                       style: TextStyle(
                                         color: ratio >= 1.0
-                                            ? AppColors.error
-                                            : AppColors.textSecondary,
+                                            ? colors.error
+                                            : colors.textSecondary,
                                         fontSize: 10,
                                       ),
                                     ),
@@ -915,6 +934,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
     double limit,
     Color color,
   ) {
+    final colors = context.colors;
     final ratio = limit > 0 ? (spent / limit) : 0.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -924,10 +944,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: colors.textSecondary, fontSize: 11),
             ),
             Text(
               '${_formatCurrency(spent)} / ${_formatCurrency(limit)}',
@@ -944,7 +961,7 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
           borderRadius: BorderRadius.circular(2),
           child: LinearProgressIndicator(
             value: ratio.clamp(0.0, 1.0),
-            backgroundColor: AppColors.border,
+            backgroundColor: colors.border,
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 4,
           ),

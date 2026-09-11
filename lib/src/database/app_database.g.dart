@@ -4026,12 +4026,37 @@ class $LocalSettingsTable extends LocalSettings
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _themeModeMeta = const VerificationMeta(
+    'themeMode',
+  );
+  @override
+  late final GeneratedColumn<String> themeMode = GeneratedColumn<String>(
+    'theme_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('dark'),
+  );
+  static const VerificationMeta _languageCodeMeta = const VerificationMeta(
+    'languageCode',
+  );
+  @override
+  late final GeneratedColumn<String> languageCode = GeneratedColumn<String>(
+    'language_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     isPro,
     smsParseCount,
     smsParseMonth,
+    themeMode,
+    languageCode,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4072,6 +4097,21 @@ class $LocalSettingsTable extends LocalSettings
         ),
       );
     }
+    if (data.containsKey('theme_mode')) {
+      context.handle(
+        _themeModeMeta,
+        themeMode.isAcceptableOrUnknown(data['theme_mode']!, _themeModeMeta),
+      );
+    }
+    if (data.containsKey('language_code')) {
+      context.handle(
+        _languageCodeMeta,
+        languageCode.isAcceptableOrUnknown(
+          data['language_code']!,
+          _languageCodeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4097,6 +4137,14 @@ class $LocalSettingsTable extends LocalSettings
         DriftSqlType.string,
         data['${effectivePrefix}sms_parse_month'],
       ),
+      themeMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}theme_mode'],
+      )!,
+      languageCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}language_code'],
+      ),
     );
   }
 
@@ -4117,11 +4165,23 @@ class LocalSettingsRow extends DataClass
   /// once Phase 4 stands up Cloud Functions infra.
   final int smsParseCount;
   final String? smsParseMonth;
+
+  /// 'light', 'dark', or 'system'. Defaults to 'dark' to preserve the
+  /// app's original dark-first look for existing installs -- this wasn't a
+  /// user choice before this column existed, so it shouldn't silently
+  /// change on upgrade.
+  final String themeMode;
+
+  /// ISO language code ('hi', 'ta', 'kn', 'mr', 'ml', ...), or null to
+  /// follow the device's system locale.
+  final String? languageCode;
   const LocalSettingsRow({
     required this.id,
     required this.isPro,
     required this.smsParseCount,
     this.smsParseMonth,
+    required this.themeMode,
+    this.languageCode,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4131,6 +4191,10 @@ class LocalSettingsRow extends DataClass
     map['sms_parse_count'] = Variable<int>(smsParseCount);
     if (!nullToAbsent || smsParseMonth != null) {
       map['sms_parse_month'] = Variable<String>(smsParseMonth);
+    }
+    map['theme_mode'] = Variable<String>(themeMode);
+    if (!nullToAbsent || languageCode != null) {
+      map['language_code'] = Variable<String>(languageCode);
     }
     return map;
   }
@@ -4143,6 +4207,10 @@ class LocalSettingsRow extends DataClass
       smsParseMonth: smsParseMonth == null && nullToAbsent
           ? const Value.absent()
           : Value(smsParseMonth),
+      themeMode: Value(themeMode),
+      languageCode: languageCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(languageCode),
     );
   }
 
@@ -4156,6 +4224,8 @@ class LocalSettingsRow extends DataClass
       isPro: serializer.fromJson<bool>(json['isPro']),
       smsParseCount: serializer.fromJson<int>(json['smsParseCount']),
       smsParseMonth: serializer.fromJson<String?>(json['smsParseMonth']),
+      themeMode: serializer.fromJson<String>(json['themeMode']),
+      languageCode: serializer.fromJson<String?>(json['languageCode']),
     );
   }
   @override
@@ -4166,6 +4236,8 @@ class LocalSettingsRow extends DataClass
       'isPro': serializer.toJson<bool>(isPro),
       'smsParseCount': serializer.toJson<int>(smsParseCount),
       'smsParseMonth': serializer.toJson<String?>(smsParseMonth),
+      'themeMode': serializer.toJson<String>(themeMode),
+      'languageCode': serializer.toJson<String?>(languageCode),
     };
   }
 
@@ -4174,6 +4246,8 @@ class LocalSettingsRow extends DataClass
     bool? isPro,
     int? smsParseCount,
     Value<String?> smsParseMonth = const Value.absent(),
+    String? themeMode,
+    Value<String?> languageCode = const Value.absent(),
   }) => LocalSettingsRow(
     id: id ?? this.id,
     isPro: isPro ?? this.isPro,
@@ -4181,6 +4255,8 @@ class LocalSettingsRow extends DataClass
     smsParseMonth: smsParseMonth.present
         ? smsParseMonth.value
         : this.smsParseMonth,
+    themeMode: themeMode ?? this.themeMode,
+    languageCode: languageCode.present ? languageCode.value : this.languageCode,
   );
   LocalSettingsRow copyWithCompanion(LocalSettingsCompanion data) {
     return LocalSettingsRow(
@@ -4192,6 +4268,10 @@ class LocalSettingsRow extends DataClass
       smsParseMonth: data.smsParseMonth.present
           ? data.smsParseMonth.value
           : this.smsParseMonth,
+      themeMode: data.themeMode.present ? data.themeMode.value : this.themeMode,
+      languageCode: data.languageCode.present
+          ? data.languageCode.value
+          : this.languageCode,
     );
   }
 
@@ -4201,13 +4281,22 @@ class LocalSettingsRow extends DataClass
           ..write('id: $id, ')
           ..write('isPro: $isPro, ')
           ..write('smsParseCount: $smsParseCount, ')
-          ..write('smsParseMonth: $smsParseMonth')
+          ..write('smsParseMonth: $smsParseMonth, ')
+          ..write('themeMode: $themeMode, ')
+          ..write('languageCode: $languageCode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, isPro, smsParseCount, smsParseMonth);
+  int get hashCode => Object.hash(
+    id,
+    isPro,
+    smsParseCount,
+    smsParseMonth,
+    themeMode,
+    languageCode,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4215,7 +4304,9 @@ class LocalSettingsRow extends DataClass
           other.id == this.id &&
           other.isPro == this.isPro &&
           other.smsParseCount == this.smsParseCount &&
-          other.smsParseMonth == this.smsParseMonth);
+          other.smsParseMonth == this.smsParseMonth &&
+          other.themeMode == this.themeMode &&
+          other.languageCode == this.languageCode);
 }
 
 class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
@@ -4223,29 +4314,39 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
   final Value<bool> isPro;
   final Value<int> smsParseCount;
   final Value<String?> smsParseMonth;
+  final Value<String> themeMode;
+  final Value<String?> languageCode;
   const LocalSettingsCompanion({
     this.id = const Value.absent(),
     this.isPro = const Value.absent(),
     this.smsParseCount = const Value.absent(),
     this.smsParseMonth = const Value.absent(),
+    this.themeMode = const Value.absent(),
+    this.languageCode = const Value.absent(),
   });
   LocalSettingsCompanion.insert({
     this.id = const Value.absent(),
     this.isPro = const Value.absent(),
     this.smsParseCount = const Value.absent(),
     this.smsParseMonth = const Value.absent(),
+    this.themeMode = const Value.absent(),
+    this.languageCode = const Value.absent(),
   });
   static Insertable<LocalSettingsRow> custom({
     Expression<int>? id,
     Expression<bool>? isPro,
     Expression<int>? smsParseCount,
     Expression<String>? smsParseMonth,
+    Expression<String>? themeMode,
+    Expression<String>? languageCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (isPro != null) 'is_pro': isPro,
       if (smsParseCount != null) 'sms_parse_count': smsParseCount,
       if (smsParseMonth != null) 'sms_parse_month': smsParseMonth,
+      if (themeMode != null) 'theme_mode': themeMode,
+      if (languageCode != null) 'language_code': languageCode,
     });
   }
 
@@ -4254,12 +4355,16 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
     Value<bool>? isPro,
     Value<int>? smsParseCount,
     Value<String?>? smsParseMonth,
+    Value<String>? themeMode,
+    Value<String?>? languageCode,
   }) {
     return LocalSettingsCompanion(
       id: id ?? this.id,
       isPro: isPro ?? this.isPro,
       smsParseCount: smsParseCount ?? this.smsParseCount,
       smsParseMonth: smsParseMonth ?? this.smsParseMonth,
+      themeMode: themeMode ?? this.themeMode,
+      languageCode: languageCode ?? this.languageCode,
     );
   }
 
@@ -4278,6 +4383,12 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
     if (smsParseMonth.present) {
       map['sms_parse_month'] = Variable<String>(smsParseMonth.value);
     }
+    if (themeMode.present) {
+      map['theme_mode'] = Variable<String>(themeMode.value);
+    }
+    if (languageCode.present) {
+      map['language_code'] = Variable<String>(languageCode.value);
+    }
     return map;
   }
 
@@ -4287,7 +4398,9 @@ class LocalSettingsCompanion extends UpdateCompanion<LocalSettingsRow> {
           ..write('id: $id, ')
           ..write('isPro: $isPro, ')
           ..write('smsParseCount: $smsParseCount, ')
-          ..write('smsParseMonth: $smsParseMonth')
+          ..write('smsParseMonth: $smsParseMonth, ')
+          ..write('themeMode: $themeMode, ')
+          ..write('languageCode: $languageCode')
           ..write(')'))
         .toString();
   }
@@ -8632,6 +8745,8 @@ typedef $$LocalSettingsTableCreateCompanionBuilder =
       Value<bool> isPro,
       Value<int> smsParseCount,
       Value<String?> smsParseMonth,
+      Value<String> themeMode,
+      Value<String?> languageCode,
     });
 typedef $$LocalSettingsTableUpdateCompanionBuilder =
     LocalSettingsCompanion Function({
@@ -8639,6 +8754,8 @@ typedef $$LocalSettingsTableUpdateCompanionBuilder =
       Value<bool> isPro,
       Value<int> smsParseCount,
       Value<String?> smsParseMonth,
+      Value<String> themeMode,
+      Value<String?> languageCode,
     });
 
 class $$LocalSettingsTableFilterComposer
@@ -8667,6 +8784,16 @@ class $$LocalSettingsTableFilterComposer
 
   ColumnFilters<String> get smsParseMonth => $composableBuilder(
     column: $table.smsParseMonth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get themeMode => $composableBuilder(
+    column: $table.themeMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get languageCode => $composableBuilder(
+    column: $table.languageCode,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8699,6 +8826,16 @@ class $$LocalSettingsTableOrderingComposer
     column: $table.smsParseMonth,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get themeMode => $composableBuilder(
+    column: $table.themeMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get languageCode => $composableBuilder(
+    column: $table.languageCode,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$LocalSettingsTableAnnotationComposer
@@ -8723,6 +8860,14 @@ class $$LocalSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get smsParseMonth => $composableBuilder(
     column: $table.smsParseMonth,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get themeMode =>
+      $composableBuilder(column: $table.themeMode, builder: (column) => column);
+
+  GeneratedColumn<String> get languageCode => $composableBuilder(
+    column: $table.languageCode,
     builder: (column) => column,
   );
 }
@@ -8766,11 +8911,15 @@ class $$LocalSettingsTableTableManager
                 Value<bool> isPro = const Value.absent(),
                 Value<int> smsParseCount = const Value.absent(),
                 Value<String?> smsParseMonth = const Value.absent(),
+                Value<String> themeMode = const Value.absent(),
+                Value<String?> languageCode = const Value.absent(),
               }) => LocalSettingsCompanion(
                 id: id,
                 isPro: isPro,
                 smsParseCount: smsParseCount,
                 smsParseMonth: smsParseMonth,
+                themeMode: themeMode,
+                languageCode: languageCode,
               ),
           createCompanionCallback:
               ({
@@ -8778,11 +8927,15 @@ class $$LocalSettingsTableTableManager
                 Value<bool> isPro = const Value.absent(),
                 Value<int> smsParseCount = const Value.absent(),
                 Value<String?> smsParseMonth = const Value.absent(),
+                Value<String> themeMode = const Value.absent(),
+                Value<String?> languageCode = const Value.absent(),
               }) => LocalSettingsCompanion.insert(
                 id: id,
                 isPro: isPro,
                 smsParseCount: smsParseCount,
                 smsParseMonth: smsParseMonth,
+                themeMode: themeMode,
+                languageCode: languageCode,
               ),
           withReferenceMapper: (p0) => p0
               .map(

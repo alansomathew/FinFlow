@@ -4,7 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:math';
 
-import '../../../constants/app_colors.dart';
+import '../../../constants/app_theme.dart';
 import '../../../constants/app_sizes.dart';
 import '../../../services/export_service.dart';
 import '../../../services/pro_tier_service.dart';
@@ -79,7 +79,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Export failed: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -90,12 +90,13 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final transactionsAsync = ref.watch(transactionListProvider);
     final budgetsAsync = ref.watch(budgetListProvider);
     final isPro = ref.watch(isProProvider).valueOrNull ?? false;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: transactionsAsync.when(
         data: (allTxs) {
           if (allTxs.isEmpty) {
@@ -134,10 +135,10 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Spend Analytics',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -149,16 +150,22 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                               tooltip: 'Export PDF',
                               onPressed: _exporting
                                   ? null
-                                  : () => _handleExport(txs, ExportService.exportPdf),
-                              icon: const Icon(
+                                  : () => _handleExport(
+                                      txs,
+                                      ExportService.exportPdf,
+                                    ),
+                              icon: Icon(
                                 Icons.picture_as_pdf_rounded,
-                                color: AppColors.textSecondary,
+                                color: colors.textSecondary,
                               ),
                             ),
                           ElevatedButton.icon(
                             onPressed: _exporting
                                 ? null
-                                : () => _handleExport(txs, ExportService.exportCsv),
+                                : () => _handleExport(
+                                    txs,
+                                    ExportService.exportCsv,
+                                  ),
                             icon: _exporting
                                 ? const SizedBox(
                                     width: 14,
@@ -175,10 +182,13 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                                   ),
                             label: const Text(
                               'Export CSV',
-                              style: TextStyle(color: Colors.white, fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: colors.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   AppSizes.radiusSm,
@@ -207,11 +217,13 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                                 setState(() => _rangePreset = preset),
                             label: Text(preset),
                             labelStyle: TextStyle(
-                              color: selected ? Colors.white : AppColors.textSecondary,
+                              color: selected
+                                  ? Colors.white
+                                  : colors.textSecondary,
                               fontSize: 12,
                             ),
-                            selectedColor: AppColors.primary,
-                            backgroundColor: AppColors.cardBg,
+                            selectedColor: colors.primary,
+                            backgroundColor: colors.cardBg,
                           ),
                         );
                       }).toList(),
@@ -221,7 +233,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
 
                   // 50/30/20 Donut Pie Chart Card
                   Card(
-                    color: AppColors.cardBg,
+                    color: colors.cardBg,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
@@ -230,24 +242,22 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Text(
+                          Text(
                             '50/30/20 Distribution',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           AppSizes.h16,
                           if (total == 0)
-                            const SizedBox(
+                            SizedBox(
                               height: 200,
                               child: Center(
                                 child: Text(
                                   'No spending in this period.',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                  ),
+                                  style: TextStyle(color: colors.textSecondary),
                                 ),
                               ),
                             )
@@ -263,7 +273,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                                       value: needs,
                                       title:
                                           '${(needs / total * 100).toStringAsFixed(0)}%',
-                                      color: AppColors.needs,
+                                      color: colors.needs,
                                       radius: 20,
                                       titleStyle: const TextStyle(
                                         color: Colors.white,
@@ -275,7 +285,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                                       value: wants,
                                       title:
                                           '${(wants / total * 100).toStringAsFixed(0)}%',
-                                      color: AppColors.wants,
+                                      color: colors.wants,
                                       radius: 20,
                                       titleStyle: const TextStyle(
                                         color: Colors.white,
@@ -287,7 +297,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                                       value: savings,
                                       title:
                                           '${(savings / total * 100).toStringAsFixed(0)}%',
-                                      color: AppColors.savings,
+                                      color: colors.savings,
                                       radius: 20,
                                       titleStyle: const TextStyle(
                                         color: Colors.white,
@@ -304,19 +314,22 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildLegendItem(
+                                  colors,
                                   'Needs',
                                   _formatCurrency(needs),
-                                  AppColors.needs,
+                                  colors.needs,
                                 ),
                                 _buildLegendItem(
+                                  colors,
                                   'Wants',
                                   _formatCurrency(wants),
-                                  AppColors.wants,
+                                  colors.wants,
                                 ),
                                 _buildLegendItem(
+                                  colors,
                                   'Savings',
                                   _formatCurrency(savings),
-                                  AppColors.savings,
+                                  colors.savings,
                                 ),
                               ],
                             ),
@@ -342,7 +355,7 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
 
                   if (!isPro) ...[
                     AppSizes.h16,
-                    _AdvancedAnalyticsUpsell(),
+                    const _AdvancedAnalyticsUpsell(),
                   ] else ...[
                     AppSizes.h16,
                     const _TopCategoriesCard(),
@@ -362,7 +375,12 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
     );
   }
 
-  Widget _buildLegendItem(String title, String subtitle, Color color) {
+  Widget _buildLegendItem(
+    AppColorExtension colors,
+    String title,
+    String subtitle,
+    Color color,
+  ) {
     return Column(
       children: [
         Row(
@@ -371,18 +389,15 @@ class _AnalyticsTabState extends ConsumerState<AnalyticsTab> {
             const SizedBox(width: 6),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: colors.textSecondary, fontSize: 11),
             ),
           ],
         ),
         AppSizes.h4,
         Text(
           subtitle,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: colors.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
@@ -398,8 +413,9 @@ class _BudgetAdherenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Card(
-      color: AppColors.cardBg,
+      color: colors.cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       ),
@@ -408,10 +424,10 @@ class _BudgetAdherenceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Budget Adherence by Envelope (This Month)',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
@@ -446,8 +462,8 @@ class _BudgetAdherenceCard extends StatelessWidget {
                                 0,
                                 min(budgets[idx].category.length, 4),
                               ),
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontSize: 9,
                               ),
                             ),
@@ -463,13 +479,13 @@ class _BudgetAdherenceCard extends StatelessWidget {
                       barRods: [
                         BarChartRodData(
                           toY: b.spentAmount,
-                          color: AppColors.primary,
+                          color: colors.primary,
                           width: 8,
                           borderRadius: BorderRadius.circular(2),
                         ),
                         BarChartRodData(
                           toY: b.limitAmount,
-                          color: AppColors.border,
+                          color: colors.border,
                           width: 8,
                           borderRadius: BorderRadius.circular(2),
                         ),
@@ -480,21 +496,21 @@ class _BudgetAdherenceCard extends StatelessWidget {
               ),
             ),
             AppSizes.h8,
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(radius: 4, backgroundColor: AppColors.primary),
-                SizedBox(width: 6),
+                CircleAvatar(radius: 4, backgroundColor: colors.primary),
+                const SizedBox(width: 6),
                 Text(
                   'Spent',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 10),
                 ),
-                SizedBox(width: 16),
-                CircleAvatar(radius: 4, backgroundColor: AppColors.border),
-                SizedBox(width: 6),
+                const SizedBox(width: 16),
+                CircleAvatar(radius: 4, backgroundColor: colors.border),
+                const SizedBox(width: 6),
                 Text(
                   'Limit',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 10),
                 ),
               ],
             ),
@@ -510,19 +526,20 @@ class _AdvancedAnalyticsUpsell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       padding: const EdgeInsets.all(AppSizes.md),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: colors.cardBg,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+        border: Border.all(color: colors.warning.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.workspace_premium_rounded,
-            color: AppColors.warning,
+            color: colors.warning,
             size: 20,
           ),
           AppSizes.w12,
@@ -530,19 +547,19 @@ class _AdvancedAnalyticsUpsell extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Pro Analytics',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
                 ),
                 AppSizes.h8,
-                const Text(
+                Text(
                   'Upgrade to Pro for top-category breakdowns, a 6-month income vs. expense trend, PDF export, and a net worth tracker.',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: colors.textSecondary,
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -569,6 +586,7 @@ class _TopCategoriesCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final transactionsAsync = ref.watch(transactionListProvider);
     return transactionsAsync.when(
       data: (txs) {
@@ -584,7 +602,7 @@ class _TopCategoriesCard extends ConsumerWidget {
         final maxVal = top.first.value;
 
         return Card(
-          color: AppColors.cardBg,
+          color: colors.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
@@ -593,10 +611,10 @@ class _TopCategoriesCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Top Spending Categories (All Time)',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -615,15 +633,15 @@ class _TopCategoriesCard extends ConsumerWidget {
                           children: [
                             Text(
                               '${cat.icon} ${e.key}',
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontSize: 12,
                               ),
                             ),
                             Text(
                               _formatCurrency(e.value),
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: colors.textPrimary,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -635,7 +653,7 @@ class _TopCategoriesCard extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(2),
                           child: LinearProgressIndicator(
                             value: ratio,
-                            backgroundColor: AppColors.border,
+                            backgroundColor: colors.border,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               cat.bucket.color,
                             ),
@@ -670,6 +688,7 @@ class _MonthlyTrendCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.colors;
     final transactionsAsync = ref.watch(transactionListProvider);
     return transactionsAsync.when(
       data: (txs) {
@@ -696,13 +715,10 @@ class _MonthlyTrendCard extends ConsumerWidget {
           expense.add(exp);
         }
 
-        final maxY = [
-          ...income,
-          ...expense,
-        ].fold(0.0, (m, v) => v > m ? v : m);
+        final maxY = [...income, ...expense].fold(0.0, (m, v) => v > m ? v : m);
 
         return Card(
-          color: AppColors.cardBg,
+          color: colors.cardBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
@@ -711,10 +727,10 @@ class _MonthlyTrendCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Income vs Expense (6 Months)',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -723,10 +739,10 @@ class _MonthlyTrendCard extends ConsumerWidget {
                 SizedBox(
                   height: 200,
                   child: maxY == 0
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No data in this period.',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(color: colors.textSecondary),
                           ),
                         )
                       : BarChart(
@@ -757,8 +773,8 @@ class _MonthlyTrendCard extends ConsumerWidget {
                                       padding: const EdgeInsets.only(top: 6),
                                       child: Text(
                                         DateFormat('MMM').format(months[idx]),
-                                        style: const TextStyle(
-                                          color: AppColors.textSecondary,
+                                        style: TextStyle(
+                                          color: colors.textSecondary,
                                           fontSize: 9,
                                         ),
                                       ),
@@ -773,13 +789,13 @@ class _MonthlyTrendCard extends ConsumerWidget {
                                 barRods: [
                                   BarChartRodData(
                                     toY: income[idx],
-                                    color: AppColors.success,
+                                    color: colors.success,
                                     width: 8,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                   BarChartRodData(
                                     toY: expense[idx],
-                                    color: AppColors.error,
+                                    color: colors.error,
                                     width: 8,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
@@ -793,18 +809,24 @@ class _MonthlyTrendCard extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircleAvatar(radius: 4, backgroundColor: AppColors.success),
+                    CircleAvatar(radius: 4, backgroundColor: colors.success),
                     const SizedBox(width: 6),
-                    const Text(
+                    Text(
                       'Income',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 10,
+                      ),
                     ),
                     const SizedBox(width: 16),
-                    const CircleAvatar(radius: 4, backgroundColor: AppColors.error),
+                    CircleAvatar(radius: 4, backgroundColor: colors.error),
                     const SizedBox(width: 6),
-                    const Text(
+                    Text(
                       'Expense',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 10,
+                      ),
                     ),
                   ],
                 ),
@@ -813,8 +835,8 @@ class _MonthlyTrendCard extends ConsumerWidget {
                   Center(
                     child: Text(
                       'Net this month: ${_formatCurrency(income.last - expense.last)}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: colors.textSecondary,
                         fontSize: 10,
                       ),
                     ),
@@ -850,7 +872,9 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
   Future<void> _recordAndLoad() async {
     if (!mounted) return;
     final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
-    final investments = await ref.read(investmentsRepositoryProvider).getInvestments();
+    final investments = await ref
+        .read(investmentsRepositoryProvider)
+        .getInvestments();
     final loans = await ref.read(debtRepositoryProvider).getLoans();
     final totals = NetWorthCalculator.compute(
       accounts: accounts,
@@ -873,8 +897,9 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Card(
-      color: AppColors.cardBg,
+      color: colors.cardBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       ),
@@ -883,18 +908,18 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Net Worth Trend',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
             AppSizes.h4,
-            const Text(
+            Text(
               'Recorded once per day you open this screen -- history starts building from today.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+              style: TextStyle(color: colors.textMuted, fontSize: 10),
             ),
             AppSizes.h16,
             SizedBox(
@@ -905,7 +930,9 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
                       future: _historyFuture,
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
                         final points = snapshot.data!;
                         if (points.length < 2) {
@@ -915,8 +942,8 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
                                   ? 'No net worth history yet.'
                                   : 'Today\'s net worth: ${_formatCurrency(points.first.netWorth)}\nCheck back tomorrow to see a trend.',
                               textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
+                              style: TextStyle(
+                                color: colors.textSecondary,
                                 fontSize: 12,
                               ),
                             ),
@@ -934,12 +961,12 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
                                     FlSpot(i.toDouble(), points[i].netWorth),
                                 ],
                                 isCurved: true,
-                                color: AppColors.primary,
+                                color: colors.primary,
                                 barWidth: 3,
                                 dotData: const FlDotData(show: false),
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  color: colors.primary.withValues(alpha: 0.12),
                                 ),
                               ),
                             ],

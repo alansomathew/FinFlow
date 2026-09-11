@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../transactions/data/recurring_repository.dart';
 import '../data/auth_repository.dart';
 
@@ -44,9 +45,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(color: AppColors.background),
+        decoration: BoxDecoration(color: colors.background),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -60,7 +62,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   borderRadius: BorderRadius.circular(AppSizes.radiusXl),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
+                      color: colors.primary.withOpacity(0.4),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -73,31 +75,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 ),
               ),
               AppSizes.h24,
-              const Text(
+              Text(
                 'FinFlow',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
               ),
               AppSizes.h4,
-              const Text(
+              Text(
                 'Smart Personal Finance Manager',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: colors.textSecondary,
                   fontSize: 14,
                   letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 80),
-              const SizedBox(
+              SizedBox(
                 width: 30,
                 height: 30,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(colors.primary),
                 ),
               ),
             ],

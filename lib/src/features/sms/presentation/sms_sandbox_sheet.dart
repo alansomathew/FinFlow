@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../../database/app_database.dart';
 import '../../../utils/sms_parser.dart';
 import '../../accounts/data/accounts_repository.dart';
@@ -96,7 +96,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
           content: Text(
             'Free tier allows up to $kFreeSmsParseLimit SMS parses per month. Upgrade to Pro for unlimited.',
           ),
-          backgroundColor: AppColors.warning,
+          backgroundColor: context.colors.warning,
         ),
       );
       return;
@@ -152,7 +152,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
         content: Text(
           'Added ${_isDuplicate ? "Duplicate " : ""}Transaction: ₹${parsed.amount} to ${matchingAccount.name}',
         ),
-        backgroundColor: AppColors.success,
+        backgroundColor: context.colors.success,
       ),
     );
   }
@@ -164,10 +164,11 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
@@ -184,16 +185,16 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: colors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               AppSizes.h12,
-              const Text(
+              Text(
                 'SMS Parsing Simulator',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: colors.textPrimary,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -202,7 +203,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
 
               // Paste Custom SMS Testing Panel
               Card(
-                color: AppColors.cardBg,
+                color: colors.cardBg,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                 ),
@@ -230,18 +231,14 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         decoration: InputDecoration(
                           hintText:
                               'Paste HDFC / SBI / ICICI transaction SMS here...',
-                          hintStyle: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
+                          hintStyle: TextStyle(color: colors.textSecondary),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusSm,
                             ),
-                            borderSide: const BorderSide(
-                              color: AppColors.border,
-                            ),
+                            borderSide: BorderSide(color: colors.border),
                           ),
-                          fillColor: AppColors.background,
+                          fillColor: colors.background,
                           filled: true,
                         ),
                       ),
@@ -249,7 +246,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                       ElevatedButton(
                         onPressed: () => _parseCustomSms(_textController.text),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: colors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                               AppSizes.radiusSm,
@@ -270,11 +267,11 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
               if (_parsedResult != null) ...[
                 AppSizes.h12,
                 Card(
-                  color: AppColors.surface,
+                  color: colors.surface,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     side: BorderSide(
-                      color: _isDuplicate ? AppColors.error : AppColors.success,
+                      color: _isDuplicate ? colors.error : colors.success,
                       width: 1.5,
                     ),
                   ),
@@ -286,10 +283,10 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
+                            Text(
                               'PARSING PREVIEW',
                               style: TextStyle(
-                                color: AppColors.textSecondary,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -300,13 +297,13 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.2),
+                                color: colors.primary.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(5),
                               ),
                               child: Text(
                                 'Confidence: ${_parsedResult!.confidenceScore}%',
-                                style: const TextStyle(
-                                  color: AppColors.primaryLight,
+                                style: TextStyle(
+                                  color: colors.primaryLight,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -319,7 +316,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                           '₹${_parsedResult!.amount.toStringAsFixed(2)}',
                           style: TextStyle(
                             color: _parsedResult!.type == 'credit'
-                                ? AppColors.success
+                                ? colors.success
                                 : Colors.white,
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -328,42 +325,42 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                         AppSizes.h8,
                         Text(
                           'Merchant: ${_parsedResult!.payee}',
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: colors.textPrimary,
                             fontSize: 13,
                           ),
                         ),
                         Text(
                           'Account (last 4): ${_parsedResult!.accountLast4}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
                         if (_parsedResult!.refId.isNotEmpty)
                           Text(
                             'Ref ID: ${_parsedResult!.refId}',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: colors.textSecondary,
                               fontSize: 12,
                             ),
                           ),
 
                         if (_isDuplicate) ...[
                           AppSizes.h8,
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.warning_amber_rounded,
-                                color: AppColors.error,
+                                color: colors.error,
                                 size: 16,
                               ),
-                              SizedBox(width: 6),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Duplicate Alert: A transaction with this amount has already been logged today.',
                                   style: TextStyle(
-                                    color: AppColors.error,
+                                    color: colors.error,
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -379,11 +376,9 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                             TextButton(
                               onPressed: () =>
                                   setState(() => _parsedResult = null),
-                              child: const Text(
+                              child: Text(
                                 'Discard',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: TextStyle(color: colors.textSecondary),
                               ),
                             ),
                             AppSizes.w12,
@@ -394,8 +389,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                               ),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: _isDuplicate
-                                    ? AppColors.error
-                                    : AppColors.success,
+                                    ? colors.error
+                                    : colors.success,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
                                     AppSizes.radiusSm,
@@ -429,12 +424,12 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
               // Scrollable simulated queue
               Expanded(
                 child: _smsQueue.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No pending inbox items.\nType an SMS above to test parsing.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -447,7 +442,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                           final date = sms.date;
 
                           return Card(
-                            color: AppColors.cardBg,
+                            color: colors.cardBg,
                             margin: const EdgeInsets.only(bottom: 8),
                             child: Padding(
                               padding: const EdgeInsets.all(AppSizes.md),
@@ -460,8 +455,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                     children: [
                                       Text(
                                         sms.sender,
-                                        style: const TextStyle(
-                                          color: AppColors.primaryLight,
+                                        style: TextStyle(
+                                          color: colors.primaryLight,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
@@ -470,8 +465,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                         DateFormat(
                                           'dd MMM hh:mm a',
                                         ).format(date),
-                                        style: const TextStyle(
-                                          color: AppColors.textMuted,
+                                        style: TextStyle(
+                                          color: colors.textMuted,
                                           fontSize: 10,
                                         ),
                                       ),
@@ -480,8 +475,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                   AppSizes.h8,
                                   Text(
                                     body,
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
                                       fontSize: 12,
                                       height: 1.3,
                                     ),
@@ -493,8 +488,8 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                       OutlinedButton(
                                         onPressed: () => _skipSms(sms.id),
                                         style: OutlinedButton.styleFrom(
-                                          side: const BorderSide(
-                                            color: AppColors.border,
+                                          side: BorderSide(
+                                            color: colors.border,
                                           ),
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
@@ -502,10 +497,10 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                             ),
                                           ),
                                         ),
-                                        child: const Text(
+                                        child: Text(
                                           'Skip',
                                           style: TextStyle(
-                                            color: AppColors.textSecondary,
+                                            color: colors.textSecondary,
                                             fontSize: 11,
                                           ),
                                         ),
@@ -519,7 +514,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                                           }
                                         },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
+                                          backgroundColor: colors.primary,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
                                               AppSizes.radiusSm,

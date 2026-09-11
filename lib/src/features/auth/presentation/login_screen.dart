@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../../database/app_database.dart';
 import '../../../database/demo_data_seeder.dart';
 import '../../../database/migration_service.dart';
@@ -163,39 +164,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.cloud_upload_rounded, color: AppColors.primary),
-            SizedBox(width: 10),
+            Icon(Icons.cloud_upload_rounded, color: context.colors.primary),
+            const SizedBox(width: 10),
             Text(
               'Migrate Guest Data?',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'We found transactions saved locally in Guest Mode. Would you like to upload and link them to your account in the cloud?',
-          style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+          style: TextStyle(color: context.colors.textSecondary, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Start Fresh',
-              style: TextStyle(color: AppColors.error),
+              style: TextStyle(color: context.colors.error),
             ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: context.colors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusSm),
               ),
@@ -218,27 +219,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: context.colors.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             ),
-            title: const Text(
+            title: Text(
               'Cloud Backup Failed',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            content: const Text(
+            content: Text(
               "We couldn't back up your data to the cloud right now. Your local data is safe and untouched — you can retry from Settings later.",
-              style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                height: 1.4,
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text(
+                child: Text(
                   'OK',
-                  style: TextStyle(color: AppColors.primary),
+                  style: TextStyle(color: context.colors.primary),
                 ),
               ),
             ],
@@ -257,8 +261,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
@@ -294,20 +299,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         AppSizes.h16,
-                        const Text(
+                        Text(
                           'FinFlow',
                           style: TextStyle(
-                            color: AppColors.textPrimary,
+                            color: colors.textPrimary,
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         AppSizes.h8,
-                        const Text(
+                        Text(
                           'Take control of your financial flow',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             fontSize: 14,
                           ),
                         ),
@@ -317,10 +322,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   AppSizes.h32,
 
                   if (_isLoading)
-                    const Center(
+                    Center(
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primary,
+                          colors.primary,
                         ),
                       ),
                     )
@@ -332,16 +337,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           Container(
                             padding: const EdgeInsets.all(AppSizes.sm),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withValues(alpha: 0.12),
+                              color: colors.error.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(
                                 AppSizes.radiusSm,
                               ),
-                              border: Border.all(color: AppColors.error),
+                              border: Border.all(color: colors.error),
                             ),
                             child: Text(
                               _errorMessage!,
-                              style: const TextStyle(
-                                color: AppColors.error,
+                              style: TextStyle(
+                                color: colors.error,
                                 fontSize: 12,
                               ),
                             ),
@@ -354,7 +359,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             TextField(
                               controller: _nameController,
                               style: const TextStyle(color: Colors.white),
-                              decoration: _fieldDecoration('Full name'),
+                              decoration: _fieldDecoration('Full name', colors),
                             ),
                             AppSizes.h12,
                           ],
@@ -362,24 +367,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             style: const TextStyle(color: Colors.white),
-                            decoration: _fieldDecoration('Email'),
+                            decoration: _fieldDecoration('Email', colors),
                           ),
                           AppSizes.h12,
                           TextField(
                             controller: _passwordController,
                             obscureText: true,
                             style: const TextStyle(color: Colors.white),
-                            decoration: _fieldDecoration('Password'),
+                            decoration: _fieldDecoration('Password', colors),
                           ),
                           AppSizes.h8,
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: _sendPasswordReset,
-                              child: const Text(
+                              child: Text(
                                 'Forgot password?',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: colors.textSecondary,
                                   fontSize: 12,
                                 ),
                               ),
@@ -388,7 +393,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ElevatedButton(
                             onPressed: _submitEmailForm,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: colors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
@@ -419,8 +424,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               _authMode == _AuthMode.register
                                   ? 'Already have an account? Sign In'
                                   : "Don't have an account? Create one",
-                              style: const TextStyle(
-                                color: AppColors.primaryLight,
+                              style: TextStyle(
+                                color: colors.primaryLight,
                                 fontSize: 13,
                               ),
                             ),
@@ -460,7 +465,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               _errorMessage = null;
                             }),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.border),
+                              side: BorderSide(color: colors.border),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
@@ -468,10 +473,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Continue with Email',
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: colors.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -484,7 +489,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         OutlinedButton(
                           onPressed: _enterGuestMode,
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
+                            side: BorderSide(color: colors.border),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(
@@ -492,10 +497,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             'Try as Guest (Offline Mode)',
                             style: TextStyle(
-                              color: AppColors.textPrimary,
+                              color: colors.textPrimary,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -505,13 +510,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
 
                   const Spacer(),
-                  const Center(
+                  Center(
                     child: Text(
                       'By continuing, you agree to our Terms & Privacy Policy',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: colors.textMuted, fontSize: 11),
                     ),
                   ),
                   AppSizes.h16,
@@ -524,17 +526,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  InputDecoration _fieldDecoration(String label) {
+  InputDecoration _fieldDecoration(String label, AppColorExtension colors) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      labelStyle: TextStyle(color: colors.textSecondary),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: colors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: colors.primary),
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusSm),

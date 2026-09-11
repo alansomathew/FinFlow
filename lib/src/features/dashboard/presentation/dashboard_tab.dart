@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../analytics/domain/net_worth_calculator.dart';
@@ -64,6 +65,7 @@ class DashboardTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final accountsAsync = ref.watch(accountListProvider);
     final transactionsAsync = ref.watch(transactionListProvider);
     final budgetsAsync = ref.watch(budgetListProvider);
@@ -109,85 +111,87 @@ class DashboardTab extends ConsumerWidget {
                         ),
                       ),
                       child: Container(
-                    padding: const EdgeInsets.all(AppSizes.lg),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'TOTAL NET WORTH',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
+                        padding: const EdgeInsets.all(AppSizes.lg),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusLg,
                           ),
-                        ),
-                        AppSizes.h8,
-                        Text(
-                          _formatINR(netWorth),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        AppSizes.h12,
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Assets',
-                                  style: TextStyle(
-                                    color: Colors.white60,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                                Text(
-                                  _formatINR(assets),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: const Offset(0, 8),
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.dashboardNetWorth,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            AppSizes.h8,
+                            Text(
+                              _formatINR(netWorth),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            AppSizes.h12,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text(
-                                  'Liabilities',
-                                  style: TextStyle(
-                                    color: Colors.white60,
-                                    fontSize: 11,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.dashboardAssets,
+                                      style: const TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    Text(
+                                      _formatINR(assets),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  _formatINR(liabilities),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      l10n.dashboardLiabilities,
+                                      style: const TextStyle(
+                                        color: Colors.white60,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                    Text(
+                                      _formatINR(liabilities),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
                       ),
                     ),
                   );
@@ -227,9 +231,9 @@ class DashboardTab extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Remaining Budget',
-                                style: TextStyle(
+                              Text(
+                                l10n.dashboardRemainingBudget,
+                                style: const TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 11,
                                 ),
@@ -286,9 +290,9 @@ class DashboardTab extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Safe Daily Spend',
-                                style: TextStyle(
+                              Text(
+                                l10n.dashboardSafeDailySpend,
+                                style: const TextStyle(
                                   color: AppColors.primaryLight,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -381,9 +385,9 @@ class DashboardTab extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Savings Goals',
-                            style: TextStyle(
+                          Text(
+                            l10n.dashboardSavingsGoals,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
@@ -395,9 +399,9 @@ class DashboardTab extends ConsumerWidget {
                                 builder: (context) => const GoalsListScreen(),
                               ),
                             ),
-                            child: const Text(
-                              'View all',
-                              style: TextStyle(
+                            child: Text(
+                              l10n.dashboardViewAll,
+                              style: const TextStyle(
                                 color: AppColors.primaryLight,
                                 fontSize: 12,
                               ),
@@ -501,17 +505,17 @@ class DashboardTab extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.show_chart_rounded,
                                     color: AppColors.savings,
                                     size: 18,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    'Investments',
-                                    style: TextStyle(
+                                    l10n.dashboardInvestments,
+                                    style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
                                     ),
@@ -555,17 +559,17 @@ class DashboardTab extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.credit_card_rounded,
                                     color: AppColors.error,
                                     size: 18,
                                   ),
-                                  SizedBox(width: 6),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    'Active Loans',
-                                    style: TextStyle(
+                                    l10n.dashboardActiveLoans,
+                                    style: const TextStyle(
                                       color: AppColors.textSecondary,
                                       fontSize: 12,
                                     ),
@@ -597,9 +601,9 @@ class DashboardTab extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Recent Ledger',
-                    style: TextStyle(
+                  Text(
+                    l10n.dashboardRecentLedger,
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -610,9 +614,9 @@ class DashboardTab extends ConsumerWidget {
                       ref.read(activeTabProvider.notifier).state =
                           1; // Navigate to Ledger
                     },
-                    child: const Text(
-                      'See All',
-                      style: TextStyle(
+                    child: Text(
+                      l10n.dashboardSeeAll,
+                      style: const TextStyle(
                         color: AppColors.primaryLight,
                         fontSize: 12,
                       ),
@@ -625,12 +629,12 @@ class DashboardTab extends ConsumerWidget {
               transactionsAsync.when(
                 data: (txs) {
                   if (txs.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
                       child: Text(
-                        'No transactions logged yet.',
+                        l10n.dashboardNoTransactions,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: const TextStyle(color: AppColors.textSecondary),
                       ),
                     );
                   }

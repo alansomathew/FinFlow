@@ -25,6 +25,76 @@
 
 ---
 
+## Ad-hoc: Dark/Light Theme + Multi-Language Support
+
+Not part of the original 12-phase plan; added mid-sequence per direct user
+request, between Phases 9 and 10. Started scoped as "infrastructure first,
+roll out gradually," then the user asked to finish the rollout across
+every screen in the same session -- so both the infrastructure and the
+color conversion are now complete app-wide. Localization text coverage is
+still partial (see below).
+
+**Theme system -- fully rolled out:**
+- `AppColorExtension` (`lib/src/constants/app_theme.dart`), a `ThemeExtension`
+  holding every semantic color the app uses, with `.dark` (the original
+  palette, unchanged) and `.light` (new) instances. `AppTheme.light()` /
+  `AppTheme.dark()` build full `ThemeData` from it. A `context.colors`
+  extension reads the active one.
+- Persisted via a new `themeMode` column on `local_settings` (schema v9;
+  defaults to `'dark'` so existing installs don't silently change look).
+  `themeModeProvider`/`setThemeMode()` in `app_settings_service.dart`.
+- A Light/Dark/System selector lives in the profile menu.
+- Every screen in the app (dashboard, transactions, budget, accounts,
+  loans, goals, investments, analytics, SMS, auth) now reads colors via
+  `context.colors` instead of the static `AppColors` class. The original
+  `AppColors` class still exists (some raw values are referenced from
+  non-widget code and by `AppColorExtension.dark`'s own definition) but no
+  screen reads it directly for rendering anymore.
+- **Bug found and fixed post-rollout:** `showModalBottomSheet`'s
+  `backgroundColor` parameter is evaluated once when the sheet is opened,
+  not reactively inside its `builder` -- so three sheets (the profile
+  menu, and budget's two history sheets) that set
+  `backgroundColor: context.colors.surface` directly on the
+  `showModalBottomSheet` call kept showing whichever theme was active at
+  *open* time until closed and reopened, even though everything inside
+  the sheet updated live. Fixed by setting `backgroundColor:
+  Colors.transparent` on the call and painting the real surface color via
+  a `Container` inside `builder` instead, which does re-evaluate on every
+  theme change. Worth checking for the same pattern if any new bottom
+  sheet is added later.
+
+**Localization (English + Hindi, Tamil, Kannada, Marathi, Malayalam) --
+infrastructure complete, text coverage partial:**
+- Standard Flutter `gen-l10n` setup: `l10n.yaml`, ARB files under
+  `lib/l10n/` (`app_en.arb` template + 5 translations), generated
+  `AppLocalizations` class wired into `MaterialApp`.
+- Persisted via a new `languageCode` column on `local_settings` (nullable
+  -- null means follow the device's system locale). `localeProvider`/
+  `setLanguageCode()` alongside the theme provider.
+- A language selector lives in the profile menu, listing all 5 languages
+  plus "Follow System".
+- **Translated:** navigation labels, app bar titles, the profile menu
+  (including the theme/language selectors), and the Dashboard's static
+  section headers (~35 keys × 5 languages). **Not yet translated:**
+  every other screen's UI text (forms, dialogs, list labels across
+  accounts/budget/loans/goals/investments/analytics/SMS), and the
+  Dashboard's dynamically-generated AI Coach sentences (those interpolate
+  live numbers into full sentences, which needs ICU message syntax rather
+  than a plain string swap). This is genuinely more work than the color
+  rollout, since every screen needs new ARB keys translated into 5
+  languages rather than a mechanical find/replace -- the color and
+  localization passes were deliberately split for exactly this reason.
+  Translations were produced directly rather than by a professional
+  translation service; flag anything that reads awkwardly for native
+  review before shipping.
+
+**Next steps for whoever continues this:** the theme rollout is done; the
+localization rollout still needs each remaining screen's strings extracted
+into `lib/l10n/app_en.arb` (and the 5 translated ARB files) and swapped
+for `AppLocalizations.of(context)!.xxx`, one screen at a time.
+
+---
+
 ## Context
 
 FinFlow is a Flutter personal-finance app with two detailed spec docs

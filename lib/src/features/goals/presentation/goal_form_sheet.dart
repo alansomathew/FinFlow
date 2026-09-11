@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../data/goals_repository.dart';
 
@@ -84,13 +84,14 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
       builder: (context, child) {
+        final colors = context.colors;
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
+            colorScheme: ColorScheme.dark(
+              primary: colors.primary,
               onPrimary: Colors.white,
-              surface: AppColors.surface,
-              onSurface: AppColors.textPrimary,
+              surface: colors.surface,
+              onSurface: colors.textPrimary,
             ),
           ),
           child: child!,
@@ -142,13 +143,14 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
   @override
   Widget build(BuildContext context) {
     final accountsAsync = ref.watch(accountListProvider);
+    final colors = context.colors;
 
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
@@ -168,7 +170,7 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.border,
+                        color: colors.border,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -176,8 +178,8 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                   AppSizes.h12,
                   Text(
                     _isEditing ? 'Edit Goal' : 'New Savings Goal',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: colors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -189,10 +191,8 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Goal Name',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -213,25 +213,24 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: 'Target Amount',
-                      labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
-                      fillColor: AppColors.cardBg,
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      fillColor: colors.cardBg,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                         borderSide: BorderSide.none,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.currency_rupee_rounded,
-                        color: AppColors.primaryLight,
+                        color: colors.primaryLight,
                       ),
                     ),
                     validator: (val) {
                       if (val == null || val.isEmpty) return 'Enter a target';
                       final parsed = double.tryParse(val);
                       if (parsed == null) return 'Enter a valid number';
-                      if (parsed <= 0) return 'Target must be greater than zero';
+                      if (parsed <= 0)
+                        return 'Target must be greater than zero';
                       return null;
                     },
                   ),
@@ -246,14 +245,14 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
+                        color: colors.cardBg,
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.event_rounded,
-                            color: AppColors.textSecondary,
+                            color: colors.textSecondary,
                             size: 20,
                           ),
                           AppSizes.w12,
@@ -269,12 +268,9 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                   ),
                   AppSizes.h16,
 
-                  const Text(
+                  Text(
                     'Icon',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                   AppSizes.h8,
                   Wrap(
@@ -290,26 +286,26 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: selected
-                                ? AppColors.primary.withValues(alpha: 0.25)
-                                : AppColors.cardBg,
+                                ? colors.primary.withValues(alpha: 0.25)
+                                : colors.cardBg,
                             shape: BoxShape.circle,
                             border: selected
-                                ? Border.all(color: AppColors.primary, width: 2)
+                                ? Border.all(color: colors.primary, width: 2)
                                 : null,
                           ),
-                          child: Text(icon, style: const TextStyle(fontSize: 18)),
+                          child: Text(
+                            icon,
+                            style: const TextStyle(fontSize: 18),
+                          ),
                         ),
                       );
                     }).toList(),
                   ),
                   AppSizes.h16,
 
-                  const Text(
+                  Text(
                     'Color',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
                   ),
                   AppSizes.h8,
                   Wrap(
@@ -348,22 +344,24 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                   accountsAsync.when(
                     data: (accounts) {
                       if (accounts.isEmpty) return const SizedBox.shrink();
-                      _selectedAccount ??= widget.existing?.linkedAccountId != null
+                      _selectedAccount ??=
+                          widget.existing?.linkedAccountId != null
                           ? accounts
-                              .where((a) => a.id == widget.existing!.linkedAccountId)
-                              .firstOrNull
+                                .where(
+                                  (a) =>
+                                      a.id == widget.existing!.linkedAccountId,
+                                )
+                                .firstOrNull
                           : null;
 
                       return DropdownButtonFormField<AccountModel?>(
                         initialValue: _selectedAccount,
-                        dropdownColor: AppColors.surface,
+                        dropdownColor: colors.surface,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           labelText: 'Linked Account (optional)',
-                          labelStyle: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
-                          fillColor: AppColors.cardBg,
+                          labelStyle: TextStyle(color: colors.textSecondary),
+                          fillColor: colors.cardBg,
                           filled: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
@@ -397,7 +395,7 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
                   ElevatedButton(
                     onPressed: _saving ? null : _submit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: colors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSizes.radiusMd),

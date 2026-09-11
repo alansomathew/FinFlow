@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../../database/app_database.dart';
 import '../../../utils/sms_parser.dart';
 import '../../accounts/data/accounts_repository.dart';
@@ -125,7 +125,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
           content: Text(
             'Free tier allows up to $kFreeSmsParseLimit SMS parses per month. Upgrade to Pro for unlimited.',
           ),
-          backgroundColor: AppColors.warning,
+          backgroundColor: context.colors.warning,
         ),
       );
     }
@@ -183,7 +183,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
               ? 'Nothing high-confidence enough to auto-add -- review the rest manually below.'
               : 'Added $added transactions.',
         ),
-        backgroundColor: AppColors.success,
+        backgroundColor: context.colors.success,
       ),
     );
     await _refresh();
@@ -191,10 +191,11 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: colors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppSizes.radiusLg),
         ),
@@ -210,7 +211,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: colors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -218,11 +219,11 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
               AppSizes.h12,
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Review Bank SMS',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: colors.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -230,10 +231,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                   ),
                   Text(
                     '$_remainingThisMonth/$kFreeSmsParseLimit left this month',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 11),
                   ),
                 ],
               ),
@@ -254,20 +252,17 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
   }
 
   Widget _buildPermissionRequest() {
+    final colors = context.colors;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.sms_rounded,
-            color: AppColors.primaryLight,
-            size: 48,
-          ),
+          Icon(Icons.sms_rounded, color: colors.primaryLight, size: 48),
           AppSizes.h16,
-          const Text(
+          Text(
             'Detect transactions automatically',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: colors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -280,8 +275,8 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                   ? 'SMS permission was denied. You can still add transactions manually, or enable it from system settings.'
                   : 'FinFlow can read bank and UPI SMS alerts on this device to suggest transactions -- nothing is sent anywhere; parsing happens entirely on your device. You can always add transactions manually instead.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: colors.textSecondary,
                 fontSize: 13,
                 height: 1.4,
               ),
@@ -293,7 +288,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                 ? openAppSettings
                 : _requestPermission,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: colors.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -310,9 +305,9 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
           AppSizes.h8,
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               "I'll add transactions manually",
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: colors.textSecondary),
             ),
           ),
         ],
@@ -321,12 +316,13 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
   }
 
   Widget _buildQueue() {
+    final colors = context.colors;
     if (_queue.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           "You're all caught up.\nNo pending SMS to review.",
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: colors.textSecondary),
         ),
       );
     }
@@ -342,7 +338,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
           ),
           label: Text('Add All High-Confidence (${_queue.length} pending)'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
+            backgroundColor: colors.success,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             ),
@@ -356,7 +352,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
               final sms = _queue[index];
               final parsed = SmsParser.parse(sms.messageBody);
               return Card(
-                color: AppColors.cardBg,
+                color: colors.cardBg,
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Padding(
                   padding: const EdgeInsets.all(AppSizes.md),
@@ -368,16 +364,16 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                         children: [
                           Text(
                             sms.sender,
-                            style: const TextStyle(
-                              color: AppColors.primaryLight,
+                            style: TextStyle(
+                              color: colors.primaryLight,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
                           ),
                           Text(
                             DateFormat('dd MMM hh:mm a').format(sms.date),
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
+                            style: TextStyle(
+                              color: colors.textMuted,
                               fontSize: 10,
                             ),
                           ),
@@ -386,8 +382,8 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                       AppSizes.h8,
                       Text(
                         sms.messageBody,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: colors.textPrimary,
                           fontSize: 12,
                           height: 1.3,
                         ),
@@ -399,20 +395,17 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                           style: TextStyle(
                             color:
                                 parsed.confidenceScore >= _autoAcceptConfidence
-                                ? AppColors.success
-                                : AppColors.warning,
+                                ? colors.success
+                                : colors.warning,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ] else ...[
                         AppSizes.h8,
-                        const Text(
+                        Text(
                           "Couldn't parse this message automatically.",
-                          style: TextStyle(
-                            color: AppColors.error,
-                            fontSize: 11,
-                          ),
+                          style: TextStyle(color: colors.error, fontSize: 11),
                         ),
                       ],
                       AppSizes.h12,
@@ -422,17 +415,17 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                           OutlinedButton(
                             onPressed: () => _skipItem(sms),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.border),
+                              side: BorderSide(color: colors.border),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   AppSizes.radiusSm,
                                 ),
                               ),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Skip',
                               style: TextStyle(
-                                color: AppColors.textSecondary,
+                                color: colors.textSecondary,
                                 fontSize: 11,
                               ),
                             ),
@@ -443,7 +436,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                                 ? () => _addItem(sms)
                                 : null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
+                              backgroundColor: colors.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                   AppSizes.radiusSm,

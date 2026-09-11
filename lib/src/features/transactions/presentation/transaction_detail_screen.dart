@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
 import '../../accounts/data/accounts_repository.dart';
 import '../data/transaction_repository.dart';
 import '../domain/transaction.dart';
@@ -26,35 +26,33 @@ class TransactionDetailScreen extends ConsumerWidget {
     WidgetRef ref,
     TransactionModel current,
   ) async {
+    final colors = context.colors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
-        title: const Text(
+        title: Text(
           'Delete Transaction?',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
         content: Text(
           'This will remove "${current.payee.isNotEmpty ? current.payee : current.category}" and reverse its effect on the account balance.',
-          style: const TextStyle(color: AppColors.textSecondary),
+          style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: colors.textSecondary),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.error),
-            ),
+            child: Text('Delete', style: TextStyle(color: colors.error)),
           ),
         ],
       ),
@@ -70,6 +68,7 @@ class TransactionDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(transactionListProvider);
+    final colors = context.colors;
     // Reflects live edits/deletes made while this screen is open; falls back
     // to the snapshot passed in while the list is loading.
     final current =
@@ -95,25 +94,22 @@ class TransactionDetailScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Transaction Details',
-          style: TextStyle(color: AppColors.textPrimary),
+          style: TextStyle(color: colors.textPrimary),
         ),
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_rounded, color: AppColors.primaryLight),
+            icon: Icon(Icons.edit_rounded, color: colors.primaryLight),
             onPressed: () => _edit(context, current),
           ),
           IconButton(
-            icon: const Icon(
-              Icons.delete_outline_rounded,
-              color: AppColors.error,
-            ),
+            icon: Icon(Icons.delete_outline_rounded, color: colors.error),
             onPressed: () => _delete(context, ref, current),
           ),
         ],
@@ -139,9 +135,7 @@ class TransactionDetailScreen extends ConsumerWidget {
                   Text(
                     '${isDebit ? "-" : "+"}${currency.format(current.amount)}',
                     style: TextStyle(
-                      color: isDebit
-                          ? AppColors.textPrimary
-                          : AppColors.success,
+                      color: isDebit ? colors.textPrimary : colors.success,
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),
@@ -149,17 +143,14 @@ class TransactionDetailScreen extends ConsumerWidget {
                   AppSizes.h4,
                   Text(
                     current.payee.isNotEmpty ? current.payee : current.category,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(color: colors.textSecondary, fontSize: 15),
                   ),
                 ],
               ),
             ),
             AppSizes.h24,
             Card(
-              color: AppColors.cardBg,
+              color: colors.cardBg,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               ),
@@ -171,20 +162,20 @@ class TransactionDetailScreen extends ConsumerWidget {
                     value:
                         '${category.icon} ${current.category} (${current.bucket.displayName})',
                   ),
-                  const Divider(color: AppColors.border, height: 1),
+                  Divider(color: colors.border, height: 1),
                   _DetailRow(
                     icon: Icons.account_balance_wallet_rounded,
                     label: 'Account',
                     value: accountName,
                   ),
-                  const Divider(color: AppColors.border, height: 1),
+                  Divider(color: colors.border, height: 1),
                   _DetailRow(
                     icon: Icons.calendar_month_rounded,
                     label: 'Date',
                     value: DateFormat('dd MMMM yyyy').format(current.date),
                   ),
                   if (current.note.isNotEmpty) ...[
-                    const Divider(color: AppColors.border, height: 1),
+                    Divider(color: colors.border, height: 1),
                     _DetailRow(
                       icon: Icons.sticky_note_2_rounded,
                       label: 'Note',
@@ -192,7 +183,7 @@ class TransactionDetailScreen extends ConsumerWidget {
                     ),
                   ],
                   if (current.refId.isNotEmpty) ...[
-                    const Divider(color: AppColors.border, height: 1),
+                    Divider(color: colors.border, height: 1),
                     _DetailRow(
                       icon: Icons.tag_rounded,
                       label: 'Reference ID',
@@ -200,7 +191,7 @@ class TransactionDetailScreen extends ConsumerWidget {
                     ),
                   ],
                   if (current.isRecurring) ...[
-                    const Divider(color: AppColors.border, height: 1),
+                    Divider(color: colors.border, height: 1),
                     const _DetailRow(
                       icon: Icons.repeat_rounded,
                       label: 'Recurring',
@@ -229,6 +220,7 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSizes.md,
@@ -236,22 +228,19 @@ class _DetailRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.textSecondary, size: 20),
+          Icon(icon, color: colors.textSecondary, size: 20),
           AppSizes.w12,
           Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
           ),
           const Spacer(),
           Flexible(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
+import '../../../constants/app_theme.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../goals/presentation/goals_list_screen.dart';
@@ -17,6 +19,7 @@ import '../../sms/data/sms_repository.dart';
 import '../../sms/presentation/sms_review_sheet.dart';
 import '../../sms/presentation/sms_sandbox_sheet.dart';
 import '../../debt/presentation/debt_planner_sheet.dart';
+import '../../../services/app_settings_service.dart';
 import '../../../services/pro_tier_service.dart';
 
 final activeTabProvider = StateProvider<int>((ref) => 0);
@@ -95,295 +98,431 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      // Deliberately transparent, not colors.surface: showModalBottomSheet's
+      // backgroundColor is evaluated once at call time, not inside builder,
+      // so a context.colors value baked in here would freeze at whatever
+      // theme was active when the sheet opened and only pick up a live
+      // theme change the *next* time the sheet is opened. The real surface
+      // color is painted by the Container below instead, which is inside
+      // builder and so re-evaluates colors on every theme change.
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSizes.radiusLg),
-        ),
-      ),
-      builder: (context) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSizes.md),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // User Info Header
-                Row(
+      builder: (context) {
+        final colors = context.colors;
+        final l10n = AppLocalizations.of(context)!;
+
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppSizes.radiusLg),
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSizes.md),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    CircleAvatar(
-                      radius: 25,
-                      backgroundColor: AppColors.primary,
-                      backgroundImage: user.photoUrl.isNotEmpty
-                          ? NetworkImage(user.photoUrl)
-                          : null,
-                      child: user.photoUrl.isEmpty
-                          ? Text(
-                              user.displayName[0],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
+                    // User Info Header
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 25,
+                          backgroundColor: colors.primary,
+                          backgroundImage: user.photoUrl.isNotEmpty
+                              ? NetworkImage(user.photoUrl)
+                              : null,
+                          child: user.photoUrl.isEmpty
+                              ? Text(
+                                  user.displayName[0],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        AppSizes.w16,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.displayName,
+                                style: TextStyle(
+                                  color: colors.textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            )
-                          : null,
-                    ),
-                    AppSizes.w16,
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user.displayName,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 18,
+                              Text(
+                                user.email,
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: user.isGuest
+                                ? colors.wants.withValues(alpha: 0.2)
+                                : colors.savings.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            user.isGuest
+                                ? l10n.profileGuestBadge
+                                : l10n.profileCloudSyncBadge,
+                            style: TextStyle(
+                              color: user.isGuest
+                                  ? colors.wants
+                                  : colors.savings,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(
-                            user.email,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                    AppSizes.h24,
+                    Divider(color: colors.border, height: 1),
+                    AppSizes.h12,
+
+                    // Action Options
+                    ListTile(
+                      leading: Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: colors.primary,
                       ),
-                      decoration: BoxDecoration(
-                        color: user.isGuest
-                            ? AppColors.wants.withOpacity(0.2)
-                            : AppColors.savings.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
+                      title: Text(
+                        l10n.menuAccountsTitle,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        l10n.menuAccountsSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const AccountsListScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.savings_rounded,
+                        color: colors.savings,
+                      ),
+                      title: Text(
+                        l10n.menuGoalsTitle,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        l10n.menuGoalsSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const GoalsListScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    if (user.isGuest)
+                      ListTile(
+                        leading: Icon(
+                          Icons.cloud_upload_rounded,
+                          color: colors.primary,
+                        ),
+                        title: Text(
+                          l10n.menuUpgradeTitle,
+                          style: TextStyle(color: colors.textPrimary),
+                        ),
+                        subtitle: Text(
+                          l10n.menuUpgradeSubtitle,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.pop(context);
+                          context.go('/login');
+                        },
+                      ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.mark_email_read_rounded,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        l10n.menuSmsAutoTitle,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        l10n.menuSmsAutoSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const SmsReviewSheet(),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.sms_rounded, color: colors.secondary),
+                      title: Text(
+                        l10n.menuSmsSandboxTitle,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        l10n.menuSmsSandboxSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const SmsSandboxSheet(),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.calculate_rounded,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        l10n.menuDebtPlannerTitle,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        l10n.menuDebtPlannerSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const DebtPlannerSheet(),
+                        );
+                      },
+                    ),
+                    AppSizes.h12,
+                    Divider(color: colors.border, height: 1),
+                    AppSizes.h12,
+
+                    // Theme selector
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.md,
                       ),
                       child: Text(
-                        user.isGuest ? 'Guest' : 'Cloud Sync',
+                        l10n.menuTheme,
                         style: TextStyle(
-                          color: user.isGuest
-                              ? AppColors.wants
-                              : AppColors.savings,
-                          fontSize: 11,
+                          color: colors.textSecondary,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                AppSizes.h24,
-                const Divider(color: AppColors.border, height: 1),
-                AppSizes.h12,
+                    AppSizes.h8,
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final mode =
+                            ref.watch(themeModeProvider).valueOrNull ??
+                            ThemeMode.dark;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSizes.md,
+                          ),
+                          child: SegmentedButton<ThemeMode>(
+                            segments: [
+                              ButtonSegment(
+                                value: ThemeMode.light,
+                                icon: const Icon(
+                                  Icons.light_mode_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(l10n.menuThemeLight),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.dark,
+                                icon: const Icon(
+                                  Icons.dark_mode_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(l10n.menuThemeDark),
+                              ),
+                              ButtonSegment(
+                                value: ThemeMode.system,
+                                icon: const Icon(
+                                  Icons.brightness_auto_rounded,
+                                  size: 16,
+                                ),
+                                label: Text(l10n.menuThemeSystem),
+                              ),
+                            ],
+                            selected: {mode},
+                            onSelectionChanged: (selection) =>
+                                setThemeMode(selection.first),
+                          ),
+                        );
+                      },
+                    ),
+                    AppSizes.h16,
 
-                // Action Options
-                ListTile(
-                  leading: const Icon(
-                    Icons.account_balance_wallet_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text(
-                    'Accounts & Cards',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                  subtitle: const Text(
-                    'Manage bank accounts, wallets, and credit cards',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const AccountsListScreen(),
+                    // Language selector
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.md,
                       ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.savings_rounded,
-                    color: AppColors.savings,
-                  ),
-                  title: const Text(
-                    'Savings Goals',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                  subtitle: const Text(
-                    'Track progress toward your savings targets',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const GoalsListScreen(),
-                      ),
-                    );
-                  },
-                ),
-                if (user.isGuest)
-                  ListTile(
-                    leading: const Icon(
-                      Icons.cloud_upload_rounded,
-                      color: AppColors.primary,
-                    ),
-                    title: const Text(
-                      'Upgrade to Cloud Sync',
-                      style: TextStyle(color: AppColors.textPrimary),
-                    ),
-                    subtitle: const Text(
-                      'Link Google account and backup data',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.go('/login');
-                    },
-                  ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.mark_email_read_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text(
-                    'SMS Auto-Detection',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                  subtitle: const Text(
-                    'Detect transactions from real bank/UPI SMS on this device',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const SmsReviewSheet(),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.sms_rounded,
-                    color: AppColors.secondary,
-                  ),
-                  title: const Text(
-                    'SMS Parsing Sandbox',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                  subtitle: const Text(
-                    'Simulate bank SMS messages to test parser',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const SmsSandboxSheet(),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.calculate_rounded,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text(
-                    'Debt Payoff Planner',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                  subtitle: const Text(
-                    'Compare Snowball vs Avalanche payoff methods',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const DebtPlannerSheet(),
-                    );
-                  },
-                ),
-                Consumer(
-                  builder: (context, ref, _) {
-                    final isPro = ref.watch(isProProvider).valueOrNull ?? false;
-                    return SwitchListTile(
-                      secondary: const Icon(
-                        Icons.workspace_premium_rounded,
-                        color: AppColors.warning,
-                      ),
-                      title: const Text(
-                        'Pro Tier (Debug Toggle)',
-                        style: TextStyle(color: AppColors.textPrimary),
-                      ),
-                      subtitle: const Text(
-                        'No billing yet -- for testing Pro-gated features',
+                      child: Text(
+                        l10n.menuLanguage,
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: colors.textSecondary,
                           fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      value: isPro,
-                      activeThumbColor: AppColors.warning,
-                      onChanged: (value) => setProTierForTesting(value),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.logout_rounded,
-                    color: AppColors.error,
-                  ),
-                  title: const Text(
-                    'Sign Out',
-                    style: TextStyle(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await ref.read(authProvider.notifier).signOut();
-                    if (context.mounted) {
-                      context.go('/login');
-                    }
-                  },
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final locale = ref.watch(localeProvider).valueOrNull;
+                        return DropdownButton<String?>(
+                          value: locale?.languageCode,
+                          isExpanded: true,
+                          underline: const SizedBox.shrink(),
+                          dropdownColor: colors.surface,
+                          style: TextStyle(color: colors.textPrimary),
+                          items: [
+                            DropdownMenuItem(
+                              value: null,
+                              child: Text(l10n.menuLanguageSystem),
+                            ),
+                            const DropdownMenuItem(
+                              value: 'en',
+                              child: Text('English'),
+                            ),
+                            const DropdownMenuItem(
+                              value: 'hi',
+                              child: Text('हिन्दी (Hindi)'),
+                            ),
+                            const DropdownMenuItem(
+                              value: 'ta',
+                              child: Text('தமிழ் (Tamil)'),
+                            ),
+                            const DropdownMenuItem(
+                              value: 'kn',
+                              child: Text('ಕನ್ನಡ (Kannada)'),
+                            ),
+                            const DropdownMenuItem(
+                              value: 'mr',
+                              child: Text('मराठी (Marathi)'),
+                            ),
+                            const DropdownMenuItem(
+                              value: 'ml',
+                              child: Text('മലയാളം (Malayalam)'),
+                            ),
+                          ],
+                          onChanged: (code) => setLanguageCode(code),
+                        );
+                      },
+                    ),
+                    AppSizes.h12,
+                    Divider(color: colors.border, height: 1),
+
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final isPro =
+                            ref.watch(isProProvider).valueOrNull ?? false;
+                        return SwitchListTile(
+                          secondary: Icon(
+                            Icons.workspace_premium_rounded,
+                            color: colors.warning,
+                          ),
+                          title: Text(
+                            l10n.menuProToggleTitle,
+                            style: TextStyle(color: colors.textPrimary),
+                          ),
+                          subtitle: Text(
+                            l10n.menuProToggleSubtitle,
+                            style: TextStyle(
+                              color: colors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                          value: isPro,
+                          activeThumbColor: colors.warning,
+                          onChanged: (value) => setProTierForTesting(value),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(Icons.logout_rounded, color: colors.error),
+                      title: Text(
+                        l10n.menuSignOut,
+                        style: TextStyle(
+                          color: colors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        await ref.read(authProvider.notifier).signOut();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
+                      },
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -391,6 +530,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final activeTab = ref.watch(activeTabProvider);
     final user = ref.watch(authProvider);
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.colors;
 
     final List<Widget> tabs = [
       const DashboardTab(),
@@ -400,30 +541,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       const AnalyticsTab(),
     ];
 
+    final tabTitles = [
+      l10n.appTitleHome,
+      l10n.appTitleTransactions,
+      l10n.appTitleBudgets,
+      l10n.appTitleInvestments,
+      l10n.appTitleAnalytics,
+    ];
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: colors.background,
         elevation: 0,
         title: Row(
           children: [
-            const Icon(
-              Icons.auto_graph_rounded,
-              color: AppColors.primary,
-              size: 24,
-            ),
+            Icon(Icons.auto_graph_rounded, color: colors.primary, size: 24),
             const SizedBox(width: 8),
             Text(
-              activeTab == 0
-                  ? 'FinFlow'
-                  : [
-                      'Transactions',
-                      'Budgets',
-                      'Investments',
-                      'Analytics',
-                    ][activeTab - 1],
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              tabTitles[activeTab],
+              style: TextStyle(
+                color: colors.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
@@ -437,7 +575,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onTap: () => _showProfileMenu(context, ref),
               child: CircleAvatar(
                 radius: 18,
-                backgroundColor: AppColors.border,
+                backgroundColor: colors.border,
                 backgroundImage:
                     user?.photoUrl != null && user!.photoUrl.isNotEmpty
                     ? NetworkImage(user.photoUrl)
@@ -459,7 +597,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       body: IndexedStack(index: activeTab, children: tabs),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTransaction(context),
-        backgroundColor: AppColors.primary,
+        backgroundColor: colors.primary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
@@ -475,7 +613,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        color: AppColors.surface,
+        color: colors.surface,
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         padding: EdgeInsets.zero,
@@ -493,8 +631,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildBottomNavItem(ref, 0, Icons.dashboard_rounded, 'Home'),
-                  _buildBottomNavItem(ref, 1, Icons.list_alt_rounded, 'Ledger'),
+                  _buildBottomNavItem(
+                    ref,
+                    0,
+                    Icons.dashboard_rounded,
+                    l10n.navHome,
+                  ),
+                  _buildBottomNavItem(
+                    ref,
+                    1,
+                    Icons.list_alt_rounded,
+                    l10n.navLedger,
+                  ),
                 ],
               ),
             ),
@@ -506,19 +654,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     ref,
                     2,
                     Icons.pie_chart_rounded,
-                    'Budget',
+                    l10n.navBudget,
                   ),
                   _buildBottomNavItem(
                     ref,
                     3,
                     Icons.trending_up_rounded,
-                    'Invest',
+                    l10n.navInvest,
                   ),
                   _buildBottomNavItem(
                     ref,
                     4,
                     Icons.insert_chart_rounded,
-                    'Charts',
+                    l10n.navCharts,
                   ),
                 ],
               ),
@@ -537,6 +685,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   ) {
     final activeTab = ref.watch(activeTabProvider);
     final isSelected = activeTab == index;
+    final colors = context.colors;
 
     return Material(
       type: MaterialType.transparency,
@@ -551,16 +700,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             children: [
               Icon(
                 icon,
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                color: isSelected ? colors.primary : colors.textSecondary,
                 size: 22,
               ),
               const SizedBox(height: 3),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                  color: isSelected ? colors.primary : colors.textSecondary,
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
