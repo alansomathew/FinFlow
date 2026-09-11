@@ -23,6 +23,13 @@
 | 11 — Pro Features | ⬜ Not started | |
 | 12 — Polish & Launch | ⬜ Not started | |
 
+**Ad-hoc work (outside the 12-phase plan, per direct user requests
+between phases):** dark/light theming + multi-language support, bottom
+nav/FAB symmetry, the Google Sign-In `serverClientId` fix, "Clear All
+Data", the salary-based budget planner + custom categories, credit card
+EMI tracking, and exact SMS-to-account matching. Each has its own
+`## Ad-hoc: ...` section immediately below with full detail.
+
 ---
 
 ## Ad-hoc: Dark/Light Theme + Multi-Language Support

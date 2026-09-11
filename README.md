@@ -42,12 +42,16 @@ FinFlow is built **offline-first**: all core data lives in a high-performance lo
 * **Diverse Asset Types**: Track Savings accounts, Current accounts, Credit Cards, Digital Wallets (Paytm, Amazon Pay), and Cash.
 * **Live Balance Recalculation**: Balances automatically adjust as transactions are added, edited, or deleted.
 * **Credit Limit & Billing Cycles**: Track available credit limits and bill due dates.
+* **Credit Card EMI Tracking**: Convert a card purchase into an EMI plan and see it reflected on the card itself — a monthly breakdown of regular card spend vs. active EMI installments, both on the account detail screen and as a compact summary in the accounts list.
+* **Exact SMS Account Matching**: Optionally save an account's last 4 digits so incoming bank/card SMS alerts are matched to the *correct* account automatically instead of a best-effort guess — with an explicit account picker whenever a confident match isn't found.
 
 ### 📊 4. 50/30/20 Budgeting Rule Engine
 * **Needs (50%)**: Rent, Groceries, Utilities, Healthcare, Transport, Education, and EMIs.
 * **Wants (30%)**: Dining Out, Entertainment, Subscriptions, Shopping, Travel, and Hobbies.
 * **Savings & Investments (20%)**: Emergency Funds, SIPs, Stocks, Gold, FDs, and Prepayments.
 * **Category Limits**: Set monthly monetary limits per category with real-time warning thresholds (80% warning, 100% exceeded).
+* **Salary-Based Planner**: Enter a monthly income figure to see each bucket's 50/30/20 target pool, then allocate real category limits against it — the app's suggested starting point whenever no budget exists yet for the month.
+* **Custom Categories**: Create categories beyond the built-in presets with your own icon and color, right from the salary planner — they show up correctly (icon, color) everywhere else in the app from that point on.
 
 ### 📝 5. Comprehensive Transaction Manager
 * **Fast Manual Entry**: Quick-action bottom sheet with category auto-suggestion and dedicated numeric keypad.
@@ -82,6 +86,11 @@ FinFlow is built **offline-first**: all core data lives in a high-performance lo
 * **Dark-First Modern UI**: Bespoke dark theme with vibrant emerald/teal accents, subtle borders, and glassmorphism.
 * **Dynamic Theme Switcher**: Toggle seamlessly between Dark Mode and Light Mode.
 * **Typography**: Powered by Google Fonts (Poppins / Inter).
+
+### 🔐 11. Account & Data Control
+* **Guest Mode**: Explore every feature offline with zero sign-up, backed by rich seeded demo data.
+* **One-Tap Cloud Upgrade**: The profile menu's "Upgrade to Cloud Sync" jumps straight into the Google sign-in prompt, with an optional guest-data migration dialog and a lossless local fallback if the cloud write ever fails.
+* **Clear All Data**: Permanently wipe every account, transaction, budget, loan, investment, and goal — locally and in the cloud for signed-in users — behind an explicit destructive-action confirmation.
 
 ---
 
@@ -209,7 +218,7 @@ The compiled APK will be available at:
 
 ## 🧪 Testing & Code Quality
 
-FinFlow includes unit tests for the Drift local database, SMS parser regex engine, and duplicate detection algorithms.
+FinFlow includes unit tests for the Drift local database, SMS parser regex engine, duplicate detection algorithms, and the amortization/EMI engine (reference EMI figures, schedule generation, Snowball vs. Avalanche payoff simulation).
 
 ```bash
 # Run all unit and widget tests
@@ -242,7 +251,7 @@ Continuous Integration is automated using **GitHub Actions** (`.github/workflows
 |:---:|---|:---:|
 | **1** | **Foundation & Auth**: Drift migration, real Firebase Auth (Google & Email), Guest Mode migration bugfix | ✅ Complete |
 | **2** | **Core Transactions**: Edit flow, detail screens, date-range filters, recurring schedules | ✅ Complete |
-| **3** | **SMS Parsing Engine**: 35+ Bank regexes, duplicate detection algorithm, permission handlers | 🟡 In Progress |
+| **3** | **SMS Parsing Engine**: 35+ Bank regexes, duplicate detection algorithm, permission handlers, exact account matching via saved card digits | ✅ Complete |
 | **4** | **Budgeting Module**: 50/30/20 budget allocations, category thresholds, budget progress | ✅ Complete |
 | **5** | **Accounts & Cards**: Bank accounts, credit cards, wallet balances, balance audit | ✅ Complete |
 | **6** | **Loans & EMI**: Snowball & Avalanche debt repayment planner, amortization calculations | ✅ Complete |
@@ -252,6 +261,14 @@ Continuous Integration is automated using **GitHub Actions** (`.github/workflows
 | **10** | **AI Financial Insights**: Gemini API / Vertex AI integration for smart spending tips | ⏳ Planned |
 | **11** | **Pro Features**: Receipt OCR scanning with ML Kit, unlimited recurring schedules | ⏳ Planned |
 | **12** | **Polish & Play Store Launch**: App bundle signing, Play Store listing & release | ⏳ Planned |
+
+In addition to the 12 numbered phases, a number of features landed as direct
+ad-hoc requests between phases: dark/light theming, multi-language support,
+the salary-based budget planner, custom categories, credit card EMI
+tracking, and exact SMS-to-account matching among them. See
+[`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md) for the full,
+detailed engineering log of everything built, fixed, and deliberately
+deferred — this README stays at the feature-overview level.
 
 ---
 
