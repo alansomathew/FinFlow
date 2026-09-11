@@ -633,6 +633,20 @@ how the app is monetized later.
    card only ever looked at accounts, silently ignoring investments and
    loans entirely despite the label -- now correctly aggregates all three
    per the SRS's actual definition.
+   **Second bug found and fixed (live crash report):**
+   `_NetWorthTrendCardState._recordAndLoad()` ended with
+   `setState(() => _historyFuture = repo.getHistory())` -- an arrow-body
+   closure whose body is the assignment *expression*, which in Dart
+   evaluates to the assigned value, so the closure implicitly returned
+   the `Future` on the right-hand side. `setState` asserts its callback
+   never returns a `Future` (the classic guard against accidentally
+   marking it `async`), so this threw `FlutterError: setState() callback
+   argument returned a Future` on every load, even though nothing here
+   was actually `async`. Fixed by switching to a block body (`setState(()
+   { _historyFuture = repo.getHistory(); })`), which discards the
+   expression's value instead of returning it. Checked the rest of the
+   codebase for the same `setState(() => field = someAsyncCall())`
+   pattern -- no other occurrences.
 4. PDF export (Pro) alongside CSV (stays free), via `pdf` + `printing`,
    shared through the same fixed share-sheet path as CSV.
 

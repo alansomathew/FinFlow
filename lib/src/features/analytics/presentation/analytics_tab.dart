@@ -884,7 +884,9 @@ class _NetWorthTrendCardState extends ConsumerState<_NetWorthTrendCard> {
     final repo = ref.read(netWorthRepositoryProvider);
     await repo.recordTodaySnapshot(totals);
     if (!mounted) return;
-    setState(() => _historyFuture = repo.getHistory());
+    setState(() {
+      _historyFuture = repo.getHistory();
+    });
   }
 
   String _formatCurrency(double amount) {
