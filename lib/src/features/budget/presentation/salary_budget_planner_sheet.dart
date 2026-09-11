@@ -70,11 +70,16 @@ class _SalaryBudgetPlannerSheetState
         .read(budgetRepositoryProvider)
         .setMonthlyIncome(_monthYear, _salary);
     if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final navigator = Navigator.of(context);
+    final successColor = context.colors.success;
+    final monthYear = _monthYear;
     setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
+    navigator.pop();
+    messenger?.showSnackBar(
       SnackBar(
-        content: Text('Saved as your budget for $_monthYear'),
-        backgroundColor: context.colors.success,
+        content: Text('Saved as your budget for $monthYear'),
+        backgroundColor: successColor,
       ),
     );
   }

@@ -378,6 +378,14 @@ trusting the insert's return value.
   the next time the planner opens for that month instead of resetting to
   blank, using the same Firestore-write-through-then-local pattern as
   every other per-month value in the app.
+- **Bug fix:** the Salary Planner's Save button persisted the salary
+  correctly but never dismissed the sheet afterward (only a SnackBar
+  confirmation showed) -- every other Save action in the app closes its
+  dialog/sheet, so this one looked stuck/broken by comparison, reported
+  as "saving the budget is giving an error" even though nothing actually
+  threw. Fixed by popping the sheet after a successful save; the salary
+  and any categories already allocated stay persisted, so reopening the
+  planner (via the same toolbar icon) picks up right where it left off.
 
 **Deferred (explicit decision: hold off on Blaze until more Cloud
 Functions consumers — EMI auto-posting in Phase 6, price feeds in Phase 8,
