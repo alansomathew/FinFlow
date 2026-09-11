@@ -255,8 +255,114 @@ Continuous Integration is automated using **GitHub Actions** (`.github/workflows
 
 ---
 
+## 🤝 Collaboration Manual
+
+We welcome contributions and collaborative development on FinFlow! To maintain code quality, architecture consistency, and smooth code reviews, please follow this collaboration manual.
+
+### 1. Branching Strategy & Workflow
+
+1. **Branching Model**:
+   * All active development branches diverge from and merge back into `master`.
+   * Keep your local `master` branch up to date:
+     ```bash
+     git checkout master
+     git pull origin master
+     ```
+   * Create a descriptive topic branch:
+     ```bash
+     git checkout -b <type>/<short-description>
+     ```
+   * **Branch Naming Conventions**:
+     * `feat/<feature-name>`: Net-new capabilities or enhancements (e.g. `feat/sms-upi-filters`)
+     * `fix/<bug-description>`: Bug fixes (e.g. `fix/balance-negative-overflow`)
+     * `refactor/<scope>`: Code refactoring without behavioral changes (e.g. `refactor/drift-daos`)
+     * `docs/<topic>`: Documentation and manuals (e.g. `docs/collaboration-guide`)
+     * `test/<scope>`: Adding or fixing test suites (e.g. `test/duplicate-detector`)
+
+2. **Code Generation & Drift DB Changes**:
+   * If you introduce or modify Drift tables (`lib/src/database/tables/`) or add code-generated dependencies:
+     ```bash
+     flutter pub get
+     dart run build_runner build --delete-conflicting-outputs
+     ```
+   * Commit both the table definitions and the generated files (`.g.dart`) together.
+   * Add database migration logic to `lib/src/database/app_database.dart` whenever schema version increments.
+
+### 2. Coding & Architectural Standards
+
+* **Feature-First Organization**: Group all code by feature under `lib/src/features/<feature>/` split across:
+  * `data/`: Repositories, local database DAOs, remote API/Firestore services.
+  * `domain/`: Pure Dart business models, validation entities, value objects.
+  * `presentation/`: Riverpod providers, UI screens, widgets, and dialog sheets.
+* **State Management**:
+  * Use **Flutter Riverpod** (`StateNotifierProvider` / `NotifierProvider` / `FutureProvider`).
+  * Avoid storing business logic inside StatefulWidget state.
+* **Localization & Strings**:
+  * Never hardcode user-facing strings in UI widgets.
+  * Add all new text strings to `lib/l10n/app_en.arb` and generate classes via `flutter gen-l10n`.
+* **Theme Compliance**:
+  * Use `Theme.of(context)` and semantic colors (`colors.surface`, `colors.textPrimary`, `colors.primary`) to ensure dark/light mode compatibility.
+
+### 3. Commit Message Guidelines
+
+We enforce the **Conventional Commits** specification:
+
+```text
+<type>(<scope>): <concise description in imperative mood>
+
+[optional body explaining context and rationale]
+
+[optional footer(s), e.g., Closes #24]
+```
+
+#### Commit Types:
+* `feat`: A new user-facing feature.
+* `fix`: A bug fix.
+* `docs`: Documentation updates.
+* `style`: Code formatting, semicolons, whitespace (no functional changes).
+* `refactor`: Restructuring code without changing behavior or fixing bugs.
+* `perf`: Performance optimizations.
+* `test`: Adding or updating test cases.
+* `chore`: Dependency updates, tooling, CI workflows, gradle adjustments.
+
+#### Examples:
+```bash
+git commit -m "feat(budget): add rollover surplus toggle for category limits"
+git commit -m "fix(sms): resolve race condition in insertOrIgnore row ID check"
+git commit -m "docs: add collaboration manual to README"
+```
+
+### 4. Local Quality Assurance (Pre-PR Checklist)
+
+Every pull request must pass the automated CI suite. Before pushing your branch, run the local verification pipeline:
+
+```bash
+# 1. Check code formatting (fails if any file needs reformatting)
+dart format --output=none --set-exit-if-changed .
+
+# 2. Run static analyzer (must report zero errors and zero warnings)
+flutter analyze
+
+# 3. Run all unit and widget tests
+flutter test
+```
+
+### 5. Pull Request (PR) & Code Review Process
+
+1. **Create Focused PRs**: Keep PRs focused on a single responsibility to enable swift reviews.
+2. **PR Description**:
+   * **Context**: Explain the problem or feature objective.
+   * **Implementation**: Summarize the changes made.
+   * **Testing**: Detail steps taken to verify correctness (include test results).
+   * **Screenshots / Recordings**: Required for any UI modifications (both Dark & Light modes).
+3. **CI Validation**: Ensure all GitHub Actions checks (`analyze-and-test`, `build-debug-apk`) are green.
+4. **Peer Review**: At least one maintainer approval is required before merging into `master`.
+
+---
+
 ## 📄 License & Author
 
 * **Author**: Alanso Mathew ([@alansomathew](https://github.com/alansomathew))
 * **Project**: FinFlow — Smart Personal Finance Manager
 * **License**: Private / Proprietary (All rights reserved).
+
