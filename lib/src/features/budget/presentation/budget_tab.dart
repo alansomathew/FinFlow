@@ -470,19 +470,20 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
       context: context,
       // Transparent here, not colors.surface -- showModalBottomSheet's
       // backgroundColor is fixed at call time, not re-evaluated inside
-      // builder, so it wouldn't track a live theme change. The Container
-      // below paints the real surface color reactively instead.
+      // builder, so it wouldn't track a live theme change. The Material
+      // below paints the real surface color reactively instead -- a plain
+      // Container/DecoratedBox would hide the ListTiles' background/ink
+      // splashes, which paint on the nearest Material ancestor.
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
         final colors = context.colors;
-        return Container(
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppSizes.radiusMd),
-            ),
+        return Material(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppSizes.radiusMd),
           ),
+          clipBehavior: Clip.antiAlias,
           child: FutureBuilder<List<String>>(
             future: ref.read(budgetRepositoryProvider).getAvailableMonths(),
             builder: (context, snapshot) {
@@ -557,13 +558,12 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
       isScrollControlled: true,
       builder: (context) {
         final colors = context.colors;
-        return Container(
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppSizes.radiusMd),
-            ),
+        return Material(
+          color: colors.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppSizes.radiusMd),
           ),
+          clipBehavior: Clip.antiAlias,
           child: FutureBuilder<List<BudgetModel>>(
             future: ref
                 .read(budgetRepositoryProvider)

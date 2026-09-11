@@ -428,12 +428,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
                   if (!_isEditing) ...[
                     AppSizes.h12,
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: colors.cardBg,
-                        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      ),
+                    Material(
+                      // Material, not Container/DecoratedBox: SwitchListTile
+                      // paints its background/ink on the nearest Material
+                      // ancestor, which an opaque DecoratedBox in between
+                      // would hide.
+                      color: colors.cardBg,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      clipBehavior: Clip.antiAlias,
                       child: SwitchListTile(
                         title: const Text(
                           'Repeat this transaction',

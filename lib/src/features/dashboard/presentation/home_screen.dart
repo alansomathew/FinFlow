@@ -116,13 +116,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.85,
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(AppSizes.radiusLg),
-                ),
+            child: Material(
+              // Material, not a plain Container/DecoratedBox: the ListTiles
+              // below paint their background/ink splashes on the nearest
+              // Material ancestor, and an opaque DecoratedBox in between
+              // would hide those effects (Flutter warns on exactly this).
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppSizes.radiusLg),
               ),
+              clipBehavior: Clip.antiAlias,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSizes.md),
                 child: Column(
