@@ -274,7 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/login');
+                          context.go('/login', extra: true);
                         },
                       ),
                     ListTile(

@@ -189,6 +189,16 @@ com.finflow.app`.
 8. Real app branding: logo rasterized into launcher icon (incl. Android
    adaptive icon) + splash screen via `flutter_launcher_icons`/
    `flutter_native_splash`.
+9. **Added later, per direct user request:** the profile menu's "Upgrade
+   to Cloud Sync" entry (guest-only) used to just navigate to the generic
+   login screen, requiring the user to then tap "Continue with Google"
+   themselves. `LoginScreen` now takes an `autoGoogle` flag (passed via
+   `context.go('/login', extra: true)` from the upgrade entry point) that
+   fires the Google sign-in prompt immediately on arrival and hides the
+   "Try as Guest" button, since re-offering guest mode to someone already
+   in a guest session upgrading out of it made no sense. A cancelled
+   Google prompt still falls back to the full login screen (Email/Guest
+   included) rather than leaving the user stuck.
 
 **Key files:** `lib/src/database/app_database.dart`, `lib/src/database/tables/*.dart`,
 `lib/src/database/migration_service.dart`, `lib/src/features/auth/data/auth_repository.dart`,

@@ -11,7 +11,12 @@ import '../../../database/migration_service.dart';
 import '../data/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.autoGoogle = false});
+
+  /// When true (the guest "Upgrade to Cloud Sync" entry point), the Google
+  /// sign-in prompt fires immediately instead of making the user land on
+  /// this screen and tap "Continue with Google" a second time.
+  final bool autoGoogle;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -28,6 +33,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autoGoogle) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loginWithGoogle());
+    }
+  }
 
   @override
   void dispose() {
@@ -484,28 +497,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ],
 
-                        AppSizes.h16,
-                        // Guest Mode Button
-                        OutlinedButton(
-                          onPressed: _enterGuestMode,
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: colors.border),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppSizes.radiusMd,
+                        if (!widget.autoGoogle) ...[
+                          AppSizes.h16,
+                          // Guest Mode Button -- hidden when arriving here to
+                          // upgrade an existing guest session, since offering
+                          // to re-enter guest mode at that point makes no
+                          // sense.
+                          OutlinedButton(
+                            onPressed: _enterGuestMode,
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: colors.border),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                  AppSizes.radiusMd,
+                                ),
+                              ),
+                            ),
+                            child: Text(
+                              'Try as Guest (Offline Mode)',
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                          child: Text(
-                            'Try as Guest (Offline Mode)',
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                        ],
                       ],
                     ),
 

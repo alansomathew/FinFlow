@@ -52,7 +52,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) =>
+            LoginScreen(autoGoogle: state.extra == true),
+      ),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
     ],
   );
