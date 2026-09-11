@@ -66,6 +66,13 @@ class AppLocalizationsTa extends AppLocalizations {
       'SIP, பங்குகள் மற்றும் போர்ட்ஃபோலியோ செயல்திறன்';
 
   @override
+  String get menuClearDataTitle => 'அனைத்து தரவையும் அழிக்கவும்';
+
+  @override
+  String get menuClearDataSubtitle =>
+      'எல்லாவற்றையும் நிரந்தரமாக நீக்கி மீண்டும் தொடங்கவும்';
+
+  @override
   String get menuUpgradeTitle => 'கிளவுட் ஒத்திசைவுக்கு மேம்படுத்தவும்';
 
   @override

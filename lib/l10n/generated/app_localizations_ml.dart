@@ -66,6 +66,13 @@ class AppLocalizationsMl extends AppLocalizations {
       'SIP-കൾ, ഓഹരികൾ, പോർട്ട്‌ഫോളിയോ പ്രകടനം';
 
   @override
+  String get menuClearDataTitle => 'എല്ലാ ഡാറ്റയും മായ്ക്കുക';
+
+  @override
+  String get menuClearDataSubtitle =>
+      'എല്ലാം ശാശ്വതമായി ഇല്ലാതാക്കി വീണ്ടും ആരംഭിക്കുക';
+
+  @override
   String get menuUpgradeTitle => 'ക്ലൗഡ് സിങ്കിലേക്ക് അപ്‌ഗ്രേഡ് ചെയ്യുക';
 
   @override

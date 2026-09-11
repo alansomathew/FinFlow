@@ -119,6 +119,47 @@ rounded-square rather than a circle.
 
 ---
 
+## Ad-hoc: Google Sign-In Fix + Clear All Data
+
+**Bug fix, live report ("Upgrade to Cloud Sync" Google sign-in not
+working):** `google_sign_in: ^7.2.0`'s new API requires
+`GoogleSignIn.instance.initialize()` to be called with a `serverClientId`
+(the Firebase project's *Web* OAuth client, `client_type: 3` in
+`google-services.json` -- not the Android client) in order to actually
+receive a non-null `idToken` back from `authenticate()` on Android.
+`AuthNotifier._ensureGoogleSignInReady()` was calling `initialize()` with
+no arguments at all: the native account picker opened and worked fine,
+but the returned `idToken` was always null, so the later
+`FirebaseAuth.signInWithCredential()` call failed every time, surfacing
+only as the generic "Google Sign-In failed. Please try again." message
+with nothing distinguishing in logcat (the exception was caught and
+discarded without being printed anywhere). Fixed by passing the Web
+client ID into `initialize()`, and separately added a `debugPrint` of
+the real exception in `login_screen.dart`'s catch block so a future
+failure of this kind is diagnosable from logs alone rather than requiring
+a live repro.
+
+**New feature, per direct user request: "Clear All Data".** A new
+`ClearDataService` (`lib/src/database/clear_data_service.dart`) deletes
+every synced Firestore subcollection under `users/{uid}` (accounts,
+transactions, budgets, loans, investments, goals, monthlyIncome,
+sms_inbox -- batched in chunks of 400 to stay under Firestore's 500-op
+batch cap) for a signed-in user, then always wipes the local database via
+the existing `AppDatabase.clearAllData()`. For a guest, the cloud step is
+skipped entirely (there's no cloud copy). Unlike the guest-migration
+path, a cloud-deletion failure is NOT swallowed into "clear local
+anyway": every repository reads Firestore-first for a signed-in user, so
+leaving local wiped but cloud intact would just have the old data
+silently reappear on the next read, making the feature look broken
+rather than genuinely failing loudly. Wired into the profile menu (next
+to Sign Out) behind a destructive-action confirmation dialog, and
+invalidates every list provider (`accountListProvider`,
+`transactionListProvider`, `budgetListProvider`, `investmentListProvider`,
+`goalListProvider`, `loanListProvider`) afterward so the now-empty state
+reflects immediately without requiring an app restart.
+
+---
+
 ## Context
 
 FinFlow is a Flutter personal-finance app with two detailed spec docs

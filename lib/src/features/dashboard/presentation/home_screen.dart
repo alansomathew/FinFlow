@@ -5,9 +5,15 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_sizes.dart';
 import '../../../constants/app_theme.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../accounts/data/accounts_repository.dart';
 import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../budget/data/budget_repository.dart';
+import '../../debt/data/debt_repository.dart';
+import '../../goals/data/goals_repository.dart';
 import '../../goals/presentation/goals_list_screen.dart';
+import '../../investments/data/investments_repository.dart';
+import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/presentation/transaction_form_sheet.dart';
 import 'dashboard_tab.dart';
 import '../../transactions/presentation/transactions_tab.dart';
@@ -19,6 +25,7 @@ import '../../sms/data/sms_repository.dart';
 import '../../sms/presentation/sms_review_sheet.dart';
 import '../../sms/presentation/sms_sandbox_sheet.dart';
 import '../../debt/presentation/debt_planner_sheet.dart';
+import '../../../database/clear_data_service.dart';
 import '../../../services/app_settings_service.dart';
 import '../../../services/pro_tier_service.dart';
 
@@ -89,6 +96,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const TransactionFormSheet(),
+    );
+  }
+
+  // Dialog/snackbar text here is hardcoded English rather than localized,
+  // matching every other dialog in the app (e.g. the guest-migration
+  // dialog in login_screen.dart) -- only navigation/menu labels have been
+  // translated so far, per the ad-hoc localization rollout's partial
+  // coverage.
+  Future<void> _confirmClearAllData(
+    BuildContext sheetContext,
+    WidgetRef ref,
+    UserProfile user,
+  ) async {
+    final colors = sheetContext.colors;
+
+    final confirmed = await showDialog<bool>(
+      context: sheetContext,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: colors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: colors.error),
+            const SizedBox(width: 10),
+            Text(
+              'Clear All Data?',
+              style: TextStyle(
+                color: colors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          user.isGuest
+              ? 'This permanently deletes every account, transaction, budget, '
+                    'loan, investment, and goal stored on this device. This '
+                    'cannot be undone.'
+              : 'This permanently deletes every account, transaction, budget, '
+                    'loan, investment, and goal for your account, both on '
+                    'this device and in the cloud. This cannot be undone.',
+          style: TextStyle(color: colors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: colors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.error),
+            child: const Text(
+              'Delete Everything',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (sheetContext.mounted) Navigator.pop(sheetContext);
+
+    final result = await ClearDataService.clearAll(
+      uid: user.isGuest ? null : user.uid,
+    );
+
+    ref.invalidate(accountListProvider);
+    ref.invalidate(transactionListProvider);
+    ref.invalidate(budgetListProvider);
+    ref.invalidate(investmentListProvider);
+    ref.invalidate(goalListProvider);
+    ref.invalidate(loanListProvider);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result == ClearDataResult.success
+              ? 'All data cleared.'
+              : "Couldn't clear your cloud data -- nothing was deleted. "
+                    'Check your connection and try again.',
+        ),
+        backgroundColor: result == ClearDataResult.success
+            ? colors.success
+            : colors.error,
+      ),
     );
   }
 
@@ -526,6 +625,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           onChanged: (value) => setProTierForTesting(value),
                         );
                       },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.delete_forever_rounded,
+                        color: colors.error,
+                      ),
+                      title: Text(
+                        l10n.menuClearDataTitle,
+                        style: TextStyle(
+                          color: colors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        l10n.menuClearDataSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () => _confirmClearAllData(context, ref, user),
                     ),
                     ListTile(
                       leading: Icon(Icons.logout_rounded, color: colors.error),

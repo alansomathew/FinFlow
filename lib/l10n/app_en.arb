@@ -27,6 +27,8 @@
   "menuGoalsSubtitle": "Track progress toward your savings targets",
   "menuInvestmentsTitle": "Investments",
   "menuInvestmentsSubtitle": "SIPs, stocks, and portfolio performance",
+  "menuClearDataTitle": "Clear All Data",
+  "menuClearDataSubtitle": "Permanently delete everything and start over",
   "menuUpgradeTitle": "Upgrade to Cloud Sync",
   "menuUpgradeSubtitle": "Link Google account and backup data",
   "menuSmsAutoTitle": "SMS Auto-Detection",

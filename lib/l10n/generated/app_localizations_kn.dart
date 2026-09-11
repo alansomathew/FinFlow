@@ -66,6 +66,13 @@ class AppLocalizationsKn extends AppLocalizations {
       'SIP, ಷೇರುಗಳು ಮತ್ತು ಪೋರ್ಟ್‌ಫೋಲಿಯೊ ಕಾರ್ಯಕ್ಷಮತೆ';
 
   @override
+  String get menuClearDataTitle => 'ಎಲ್ಲಾ ಡೇಟಾ ಅಳಿಸಿ';
+
+  @override
+  String get menuClearDataSubtitle =>
+      'ಎಲ್ಲವನ್ನೂ ಶಾಶ್ವತವಾಗಿ ಅಳಿಸಿ ಮತ್ತೆ ಪ್ರಾರಂಭಿಸಿ';
+
+  @override
   String get menuUpgradeTitle => 'ಕ್ಲೌಡ್ ಸಿಂಕ್‌ಗೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ';
 
   @override

@@ -93,7 +93,17 @@ class AuthNotifier extends StateNotifier<UserProfile?> {
 
   Future<void> _ensureGoogleSignInReady() async {
     if (_googleSignInReady) return;
-    await _googleSignIn.initialize();
+    // serverClientId must be the Firebase project's *Web* OAuth client
+    // (client_type 3 in google-services.json), not the Android one -- on
+    // Android, google_sign_in only returns a non-null idToken from
+    // authenticate() when this is set. Without it, authenticate() still
+    // succeeds (the account picker works fine) but idToken comes back
+    // null, so the later signInWithCredential() call fails, surfacing as
+    // "Google Sign-In failed" with no more specific error.
+    await _googleSignIn.initialize(
+      serverClientId:
+          '836907422627-m414hgv46747es6t0m6jg6ssdp5c965u.apps.googleusercontent.com',
+    );
     _googleSignInReady = true;
   }
 

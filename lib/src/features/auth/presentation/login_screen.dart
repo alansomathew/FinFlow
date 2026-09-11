@@ -71,6 +71,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } on GoogleSignInCancelled {
       setState(() => _isLoading = false);
     } catch (e) {
+      // The on-screen message stays generic for the user, but the real
+      // exception is otherwise fully swallowed -- printing it is the only
+      // way to diagnose a sign-in failure afterward without reproducing it
+      // live under a debugger.
+      debugPrint('Google Sign-In failed: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Google Sign-In failed. Please try again.';

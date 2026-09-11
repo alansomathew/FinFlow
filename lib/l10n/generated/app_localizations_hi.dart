@@ -64,6 +64,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get menuInvestmentsSubtitle => 'SIP, शेयर और पोर्टफोलियो प्रदर्शन';
 
   @override
+  String get menuClearDataTitle => 'सारा डेटा साफ़ करें';
+
+  @override
+  String get menuClearDataSubtitle =>
+      'सब कुछ स्थायी रूप से हटाएं और फिर से शुरू करें';
+
+  @override
   String get menuUpgradeTitle => 'क्लाउड सिंक में अपग्रेड करें';
 
   @override

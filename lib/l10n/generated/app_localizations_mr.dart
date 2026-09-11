@@ -64,6 +64,13 @@ class AppLocalizationsMr extends AppLocalizations {
   String get menuInvestmentsSubtitle => 'SIP, शेअर्स आणि पोर्टफोलिओ कामगिरी';
 
   @override
+  String get menuClearDataTitle => 'सर्व डेटा साफ करा';
+
+  @override
+  String get menuClearDataSubtitle =>
+      'सर्वकाही कायमचे हटवा आणि पुन्हा सुरू करा';
+
+  @override
   String get menuUpgradeTitle => 'क्लाउड सिंकमध्ये अपग्रेड करा';
 
   @override

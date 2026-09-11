@@ -214,6 +214,18 @@ abstract class AppLocalizations {
   /// **'SIPs, stocks, and portfolio performance'**
   String get menuInvestmentsSubtitle;
 
+  /// No description provided for @menuClearDataTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All Data'**
+  String get menuClearDataTitle;
+
+  /// No description provided for @menuClearDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete everything and start over'**
+  String get menuClearDataSubtitle;
+
   /// No description provided for @menuUpgradeTitle.
   ///
   /// In en, this message translates to:

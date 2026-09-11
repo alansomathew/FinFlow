@@ -65,6 +65,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'SIPs, stocks, and portfolio performance';
 
   @override
+  String get menuClearDataTitle => 'Clear All Data';
+
+  @override
+  String get menuClearDataSubtitle =>
+      'Permanently delete everything and start over';
+
+  @override
   String get menuUpgradeTitle => 'Upgrade to Cloud Sync';
 
   @override
