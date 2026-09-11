@@ -82,7 +82,11 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
     await _refresh();
   }
 
-  Future<bool> _addSingle(SmsInboxData sms, ParsedSms parsed) async {
+  Future<bool> _addSingle(
+    SmsInboxData sms,
+    ParsedSms parsed, {
+    required TransactionCategory category,
+  }) async {
     final smsRepo = ref.read(smsRepositoryProvider);
     if (!await smsRepo.canParseMoreThisMonth()) return false;
 
@@ -93,7 +97,6 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
     );
     if (account == null) return false;
 
-    final category = TransactionCategory.getByName(parsed.payee);
     final tx = TransactionModel(
       id: const Uuid().v4(),
       amount: parsed.amount,
@@ -110,6 +113,101 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
     return true;
   }
 
+  /// Asks the user to confirm (or change) which category this parsed SMS
+  /// should be filed under before it's added, defaulting to a guess derived
+  /// from the merchant/payee name -- that guess is often wrong for income
+  /// (a salary credit's "payee" is an employer name, which never matches a
+  /// category preset), so this is the point where the user actually gets a
+  /// say instead of a mis-guessed category silently landing on the ledger.
+  Future<TransactionCategory?> _pickCategory(
+    TransactionCategory defaultCategory,
+    ParsedSms parsed,
+  ) async {
+    final isIncome = parsed.type == 'credit';
+    final options = TransactionCategory.presets
+        .where(
+          (c) => isIncome
+              ? c.bucket == BudgetBucket.income
+              : c.bucket != BudgetBucket.income,
+        )
+        .toList();
+    TransactionCategory selected = options.contains(defaultCategory)
+        ? defaultCategory
+        : options.first;
+
+    return showDialog<TransactionCategory>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final colors = context.colors;
+            return AlertDialog(
+              backgroundColor: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+              title: Text(
+                'Confirm Category',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '₹${parsed.amount.toStringAsFixed(2)} · ${parsed.payee}',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                  ),
+                  AppSizes.h12,
+                  DropdownButtonFormField<TransactionCategory>(
+                    initialValue: selected,
+                    dropdownColor: colors.surface,
+                    style: TextStyle(color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                    ),
+                    items: options.map((c) {
+                      return DropdownMenuItem(
+                        value: c,
+                        child: Text('${c.icon}  ${c.name}'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setStateDialog(() => selected = val);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, selected),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                  ),
+                  child: const Text(
+                    'Confirm & Add',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _addItem(SmsInboxData sms) async {
     final parsed = SmsParser.parse(sms.messageBody);
     if (parsed == null) {
@@ -118,7 +216,11 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
       return;
     }
 
-    final added = await _addSingle(sms, parsed);
+    final defaultCategory = TransactionCategory.getByName(parsed.payee);
+    final category = await _pickCategory(defaultCategory, parsed);
+    if (!mounted || category == null) return;
+
+    final added = await _addSingle(sms, parsed, category: category);
     await ref.read(accountListProvider.notifier).refresh();
     if (!mounted) return;
 

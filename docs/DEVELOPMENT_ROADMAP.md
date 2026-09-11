@@ -287,6 +287,15 @@ permanently as a dev/QA tool.
 4. Free-tier gate: 100 SMS-parses/month (`kFreeSmsParseLimit`) via a new
    `LocalSettings` counter (schema v4).
 5. CSV import: skipped for now (optional per the original plan).
+6. Per explicit user request, tapping "Add" on a parsed SMS now opens a
+   category-confirmation dialog (defaulting to the auto-detected guess,
+   filtered to income categories for a detected credit or spending
+   categories otherwise) before the transaction is written -- the category
+   is never silently auto-assigned. This also fixes a latent correctness
+   gap: the auto-guess derived the category from the SMS's merchant/payee
+   name, which for a salary or refund credit is an employer/bank name that
+   never matches a category preset, silently falling back to a generic
+   "Wants" category; the user can now just pick "Salary" themselves.
 
 **New dependencies:** `another_telephony`, `permission_handler`.
 
@@ -328,6 +337,16 @@ trusting the insert's return value.
 - Basic "Monthly History" view: a month picker sheet (via
   `getAvailableMonths()`) drilling into a read-only per-category breakdown
   for that month.
+- **Added later, per direct user request:** a Salary-Based 50/30/20
+  Planner (`salary_budget_planner_sheet.dart`, reachable from the Budget
+  tab's toolbar). Enter a monthly salary/income figure and the sheet shows
+  each bucket's target pool (50% Needs, 30% Wants, 20% Savings) plus a
+  running allocated/remaining total; the user still picks which
+  categories exist and what each one's limit is, rather than the app
+  guessing an even split -- confirmed with the user that manual
+  allocation against a computed target was preferred over auto-dividing a
+  bucket evenly across categories, since real expenses (rent vs.
+  groceries) are never actually equal shares.
 
 **Deferred (explicit decision: hold off on Blaze until more Cloud
 Functions consumers — EMI auto-posting in Phase 6, price feeds in Phase 8,

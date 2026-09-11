@@ -5,6 +5,7 @@ import '../../../constants/app_sizes.dart';
 import '../../../constants/app_theme.dart';
 import '../../transactions/domain/transaction.dart';
 import '../data/budget_repository.dart';
+import 'salary_budget_planner_sheet.dart';
 
 class BudgetTab extends ConsumerStatefulWidget {
   const BudgetTab({super.key});
@@ -255,6 +256,15 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
           },
         );
       },
+    );
+  }
+
+  void _showSalaryPlannerSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => const SalaryBudgetPlannerSheet(),
     );
   }
 
@@ -716,6 +726,14 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
                     ),
                     Row(
                       children: [
+                        IconButton(
+                          onPressed: () => _showSalaryPlannerSheet(context),
+                          tooltip: 'Salary-Based 50/30/20 Planner',
+                          icon: Icon(
+                            Icons.calculate_outlined,
+                            color: colors.textSecondary,
+                          ),
+                        ),
                         IconButton(
                           onPressed: () => _showHistorySheet(context),
                           tooltip: 'Monthly History',
