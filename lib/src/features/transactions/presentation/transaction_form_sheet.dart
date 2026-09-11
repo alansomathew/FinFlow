@@ -349,6 +349,16 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
                     ),
                     child: DropdownButtonFormField<TransactionCategory>(
+                      // _selectedCategory can be a non-preset category for
+                      // a transaction whose stored category name doesn't
+                      // match any preset (e.g. an older SMS-imported
+                      // transaction from before category confirmation was
+                      // added) -- TransactionCategory.getByName() always
+                      // succeeds via a fallback, so the dropdown's value
+                      // must include that fallback instance too, or this
+                      // throws "There should be exactly one item with
+                      // [DropdownButton]'s value" since it wouldn't appear
+                      // in a preset-only items list at all.
                       initialValue: _selectedCategory,
                       dropdownColor: colors.surface,
                       decoration: InputDecoration(
@@ -357,14 +367,21 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         labelStyle: TextStyle(color: colors.textSecondary),
                       ),
                       style: const TextStyle(color: Colors.white),
-                      items: TransactionCategory.presets.map((cat) {
-                        return DropdownMenuItem<TransactionCategory>(
-                          value: cat,
-                          child: Text(
-                            '${cat.icon} ${cat.name} (${cat.bucket.displayName})',
-                          ),
-                        );
-                      }).toList(),
+                      items:
+                          [
+                            ...TransactionCategory.presets,
+                            if (!TransactionCategory.presets.any(
+                              (c) => c.name == _selectedCategory.name,
+                            ))
+                              _selectedCategory,
+                          ].map((cat) {
+                            return DropdownMenuItem<TransactionCategory>(
+                              value: cat,
+                              child: Text(
+                                '${cat.icon} ${cat.name} (${cat.bucket.displayName})',
+                              ),
+                            );
+                          }).toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {

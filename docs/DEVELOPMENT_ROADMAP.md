@@ -208,6 +208,16 @@ auto-adjust on insert/delete, offline-first writes.
 - Found while touching this code: swipe-to-delete in the ledger never
   refreshed `accountListProvider`, leaving the account balance stale
   elsewhere in the app until something else happened to refresh it.
+- Found later, while investigating a live crash report: editing any
+  transaction whose stored category name didn't match one of the curated
+  presets (e.g. an older SMS-imported transaction, from before category
+  confirmation was added in Phase 3) crashed the edit form outright --
+  `TransactionCategory.getByName()` always succeeds via a synthetic
+  fallback for an unrecognized name, but the category dropdown's item
+  list only ever offered the curated presets, so the selected value
+  didn't appear in its own items list at all. Fixed by including that
+  fallback category as an extra dropdown item when it isn't already one
+  of the presets.
 
 **Net-new (all done):**
 1. `updateTransaction` (repository + UI): reverses the old transaction's
@@ -346,7 +356,12 @@ trusting the insert's return value.
   guessing an even split -- confirmed with the user that manual
   allocation against a computed target was preferred over auto-dividing a
   bucket evenly across categories, since real expenses (rent vs.
-  groceries) are never actually equal shares.
+  groceries) are never actually equal shares. The salary figure itself is
+  now persisted per calendar month (new `monthly_income` table, schema
+  v10) with a Save button, per follow-up user request -- it's remembered
+  the next time the planner opens for that month instead of resetting to
+  blank, using the same Firestore-write-through-then-local pattern as
+  every other per-month value in the app.
 
 **Deferred (explicit decision: hold off on Blaze until more Cloud
 Functions consumers — EMI auto-posting in Phase 6, price feeds in Phase 8,

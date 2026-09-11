@@ -33,6 +33,51 @@ class _SalaryBudgetPlannerSheetState
     extends ConsumerState<SalaryBudgetPlannerSheet> {
   final _salaryController = TextEditingController();
   double _salary = 0;
+  bool _saving = false;
+  bool _loadingSaved = true;
+  late final String _monthYear;
+
+  @override
+  void initState() {
+    super.initState();
+    _monthYear = monthKeyOf(DateTime.now());
+    _loadSavedIncome();
+  }
+
+  Future<void> _loadSavedIncome() async {
+    final saved = await ref
+        .read(budgetRepositoryProvider)
+        .getMonthlyIncome(_monthYear);
+    if (!mounted) return;
+    setState(() {
+      if (saved != null) {
+        _salary = saved;
+        _salaryController.text = saved.toStringAsFixed(0);
+      }
+      _loadingSaved = false;
+    });
+  }
+
+  Future<void> _saveSalary() async {
+    if (_salary <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid salary first')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    await ref
+        .read(budgetRepositoryProvider)
+        .setMonthlyIncome(_monthYear, _salary);
+    if (!mounted) return;
+    setState(() => _saving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Saved as your budget for $_monthYear'),
+        backgroundColor: context.colors.success,
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -73,7 +118,6 @@ class _SalaryBudgetPlannerSheetState
     final limitController = TextEditingController(
       text: remaining > 0 ? remaining.toStringAsFixed(0) : '',
     );
-    final monthYear = monthKeyOf(DateTime.now());
 
     showDialog(
       context: context,
@@ -154,7 +198,7 @@ class _SalaryBudgetPlannerSheetState
                     }
                     await ref
                         .read(budgetListProvider.notifier)
-                        .setLimit(selected.name, limit, monthYear);
+                        .setLimit(selected.name, limit, _monthYear);
                     if (context.mounted) Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
@@ -226,28 +270,73 @@ class _SalaryBudgetPlannerSheetState
                   style: TextStyle(color: colors.textSecondary, fontSize: 12),
                 ),
                 AppSizes.h16,
-                TextField(
-                  controller: _salaryController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  style: TextStyle(color: colors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Monthly Salary / Income',
-                    labelStyle: TextStyle(color: colors.textSecondary),
-                    fillColor: colors.cardBg,
-                    filled: true,
-                    prefixIcon: Icon(
-                      Icons.currency_rupee_rounded,
-                      color: colors.primaryLight,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _salaryController,
+                        enabled: !_loadingSaved,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        style: TextStyle(color: colors.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: 'Monthly Salary / Income',
+                          labelStyle: TextStyle(color: colors.textSecondary),
+                          fillColor: colors.cardBg,
+                          filled: true,
+                          prefixIcon: Icon(
+                            Icons.currency_rupee_rounded,
+                            color: colors.primaryLight,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (val) =>
+                            setState(() => _salary = double.tryParse(val) ?? 0),
+                      ),
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                      borderSide: BorderSide.none,
+                    AppSizes.w8,
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: (_saving || _loadingSaved)
+                            ? null
+                            : _saveSalary,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                          ),
+                        ),
+                        child: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                'Save',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                      ),
                     ),
-                  ),
-                  onChanged: (val) =>
-                      setState(() => _salary = double.tryParse(val) ?? 0),
+                  ],
+                ),
+                AppSizes.h4,
+                Text(
+                  'Saved as this month\'s income target so it\'s here next time you open this planner.',
+                  style: TextStyle(color: colors.textMuted, fontSize: 11),
                 ),
                 AppSizes.h16,
                 Expanded(

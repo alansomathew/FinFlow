@@ -71,7 +71,11 @@ class BudgetModel {
     );
   }
 
-  BudgetModel copyWith({double? limitAmount, double? spentAmount, bool? rolloverEnabled}) {
+  BudgetModel copyWith({
+    double? limitAmount,
+    double? spentAmount,
+    bool? rolloverEnabled,
+  }) {
     return BudgetModel(
       category: category,
       monthYear: monthYear,
@@ -107,15 +111,21 @@ class BudgetRepository {
     }
     if (limits.isEmpty) return [];
 
-    final transactions = await _ref.read(transactionRepositoryProvider).getTransactions();
+    final transactions = await _ref
+        .read(transactionRepositoryProvider)
+        .getTransactions();
     final spentByCategory = <String, double>{};
     for (final tx in transactions) {
-      if (tx.bucket == BudgetBucket.income) continue; // budgets track spending, not income
+      if (tx.bucket == BudgetBucket.income)
+        continue; // budgets track spending, not income
       if (monthKeyOf(tx.date) != targetMonth) continue;
-      spentByCategory[tx.category] = (spentByCategory[tx.category] ?? 0) + tx.amount;
+      spentByCategory[tx.category] =
+          (spentByCategory[tx.category] ?? 0) + tx.amount;
     }
 
-    return limits.map((b) => b.copyWith(spentAmount: spentByCategory[b.category] ?? 0.0)).toList();
+    return limits
+        .map((b) => b.copyWith(spentAmount: spentByCategory[b.category] ?? 0.0))
+        .toList();
   }
 
   /// All distinct months with at least one budget row, most recent first --
@@ -124,11 +134,12 @@ class BudgetRepository {
     final user = _ref.read(authProvider);
     List<String> months;
     if (user == null || user.isGuest) {
-      final rows = await (_db.selectOnly(_db.budgets)
-            ..addColumns([_db.budgets.monthYear])
-            ..where(_db.budgets.deletedAt.isNull())
-            ..groupBy([_db.budgets.monthYear]))
-          .get();
+      final rows =
+          await (_db.selectOnly(_db.budgets)
+                ..addColumns([_db.budgets.monthYear])
+                ..where(_db.budgets.deletedAt.isNull())
+                ..groupBy([_db.budgets.monthYear]))
+              .get();
       months = rows.map((r) => r.read(_db.budgets.monthYear)!).toList();
     } else {
       try {
@@ -137,18 +148,85 @@ class BudgetRepository {
             .doc(user.uid)
             .collection('budgets')
             .get();
-        months = snapshot.docs.map((d) => d.data()['month_year'] as String).toSet().toList();
+        months = snapshot.docs
+            .map((d) => d.data()['month_year'] as String)
+            .toSet()
+            .toList();
       } catch (e) {
-        final rows = await (_db.selectOnly(_db.budgets)
-              ..addColumns([_db.budgets.monthYear])
-              ..where(_db.budgets.deletedAt.isNull())
-              ..groupBy([_db.budgets.monthYear]))
-            .get();
+        final rows =
+            await (_db.selectOnly(_db.budgets)
+                  ..addColumns([_db.budgets.monthYear])
+                  ..where(_db.budgets.deletedAt.isNull())
+                  ..groupBy([_db.budgets.monthYear]))
+                .get();
         months = rows.map((r) => r.read(_db.budgets.monthYear)!).toList();
       }
     }
     months.sort((a, b) => b.compareTo(a));
     return months;
+  }
+
+  /// The salary/income figure entered for [monthYear] via the Salary-Based
+  /// 50/30/20 Planner, or null if none has been saved yet. Local-only for
+  /// guests, write-through (Firestore + local) for signed-in users, same
+  /// pattern as every other per-month value in this repository.
+  Future<double?> getMonthlyIncome(String monthYear) async {
+    final user = _ref.read(authProvider);
+    if (user == null || user.isGuest) {
+      return _getLocalMonthlyIncome(monthYear);
+    } else {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('monthlyIncome')
+            .doc(monthYear)
+            .get();
+        if (doc.exists) {
+          return (doc.data()?['salary_amount'] as num?)?.toDouble();
+        }
+        return _getLocalMonthlyIncome(monthYear);
+      } catch (e) {
+        return _getLocalMonthlyIncome(monthYear);
+      }
+    }
+  }
+
+  Future<double?> _getLocalMonthlyIncome(String monthYear) async {
+    final row = await (_db.select(
+      _db.monthlyIncome,
+    )..where((t) => t.monthYear.equals(monthYear))).getSingleOrNull();
+    return row?.salaryAmount;
+  }
+
+  Future<void> setMonthlyIncome(String monthYear, double amount) async {
+    final user = _ref.read(authProvider);
+    if (user == null || user.isGuest) {
+      await _setLocalMonthlyIncome(monthYear, amount);
+    } else {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('monthlyIncome')
+            .doc(monthYear)
+            .set({'month_year': monthYear, 'salary_amount': amount});
+        await _setLocalMonthlyIncome(monthYear, amount);
+      } catch (e) {
+        await _setLocalMonthlyIncome(monthYear, amount);
+      }
+    }
+  }
+
+  Future<void> _setLocalMonthlyIncome(String monthYear, double amount) async {
+    await _db
+        .into(_db.monthlyIncome)
+        .insertOnConflictUpdate(
+          MonthlyIncomeCompanion.insert(
+            monthYear: monthYear,
+            salaryAmount: amount,
+          ),
+        );
   }
 
   Future<List<BudgetModel>> _getLimits(String monthYear) async {
@@ -163,7 +241,9 @@ class BudgetRepository {
             .collection('budgets')
             .where('month_year', isEqualTo: monthYear)
             .get();
-        return querySnapshot.docs.map((doc) => BudgetModel.fromMap(doc.data())).toList();
+        return querySnapshot.docs
+            .map((doc) => BudgetModel.fromMap(doc.data()))
+            .toList();
       } catch (e) {
         return _getLocalLimits(monthYear);
       }
@@ -171,13 +251,17 @@ class BudgetRepository {
   }
 
   Future<List<BudgetModel>> _getLocalLimits(String monthYear) async {
-    final rows = await (_db.select(_db.budgets)
-          ..where((t) => t.deletedAt.isNull() & t.monthYear.equals(monthYear)))
-        .get();
+    final rows =
+        await (_db.select(_db.budgets)..where(
+              (t) => t.deletedAt.isNull() & t.monthYear.equals(monthYear),
+            ))
+            .get();
     return rows.map(BudgetModel.fromRow).toList();
   }
 
-  Future<List<BudgetModel>> _carryForwardFromPreviousMonth(String targetMonth) async {
+  Future<List<BudgetModel>> _carryForwardFromPreviousMonth(
+    String targetMonth,
+  ) async {
     final prevLimits = await _getLimits(_previousMonthKey(targetMonth));
     if (prevLimits.isEmpty) return [];
 
@@ -252,8 +336,9 @@ class BudgetRepository {
   }
 
   Future<void> _deleteLocal(String category, String monthYear) async {
-    await (_db.delete(_db.budgets)
-          ..where((t) => t.category.equals(category) & t.monthYear.equals(monthYear)))
+    await (_db.delete(_db.budgets)..where(
+          (t) => t.category.equals(category) & t.monthYear.equals(monthYear),
+        ))
         .go();
   }
 }
@@ -278,7 +363,12 @@ class BudgetListNotifier extends StateNotifier<AsyncValue<List<BudgetModel>>> {
     }
   }
 
-  Future<void> setLimit(String category, double limit, String monthYear, {bool rolloverEnabled = false}) async {
+  Future<void> setLimit(
+    String category,
+    double limit,
+    String monthYear, {
+    bool rolloverEnabled = false,
+  }) async {
     final budget = BudgetModel(
       category: category,
       monthYear: monthYear,
@@ -296,7 +386,10 @@ class BudgetListNotifier extends StateNotifier<AsyncValue<List<BudgetModel>>> {
   }
 }
 
-final budgetListProvider = StateNotifierProvider<BudgetListNotifier, AsyncValue<List<BudgetModel>>>((ref) {
-  final repo = ref.watch(budgetRepositoryProvider);
-  return BudgetListNotifier(repo);
-});
+final budgetListProvider =
+    StateNotifierProvider<BudgetListNotifier, AsyncValue<List<BudgetModel>>>((
+      ref,
+    ) {
+      final repo = ref.watch(budgetRepositoryProvider);
+      return BudgetListNotifier(repo);
+    });

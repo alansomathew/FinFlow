@@ -6139,6 +6139,329 @@ class NetWorthSnapshotsCompanion extends UpdateCompanion<NetWorthSnapshot> {
   }
 }
 
+class $MonthlyIncomeTable extends MonthlyIncome
+    with TableInfo<$MonthlyIncomeTable, MonthlyIncomeData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MonthlyIncomeTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _monthYearMeta = const VerificationMeta(
+    'monthYear',
+  );
+  @override
+  late final GeneratedColumn<String> monthYear = GeneratedColumn<String>(
+    'month_year',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _salaryAmountMeta = const VerificationMeta(
+    'salaryAmount',
+  );
+  @override
+  late final GeneratedColumn<double> salaryAmount = GeneratedColumn<double>(
+    'salary_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => DateTime.now(),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    clientDefault: () => DateTime.now(),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    monthYear,
+    salaryAmount,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'monthly_income';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MonthlyIncomeData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('month_year')) {
+      context.handle(
+        _monthYearMeta,
+        monthYear.isAcceptableOrUnknown(data['month_year']!, _monthYearMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_monthYearMeta);
+    }
+    if (data.containsKey('salary_amount')) {
+      context.handle(
+        _salaryAmountMeta,
+        salaryAmount.isAcceptableOrUnknown(
+          data['salary_amount']!,
+          _salaryAmountMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_salaryAmountMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {monthYear};
+  @override
+  MonthlyIncomeData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MonthlyIncomeData(
+      monthYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}month_year'],
+      )!,
+      salaryAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}salary_amount'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MonthlyIncomeTable createAlias(String alias) {
+    return $MonthlyIncomeTable(attachedDatabase, alias);
+  }
+}
+
+class MonthlyIncomeData extends DataClass
+    implements Insertable<MonthlyIncomeData> {
+  final String monthYear;
+  final double salaryAmount;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const MonthlyIncomeData({
+    required this.monthYear,
+    required this.salaryAmount,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['month_year'] = Variable<String>(monthYear);
+    map['salary_amount'] = Variable<double>(salaryAmount);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  MonthlyIncomeCompanion toCompanion(bool nullToAbsent) {
+    return MonthlyIncomeCompanion(
+      monthYear: Value(monthYear),
+      salaryAmount: Value(salaryAmount),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory MonthlyIncomeData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MonthlyIncomeData(
+      monthYear: serializer.fromJson<String>(json['monthYear']),
+      salaryAmount: serializer.fromJson<double>(json['salaryAmount']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'monthYear': serializer.toJson<String>(monthYear),
+      'salaryAmount': serializer.toJson<double>(salaryAmount),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  MonthlyIncomeData copyWith({
+    String? monthYear,
+    double? salaryAmount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => MonthlyIncomeData(
+    monthYear: monthYear ?? this.monthYear,
+    salaryAmount: salaryAmount ?? this.salaryAmount,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  MonthlyIncomeData copyWithCompanion(MonthlyIncomeCompanion data) {
+    return MonthlyIncomeData(
+      monthYear: data.monthYear.present ? data.monthYear.value : this.monthYear,
+      salaryAmount: data.salaryAmount.present
+          ? data.salaryAmount.value
+          : this.salaryAmount,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthlyIncomeData(')
+          ..write('monthYear: $monthYear, ')
+          ..write('salaryAmount: $salaryAmount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(monthYear, salaryAmount, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MonthlyIncomeData &&
+          other.monthYear == this.monthYear &&
+          other.salaryAmount == this.salaryAmount &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MonthlyIncomeCompanion extends UpdateCompanion<MonthlyIncomeData> {
+  final Value<String> monthYear;
+  final Value<double> salaryAmount;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const MonthlyIncomeCompanion({
+    this.monthYear = const Value.absent(),
+    this.salaryAmount = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MonthlyIncomeCompanion.insert({
+    required String monthYear,
+    required double salaryAmount,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : monthYear = Value(monthYear),
+       salaryAmount = Value(salaryAmount);
+  static Insertable<MonthlyIncomeData> custom({
+    Expression<String>? monthYear,
+    Expression<double>? salaryAmount,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (monthYear != null) 'month_year': monthYear,
+      if (salaryAmount != null) 'salary_amount': salaryAmount,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MonthlyIncomeCompanion copyWith({
+    Value<String>? monthYear,
+    Value<double>? salaryAmount,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return MonthlyIncomeCompanion(
+      monthYear: monthYear ?? this.monthYear,
+      salaryAmount: salaryAmount ?? this.salaryAmount,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (monthYear.present) {
+      map['month_year'] = Variable<String>(monthYear.value);
+    }
+    if (salaryAmount.present) {
+      map['salary_amount'] = Variable<double>(salaryAmount.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthlyIncomeCompanion(')
+          ..write('monthYear: $monthYear, ')
+          ..write('salaryAmount: $salaryAmount, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6153,6 +6476,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GoalsTable goals = $GoalsTable(this);
   late final $NetWorthSnapshotsTable netWorthSnapshots =
       $NetWorthSnapshotsTable(this);
+  late final $MonthlyIncomeTable monthlyIncome = $MonthlyIncomeTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6168,6 +6492,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     recurringRules,
     goals,
     netWorthSnapshots,
+    monthlyIncome,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -10090,6 +10415,202 @@ typedef $$NetWorthSnapshotsTableProcessedTableManager =
       NetWorthSnapshot,
       PrefetchHooks Function()
     >;
+typedef $$MonthlyIncomeTableCreateCompanionBuilder =
+    MonthlyIncomeCompanion Function({
+      required String monthYear,
+      required double salaryAmount,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$MonthlyIncomeTableUpdateCompanionBuilder =
+    MonthlyIncomeCompanion Function({
+      Value<String> monthYear,
+      Value<double> salaryAmount,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$MonthlyIncomeTableFilterComposer
+    extends Composer<_$AppDatabase, $MonthlyIncomeTable> {
+  $$MonthlyIncomeTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get monthYear => $composableBuilder(
+    column: $table.monthYear,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get salaryAmount => $composableBuilder(
+    column: $table.salaryAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MonthlyIncomeTableOrderingComposer
+    extends Composer<_$AppDatabase, $MonthlyIncomeTable> {
+  $$MonthlyIncomeTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get monthYear => $composableBuilder(
+    column: $table.monthYear,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get salaryAmount => $composableBuilder(
+    column: $table.salaryAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MonthlyIncomeTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MonthlyIncomeTable> {
+  $$MonthlyIncomeTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get monthYear =>
+      $composableBuilder(column: $table.monthYear, builder: (column) => column);
+
+  GeneratedColumn<double> get salaryAmount => $composableBuilder(
+    column: $table.salaryAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MonthlyIncomeTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MonthlyIncomeTable,
+          MonthlyIncomeData,
+          $$MonthlyIncomeTableFilterComposer,
+          $$MonthlyIncomeTableOrderingComposer,
+          $$MonthlyIncomeTableAnnotationComposer,
+          $$MonthlyIncomeTableCreateCompanionBuilder,
+          $$MonthlyIncomeTableUpdateCompanionBuilder,
+          (
+            MonthlyIncomeData,
+            BaseReferences<
+              _$AppDatabase,
+              $MonthlyIncomeTable,
+              MonthlyIncomeData
+            >,
+          ),
+          MonthlyIncomeData,
+          PrefetchHooks Function()
+        > {
+  $$MonthlyIncomeTableTableManager(_$AppDatabase db, $MonthlyIncomeTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MonthlyIncomeTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MonthlyIncomeTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MonthlyIncomeTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> monthYear = const Value.absent(),
+                Value<double> salaryAmount = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MonthlyIncomeCompanion(
+                monthYear: monthYear,
+                salaryAmount: salaryAmount,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String monthYear,
+                required double salaryAmount,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MonthlyIncomeCompanion.insert(
+                monthYear: monthYear,
+                salaryAmount: salaryAmount,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MonthlyIncomeTable, MonthlyIncomeData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $MonthlyIncomeTable,
+                    MonthlyIncomeData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MonthlyIncomeTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MonthlyIncomeTable,
+      MonthlyIncomeData,
+      $$MonthlyIncomeTableFilterComposer,
+      $$MonthlyIncomeTableOrderingComposer,
+      $$MonthlyIncomeTableAnnotationComposer,
+      $$MonthlyIncomeTableCreateCompanionBuilder,
+      $$MonthlyIncomeTableUpdateCompanionBuilder,
+      (
+        MonthlyIncomeData,
+        BaseReferences<_$AppDatabase, $MonthlyIncomeTable, MonthlyIncomeData>,
+      ),
+      MonthlyIncomeData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10114,4 +10635,6 @@ class $AppDatabaseManager {
       $$GoalsTableTableManager(_db, _db.goals);
   $$NetWorthSnapshotsTableTableManager get netWorthSnapshots =>
       $$NetWorthSnapshotsTableTableManager(_db, _db.netWorthSnapshots);
+  $$MonthlyIncomeTableTableManager get monthlyIncome =>
+      $$MonthlyIncomeTableTableManager(_db, _db.monthlyIncome);
 }
