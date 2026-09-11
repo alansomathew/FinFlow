@@ -276,11 +276,14 @@ permanently as a dev/QA tool.
    previous same-amount-same-day-only check.
 3. `SmsReviewSheet`: permission rationale card (on-device-only parsing,
    permanently-denied → Settings deep link, always offers manual entry),
-   per-item Add/Skip, batch "Add All High-Confidence" (≥70% per the SRS,
-   skips duplicates). Auto-opens on app foreground/resume once SMS
+   per-item Add/Skip. Auto-opens on app foreground/resume once SMS
    detection is already enabled — first-time enabling is a deliberate
    profile-menu action, not an auto-prompt, given how sensitive the
-   permission is.
+   permission is. A batch "Add All High-Confidence" shortcut (≥70%,
+   skipping duplicates) originally shipped alongside per-item review, but
+   was removed per explicit user request: every parsed SMS must be
+   individually looked at and Added or Skipped, with no bulk path that
+   turns messages into transactions without being asked about each one.
 4. Free-tier gate: 100 SMS-parses/month (`kFreeSmsParseLimit`) via a new
    `LocalSettings` counter (schema v4).
 5. CSV import: skipped for now (optional per the original plan).

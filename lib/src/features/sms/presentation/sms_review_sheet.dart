@@ -14,16 +14,19 @@ import '../data/sms_device_service.dart';
 import '../data/sms_repository.dart';
 import '../domain/sms_duplicate_detector.dart';
 
-/// Confidence threshold above which "Add All" auto-accepts a parsed SMS
-/// without individual review, per the SRS: parses below 70% confidence are
-/// always left for manual review.
+/// Confidence threshold above which a parse is shown in green rather than
+/// amber -- purely a visual signal now. Every parsed SMS still requires an
+/// explicit per-item Add or Skip; there is deliberately no bulk auto-add,
+/// so a transaction is never created without the user looking at that
+/// specific message and deciding on it.
 const _autoAcceptConfidence = 70;
 
 /// The real, device-driven counterpart to the manual-paste SMS Sandbox:
 /// shows whatever the device's actual SMS inbox has staged for review,
-/// requests the SMS permission if not yet granted, and offers per-item
-/// Add/Skip plus a batch "Add All" for high-confidence, non-duplicate items.
-/// Triggered automatically on app foreground/resume (see home_screen.dart).
+/// requests the SMS permission if not yet granted, and requires an
+/// individual Add/Skip decision on every item -- no bulk "add all" shortcut,
+/// so nothing is ever added without being asked about first. Triggered
+/// automatically on app foreground/resume (see home_screen.dart).
 class SmsReviewSheet extends ConsumerStatefulWidget {
   const SmsReviewSheet({super.key});
 
@@ -134,58 +137,6 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
 
   Future<void> _skipItem(SmsInboxData sms) async {
     await ref.read(smsRepositoryProvider).markSkipped(sms.id);
-    await _refresh();
-  }
-
-  Future<void> _addAllHighConfidence() async {
-    final txs = await ref.read(transactionRepositoryProvider).getTransactions();
-    final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
-    var added = 0;
-    var capped = false;
-
-    for (final sms in List.of(_queue)) {
-      final parsed = SmsParser.parse(sms.messageBody);
-      if (parsed == null || parsed.confidenceScore < _autoAcceptConfidence)
-        continue;
-
-      final account = SmsDuplicateDetector.resolveAccount(
-        accounts,
-        parsed.accountLast4,
-      );
-      if (account == null) continue;
-
-      final isDuplicate = SmsDuplicateDetector.isDuplicate(
-        parsed: parsed,
-        smsDate: sms.date,
-        resolvedAccountId: account.id,
-        existingTransactions: txs,
-      );
-      if (isDuplicate)
-        continue; // leave ambiguous/duplicate ones for manual review
-
-      final ok = await _addSingle(sms, parsed);
-      if (!ok) {
-        capped = true;
-        break;
-      }
-      added++;
-    }
-
-    await ref.read(accountListProvider.notifier).refresh();
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          capped
-              ? 'Added $added transactions, then hit the free-tier monthly limit.'
-              : added == 0
-              ? 'Nothing high-confidence enough to auto-add -- review the rest manually below.'
-              : 'Added $added transactions.',
-        ),
-        backgroundColor: context.colors.success,
-      ),
-    );
     await _refresh();
   }
 
@@ -330,21 +281,6 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ElevatedButton.icon(
-          onPressed: _addAllHighConfidence,
-          icon: const Icon(
-            Icons.playlist_add_check_rounded,
-            color: Colors.white,
-          ),
-          label: Text('Add All High-Confidence (${_queue.length} pending)'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: colors.success,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-            ),
-          ),
-        ),
-        AppSizes.h12,
         Expanded(
           child: ListView.builder(
             itemCount: _queue.length,
