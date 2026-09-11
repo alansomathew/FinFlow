@@ -59,6 +59,13 @@ class AppLocalizationsKn extends AppLocalizations {
       'ನಿಮ್ಮ ಉಳಿತಾಯ ಗುರಿಗಳ ಪ್ರಗತಿಯನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ';
 
   @override
+  String get menuInvestmentsTitle => 'ಹೂಡಿಕೆಗಳು';
+
+  @override
+  String get menuInvestmentsSubtitle =>
+      'SIP, ಷೇರುಗಳು ಮತ್ತು ಪೋರ್ಟ್‌ಫೋಲಿಯೊ ಕಾರ್ಯಕ್ಷಮತೆ';
+
+  @override
   String get menuUpgradeTitle => 'ಕ್ಲೌಡ್ ಸಿಂಕ್‌ಗೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ';
 
   @override

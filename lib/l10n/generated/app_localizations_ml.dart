@@ -59,6 +59,13 @@ class AppLocalizationsMl extends AppLocalizations {
       'നിങ്ങളുടെ സമ്പാദ്യ ലക്ഷ്യങ്ങളുടെ പുരോഗതി ട്രാക്ക് ചെയ്യുക';
 
   @override
+  String get menuInvestmentsTitle => 'നിക്ഷേപങ്ങൾ';
+
+  @override
+  String get menuInvestmentsSubtitle =>
+      'SIP-കൾ, ഓഹരികൾ, പോർട്ട്‌ഫോളിയോ പ്രകടനം';
+
+  @override
   String get menuUpgradeTitle => 'ക്ലൗഡ് സിങ്കിലേക്ക് അപ്‌ഗ്രേഡ് ചെയ്യുക';
 
   @override

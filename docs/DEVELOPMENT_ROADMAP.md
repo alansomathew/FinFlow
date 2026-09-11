@@ -95,6 +95,30 @@ for `AppLocalizations.of(context)!.xxx`, one screen at a time.
 
 ---
 
+## Ad-hoc: Bottom Nav / FAB Symmetry
+
+Per direct user request: the Home screen's bottom bar had 5 tabs split
+2-left/3-right around a `centerDocked` FAB (Home, Ledger | Budget, Invest,
+Charts), which read as visually lopsided, and the FAB itself was a
+rounded-square rather than a circle.
+
+- **FAB:** `FloatingActionButton`'s `shape` changed from
+  `RoundedRectangleBorder` to `CircleBorder`, and its inner gradient
+  `Container` from a rounded-rect `BoxDecoration` to `BoxShape.circle`.
+- **Bottom bar:** Investments moved out of the tab bar and into the
+  profile menu, next to Accounts and Goals -- a natural fit, since
+  `InvestmentsTab` (like `AccountsListScreen`/`GoalsListScreen`, unlike
+  the other four tabs) already builds its own self-contained `Scaffold`
+  with its own FAB rather than being a bare tab body sharing the shell's
+  Add-Transaction FAB. Wrapped in a new `InvestmentsScreen` (adds the
+  `AppBar`/back button a pushed screen needs, since `InvestmentsTab`
+  itself has none). The tab bar is now an even 2-left/2-right split (Home,
+  Ledger | Budget, Charts) around the centered FAB. New
+  `menuInvestmentsTitle`/`menuInvestmentsSubtitle` ARB keys added across
+  all 6 languages for the new menu entry.
+
+---
+
 ## Context
 
 FinFlow is a Flutter personal-finance app with two detailed spec docs

@@ -12,7 +12,7 @@ import '../../transactions/presentation/transaction_form_sheet.dart';
 import 'dashboard_tab.dart';
 import '../../transactions/presentation/transactions_tab.dart';
 import '../../budget/presentation/budget_tab.dart';
-import '../../investments/presentation/investments_tab.dart';
+import '../../investments/presentation/investments_screen.dart';
 import '../../analytics/presentation/analytics_tab.dart';
 import '../../sms/data/sms_device_service.dart';
 import '../../sms/data/sms_repository.dart';
@@ -251,6 +251,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) => const GoalsListScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.trending_up_rounded,
+                        color: colors.primary,
+                      ),
+                      title: Text(
+                        l10n.menuInvestmentsTitle,
+                        style: TextStyle(color: colors.textPrimary),
+                      ),
+                      subtitle: Text(
+                        l10n.menuInvestmentsSubtitle,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const InvestmentsScreen(),
                           ),
                         );
                       },
@@ -540,7 +565,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       const DashboardTab(),
       const TransactionsTab(),
       const BudgetTab(),
-      const InvestmentsTab(),
       const AnalyticsTab(),
     ];
 
@@ -548,7 +572,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       l10n.appTitleHome,
       l10n.appTitleTransactions,
       l10n.appTitleBudgets,
-      l10n.appTitleInvestments,
       l10n.appTitleAnalytics,
     ];
 
@@ -601,15 +624,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTransaction(context),
         backgroundColor: colors.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        ),
+        shape: const CircleBorder(),
         child: Container(
           width: 56,
           height: 56,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            shape: BoxShape.circle,
           ),
           child: const Icon(Icons.add, color: Colors.white, size: 28),
         ),
@@ -626,8 +647,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         // gap) so the boundary between them always lands at the exact
         // center of the bar, matching where centerDocked positions the
         // FAB/notch -- a fixed gap can't do that when the item counts on
-        // each side differ (2 left, 3 right here), since equal-flex items
-        // either side of a fixed gap don't actually meet at the midpoint.
+        // each side differ, since equal-flex items either side of a fixed
+        // gap don't actually meet at the midpoint. Investments moved to the
+        // profile menu (alongside Accounts/Goals) so this stays an even
+        // 2-left/2-right split around the centered FAB.
         child: Row(
           children: [
             Expanded(
@@ -662,12 +685,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   _buildBottomNavItem(
                     ref,
                     3,
-                    Icons.trending_up_rounded,
-                    l10n.navInvest,
-                  ),
-                  _buildBottomNavItem(
-                    ref,
-                    4,
                     Icons.insert_chart_rounded,
                     l10n.navCharts,
                   ),

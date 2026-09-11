@@ -59,6 +59,13 @@ class AppLocalizationsTa extends AppLocalizations {
       'உங்கள் சேமிப்பு இலக்குகளின் முன்னேற்றத்தை கண்காணிக்கவும்';
 
   @override
+  String get menuInvestmentsTitle => 'முதலீடுகள்';
+
+  @override
+  String get menuInvestmentsSubtitle =>
+      'SIP, பங்குகள் மற்றும் போர்ட்ஃபோலியோ செயல்திறன்';
+
+  @override
   String get menuUpgradeTitle => 'கிளவுட் ஒத்திசைவுக்கு மேம்படுத்தவும்';
 
   @override

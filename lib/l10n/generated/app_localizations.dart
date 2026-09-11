@@ -202,6 +202,18 @@ abstract class AppLocalizations {
   /// **'Track progress toward your savings targets'**
   String get menuGoalsSubtitle;
 
+  /// No description provided for @menuInvestmentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Investments'**
+  String get menuInvestmentsTitle;
+
+  /// No description provided for @menuInvestmentsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'SIPs, stocks, and portfolio performance'**
+  String get menuInvestmentsSubtitle;
+
   /// No description provided for @menuUpgradeTitle.
   ///
   /// In en, this message translates to:

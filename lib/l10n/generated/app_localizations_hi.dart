@@ -58,6 +58,12 @@ class AppLocalizationsHi extends AppLocalizations {
   String get menuGoalsSubtitle => 'अपने बचत लक्ष्यों की प्रगति ट्रैक करें';
 
   @override
+  String get menuInvestmentsTitle => 'निवेश';
+
+  @override
+  String get menuInvestmentsSubtitle => 'SIP, शेयर और पोर्टफोलियो प्रदर्शन';
+
+  @override
   String get menuUpgradeTitle => 'क्लाउड सिंक में अपग्रेड करें';
 
   @override

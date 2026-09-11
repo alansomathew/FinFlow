@@ -25,6 +25,8 @@
   "menuAccountsSubtitle": "Manage bank accounts, wallets, and credit cards",
   "menuGoalsTitle": "Savings Goals",
   "menuGoalsSubtitle": "Track progress toward your savings targets",
+  "menuInvestmentsTitle": "Investments",
+  "menuInvestmentsSubtitle": "SIPs, stocks, and portfolio performance",
   "menuUpgradeTitle": "Upgrade to Cloud Sync",
   "menuUpgradeSubtitle": "Link Google account and backup data",
   "menuSmsAutoTitle": "SMS Auto-Detection",

@@ -58,6 +58,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuGoalsSubtitle => 'Track progress toward your savings targets';
 
   @override
+  String get menuInvestmentsTitle => 'Investments';
+
+  @override
+  String get menuInvestmentsSubtitle =>
+      'SIPs, stocks, and portfolio performance';
+
+  @override
   String get menuUpgradeTitle => 'Upgrade to Cloud Sync';
 
   @override

@@ -58,6 +58,12 @@ class AppLocalizationsMr extends AppLocalizations {
   String get menuGoalsSubtitle => 'तुमच्या बचत उद्दिष्टांची प्रगती ट्रॅक करा';
 
   @override
+  String get menuInvestmentsTitle => 'गुंतवणूक';
+
+  @override
+  String get menuInvestmentsSubtitle => 'SIP, शेअर्स आणि पोर्टफोलिओ कामगिरी';
+
+  @override
   String get menuUpgradeTitle => 'क्लाउड सिंकमध्ये अपग्रेड करा';
 
   @override
