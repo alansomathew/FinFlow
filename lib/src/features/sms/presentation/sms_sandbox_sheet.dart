@@ -87,6 +87,101 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
     });
   }
 
+  /// Asks the user to confirm (or change) which category this parsed SMS
+  /// should be filed under before it's added -- mirrors the same step in
+  /// the real device-driven SmsReviewSheet, since the auto-guess derived
+  /// from the merchant/payee name is often wrong for income (a salary
+  /// credit's "payee" is an employer name, which never matches a category
+  /// preset).
+  Future<TransactionCategory?> _pickCategory(
+    TransactionCategory defaultCategory,
+    ParsedSms parsed,
+  ) async {
+    final isIncome = parsed.type == 'credit';
+    final options = TransactionCategory.presets
+        .where(
+          (c) => isIncome
+              ? c.bucket == BudgetBucket.income
+              : c.bucket != BudgetBucket.income,
+        )
+        .toList();
+    TransactionCategory selected = options.contains(defaultCategory)
+        ? defaultCategory
+        : options.first;
+
+    return showDialog<TransactionCategory>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final colors = context.colors;
+            return AlertDialog(
+              backgroundColor: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+              title: Text(
+                'Confirm Category',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '₹${parsed.amount.toStringAsFixed(2)} · ${parsed.payee}',
+                    style: TextStyle(color: colors.textSecondary, fontSize: 12),
+                  ),
+                  AppSizes.h12,
+                  DropdownButtonFormField<TransactionCategory>(
+                    initialValue: selected,
+                    dropdownColor: colors.surface,
+                    style: TextStyle(color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                    ),
+                    items: options.map((c) {
+                      return DropdownMenuItem(
+                        value: c,
+                        child: Text('${c.icon}  ${c.name}'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setStateDialog(() => selected = val);
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, selected),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                  ),
+                  child: const Text(
+                    'Confirm & Add',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _addParsedToLedger(ParsedSms parsed, String smsId) async {
     final smsRepo = ref.read(smsRepositoryProvider);
     if (!await smsRepo.canParseMoreThisMonth()) {
@@ -111,13 +206,14 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
       return;
     }
 
+    final defaultCategory = TransactionCategory.getByName(parsed.payee);
+    final category = await _pickCategory(defaultCategory, parsed);
+    if (!mounted || category == null) return;
+
     final matchingAccount = SmsDuplicateDetector.resolveAccount(
       accounts,
       parsed.accountLast4,
     )!;
-
-    // Auto-map category
-    final category = TransactionCategory.getByName(parsed.payee);
 
     final tx = TransactionModel(
       id: const Uuid().v4(),

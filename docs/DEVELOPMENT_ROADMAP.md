@@ -306,6 +306,10 @@ permanently as a dev/QA tool.
    name, which for a salary or refund credit is an employer/bank name that
    never matches a category preset, silently falling back to a generic
    "Wants" category; the user can now just pick "Salary" themselves.
+   Rolled out to both real-SMS entry points: `SmsReviewSheet` and the
+   manual-paste SMS Sandbox (initially left as a dev/QA tool exempt from
+   this, then extended to match once it became clear the user exercises
+   both paths and expects the same behavior from each).
 
 **New dependencies:** `another_telephony`, `permission_handler`.
 
