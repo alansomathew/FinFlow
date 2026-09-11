@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -110,6 +110,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 12) {
         await m.addColumn(loans, loans.isCardEmi);
+      }
+      if (from < 13) {
+        await m.addColumn(accounts, accounts.cardLast4);
       }
     },
     beforeOpen: (details) async {

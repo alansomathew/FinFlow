@@ -92,6 +92,17 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     requiredDuringInsert: false,
     defaultValue: const Constant('INR'),
   );
+  static const VerificationMeta _cardLast4Meta = const VerificationMeta(
+    'cardLast4',
+  );
+  @override
+  late final GeneratedColumn<String> cardLast4 = GeneratedColumn<String>(
+    'card_last4',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _ownerUidsMeta = const VerificationMeta(
     'ownerUids',
   );
@@ -148,6 +159,7 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     cardDueDate,
     colorHex,
     currency,
+    cardLast4,
     ownerUids,
     createdAt,
     updatedAt,
@@ -226,6 +238,12 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
       );
     }
+    if (data.containsKey('card_last4')) {
+      context.handle(
+        _cardLast4Meta,
+        cardLast4.isAcceptableOrUnknown(data['card_last4']!, _cardLast4Meta),
+      );
+    }
     if (data.containsKey('owner_uids')) {
       context.handle(
         _ownerUidsMeta,
@@ -291,6 +309,10 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         DriftSqlType.string,
         data['${effectivePrefix}currency'],
       )!,
+      cardLast4: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}card_last4'],
+      ),
       ownerUids: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}owner_uids'],
@@ -326,6 +348,15 @@ class Account extends DataClass implements Insertable<Account> {
   final String colorHex;
   final String currency;
 
+  /// Last 4 digits of the card/account number, as they'd appear in a bank
+  /// SMS alert (e.g. "HDFC Bank Card xx1234 debited..."). Nullable and
+  /// mainly meaningful for 'bank'/'credit_card' accounts -- lets
+  /// SmsDuplicateDetector.resolveAccount match a parsed SMS to the exact
+  /// account instead of guessing, which matters most for credit cards
+  /// since a user often has several and a wrong guess misattributes real
+  /// spending to the wrong card.
+  final String? cardLast4;
+
   /// JSON-encoded array of Firebase UIDs with access to this account, beyond
   /// the owner. Nullable and unused until Phase 11's joint wallet feature;
   /// added now so that feature doesn't need its own migration later.
@@ -342,6 +373,7 @@ class Account extends DataClass implements Insertable<Account> {
     this.cardDueDate,
     required this.colorHex,
     required this.currency,
+    this.cardLast4,
     this.ownerUids,
     required this.createdAt,
     required this.updatedAt,
@@ -360,6 +392,9 @@ class Account extends DataClass implements Insertable<Account> {
     }
     map['color_hex'] = Variable<String>(colorHex);
     map['currency'] = Variable<String>(currency);
+    if (!nullToAbsent || cardLast4 != null) {
+      map['card_last4'] = Variable<String>(cardLast4);
+    }
     if (!nullToAbsent || ownerUids != null) {
       map['owner_uids'] = Variable<String>(ownerUids);
     }
@@ -383,6 +418,9 @@ class Account extends DataClass implements Insertable<Account> {
           : Value(cardDueDate),
       colorHex: Value(colorHex),
       currency: Value(currency),
+      cardLast4: cardLast4 == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cardLast4),
       ownerUids: ownerUids == null && nullToAbsent
           ? const Value.absent()
           : Value(ownerUids),
@@ -408,6 +446,7 @@ class Account extends DataClass implements Insertable<Account> {
       cardDueDate: serializer.fromJson<String?>(json['cardDueDate']),
       colorHex: serializer.fromJson<String>(json['colorHex']),
       currency: serializer.fromJson<String>(json['currency']),
+      cardLast4: serializer.fromJson<String?>(json['cardLast4']),
       ownerUids: serializer.fromJson<String?>(json['ownerUids']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -426,6 +465,7 @@ class Account extends DataClass implements Insertable<Account> {
       'cardDueDate': serializer.toJson<String?>(cardDueDate),
       'colorHex': serializer.toJson<String>(colorHex),
       'currency': serializer.toJson<String>(currency),
+      'cardLast4': serializer.toJson<String?>(cardLast4),
       'ownerUids': serializer.toJson<String?>(ownerUids),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -442,6 +482,7 @@ class Account extends DataClass implements Insertable<Account> {
     Value<String?> cardDueDate = const Value.absent(),
     String? colorHex,
     String? currency,
+    Value<String?> cardLast4 = const Value.absent(),
     Value<String?> ownerUids = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -455,6 +496,7 @@ class Account extends DataClass implements Insertable<Account> {
     cardDueDate: cardDueDate.present ? cardDueDate.value : this.cardDueDate,
     colorHex: colorHex ?? this.colorHex,
     currency: currency ?? this.currency,
+    cardLast4: cardLast4.present ? cardLast4.value : this.cardLast4,
     ownerUids: ownerUids.present ? ownerUids.value : this.ownerUids,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -474,6 +516,7 @@ class Account extends DataClass implements Insertable<Account> {
           : this.cardDueDate,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
       currency: data.currency.present ? data.currency.value : this.currency,
+      cardLast4: data.cardLast4.present ? data.cardLast4.value : this.cardLast4,
       ownerUids: data.ownerUids.present ? data.ownerUids.value : this.ownerUids,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -492,6 +535,7 @@ class Account extends DataClass implements Insertable<Account> {
           ..write('cardDueDate: $cardDueDate, ')
           ..write('colorHex: $colorHex, ')
           ..write('currency: $currency, ')
+          ..write('cardLast4: $cardLast4, ')
           ..write('ownerUids: $ownerUids, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -510,6 +554,7 @@ class Account extends DataClass implements Insertable<Account> {
     cardDueDate,
     colorHex,
     currency,
+    cardLast4,
     ownerUids,
     createdAt,
     updatedAt,
@@ -527,6 +572,7 @@ class Account extends DataClass implements Insertable<Account> {
           other.cardDueDate == this.cardDueDate &&
           other.colorHex == this.colorHex &&
           other.currency == this.currency &&
+          other.cardLast4 == this.cardLast4 &&
           other.ownerUids == this.ownerUids &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -542,6 +588,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<String?> cardDueDate;
   final Value<String> colorHex;
   final Value<String> currency;
+  final Value<String?> cardLast4;
   final Value<String?> ownerUids;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
@@ -556,6 +603,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.cardDueDate = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.currency = const Value.absent(),
+    this.cardLast4 = const Value.absent(),
     this.ownerUids = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -571,6 +619,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.cardDueDate = const Value.absent(),
     required String colorHex,
     this.currency = const Value.absent(),
+    this.cardLast4 = const Value.absent(),
     this.ownerUids = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -590,6 +639,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Expression<String>? cardDueDate,
     Expression<String>? colorHex,
     Expression<String>? currency,
+    Expression<String>? cardLast4,
     Expression<String>? ownerUids,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -605,6 +655,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       if (cardDueDate != null) 'card_due_date': cardDueDate,
       if (colorHex != null) 'color_hex': colorHex,
       if (currency != null) 'currency': currency,
+      if (cardLast4 != null) 'card_last4': cardLast4,
       if (ownerUids != null) 'owner_uids': ownerUids,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -622,6 +673,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<String?>? cardDueDate,
     Value<String>? colorHex,
     Value<String>? currency,
+    Value<String?>? cardLast4,
     Value<String?>? ownerUids,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
@@ -637,6 +689,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       cardDueDate: cardDueDate ?? this.cardDueDate,
       colorHex: colorHex ?? this.colorHex,
       currency: currency ?? this.currency,
+      cardLast4: cardLast4 ?? this.cardLast4,
       ownerUids: ownerUids ?? this.ownerUids,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -672,6 +725,9 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     if (currency.present) {
       map['currency'] = Variable<String>(currency.value);
     }
+    if (cardLast4.present) {
+      map['card_last4'] = Variable<String>(cardLast4.value);
+    }
     if (ownerUids.present) {
       map['owner_uids'] = Variable<String>(ownerUids.value);
     }
@@ -701,6 +757,7 @@ class AccountsCompanion extends UpdateCompanion<Account> {
           ..write('cardDueDate: $cardDueDate, ')
           ..write('colorHex: $colorHex, ')
           ..write('currency: $currency, ')
+          ..write('cardLast4: $cardLast4, ')
           ..write('ownerUids: $ownerUids, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -7077,6 +7134,7 @@ typedef $$AccountsTableCreateCompanionBuilder =
       Value<String?> cardDueDate,
       required String colorHex,
       Value<String> currency,
+      Value<String?> cardLast4,
       Value<String?> ownerUids,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -7093,6 +7151,7 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<String?> cardDueDate,
       Value<String> colorHex,
       Value<String> currency,
+      Value<String?> cardLast4,
       Value<String?> ownerUids,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
@@ -7224,6 +7283,11 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cardLast4 => $composableBuilder(
+    column: $table.cardLast4,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7397,6 +7461,11 @@ class $$AccountsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get cardLast4 => $composableBuilder(
+    column: $table.cardLast4,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get ownerUids => $composableBuilder(
     column: $table.ownerUids,
     builder: (column) => ColumnOrderings(column),
@@ -7454,6 +7523,9 @@ class $$AccountsTableAnnotationComposer
 
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<String> get cardLast4 =>
+      $composableBuilder(column: $table.cardLast4, builder: (column) => column);
 
   GeneratedColumn<String> get ownerUids =>
       $composableBuilder(column: $table.ownerUids, builder: (column) => column);
@@ -7609,6 +7681,7 @@ class $$AccountsTableTableManager
                 Value<String?> cardDueDate = const Value.absent(),
                 Value<String> colorHex = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<String?> cardLast4 = const Value.absent(),
                 Value<String?> ownerUids = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -7623,6 +7696,7 @@ class $$AccountsTableTableManager
                 cardDueDate: cardDueDate,
                 colorHex: colorHex,
                 currency: currency,
+                cardLast4: cardLast4,
                 ownerUids: ownerUids,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -7639,6 +7713,7 @@ class $$AccountsTableTableManager
                 Value<String?> cardDueDate = const Value.absent(),
                 required String colorHex,
                 Value<String> currency = const Value.absent(),
+                Value<String?> cardLast4 = const Value.absent(),
                 Value<String?> ownerUids = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -7653,6 +7728,7 @@ class $$AccountsTableTableManager
                 cardDueDate: cardDueDate,
                 colorHex: colorHex,
                 currency: currency,
+                cardLast4: cardLast4,
                 ownerUids: ownerUids,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

@@ -267,6 +267,43 @@ instead of debited from a bank account.
 
 ---
 
+## Ad-hoc: Spending From Credit Cards (SMS Account Matching Fix)
+
+Per direct user follow-up ("the user can spend from the credit cards
+also"): manual transaction entry already let a credit card be picked as
+the account (`transaction_form_sheet.dart`'s account dropdown was never
+type-filtered), so that path already worked. The real gap was the
+**SMS-driven path**, which is how most day-to-day spending actually gets
+logged: `SmsDuplicateDetector.resolveAccount` had no reliable way to
+match a parsed SMS's card-last-4 digits to a specific account at all --
+`AccountModel` didn't even store a card's last 4 digits, so it fuzzy-
+matched against the account's free-text *name*/*id*, and silently fell
+back to `accounts.first` whenever that failed. In practice this meant a
+credit card purchase SMS would routinely get misattributed to whichever
+account happened to be first (often a bank account), with no indication
+anything had gone wrong -- exactly the failure this feature set out to
+fix, since it would have quietly undermined the EMI/regular-spend
+breakdown built earlier in this session.
+
+- `AccountModel`/`Accounts` table (schema v13) gained `cardLast4`
+  (optional). `account_form_sheet.dart` collects it for `bank` and
+  `credit_card` types ("Last 4 Digits (optional) -- matches this account
+  to SMS alerts automatically").
+- `SmsDuplicateDetector.resolveAccount` now matches `cardLast4` exactly
+  first (the only genuinely reliable signal), falls back to the old
+  fuzzy name/id heuristic for accounts that haven't set it, and returns
+  **null** instead of guessing `accounts.first` when nothing matches.
+- Both SMS flows (`sms_review_sheet.dart` and `sms_sandbox_sheet.dart`,
+  kept in sync as usual) now show an account dropdown alongside the
+  existing category dropdown in the same confirm-before-adding dialog,
+  pre-selected to the resolved best guess -- or, when nothing matched
+  confidently, to the first account with a visible warning ("Couldn't
+  auto-match this SMS to an account -- pick the right one") instead of
+  silently failing to add the transaction at all, which is what used to
+  happen when `resolveAccount` returned null.
+
+---
+
 ## Context
 
 FinFlow is a Flutter personal-finance app with two detailed spec docs

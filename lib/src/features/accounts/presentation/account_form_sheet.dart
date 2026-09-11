@@ -40,6 +40,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
   late final TextEditingController _nameController;
   late final TextEditingController _balanceController;
   late final TextEditingController _creditLimitController;
+  late final TextEditingController _last4Controller;
 
   late String _selectedType;
   late String _selectedColor;
@@ -61,6 +62,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
           ? existing.creditLimit.toString()
           : '',
     );
+    _last4Controller = TextEditingController(text: existing?.cardLast4 ?? '');
     _selectedType = existing?.type ?? 'bank';
     _selectedColor = existing?.colorHex ?? _colorPalette.first;
     if (existing != null && existing.cardDueDate.isNotEmpty) {
@@ -73,6 +75,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
     _nameController.dispose();
     _balanceController.dispose();
     _creditLimitController.dispose();
+    _last4Controller.dispose();
     super.dispose();
   }
 
@@ -136,6 +139,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
           ? DateFormat('yyyy-MM-dd').format(_dueDate!)
           : '',
       colorHex: _selectedColor,
+      cardLast4: _last4Controller.text.trim(),
     );
 
     await ref.read(accountListProvider.notifier).add(account);
@@ -146,6 +150,7 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final isCreditCard = _selectedType == 'credit_card';
+    final showLast4Field = _selectedType == 'bank' || isCreditCard;
 
     return Container(
       padding: EdgeInsets.only(
@@ -272,6 +277,42 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
                       return null;
                     },
                   ),
+
+                  if (showLast4Field) ...[
+                    AppSizes.h16,
+                    TextFormField(
+                      controller: _last4Controller,
+                      keyboardType: TextInputType.number,
+                      maxLength: 4,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Last 4 Digits (optional)',
+                        helperText:
+                            'Matches this account to SMS alerts automatically',
+                        helperStyle: TextStyle(
+                          color: colors.textMuted,
+                          fontSize: 11,
+                        ),
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                        counterText: '',
+                        fillColor: colors.cardBg,
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusMd,
+                          ),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      validator: (val) {
+                        if (val == null || val.isEmpty) return null;
+                        if (val.length != 4 || int.tryParse(val) == null) {
+                          return 'Enter exactly 4 digits';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
 
                   if (isCreditCard) ...[
                     AppSizes.h16,

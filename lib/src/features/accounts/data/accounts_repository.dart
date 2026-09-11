@@ -16,6 +16,11 @@ class AccountModel {
   final String cardDueDate;
   final String colorHex;
 
+  /// Last 4 digits of the card/account number, as they'd appear in a bank
+  /// SMS alert -- lets SmsDuplicateDetector.resolveAccount match a parsed
+  /// SMS to the exact account rather than guessing.
+  final String cardLast4;
+
   AccountModel({
     required this.id,
     required this.name,
@@ -24,6 +29,7 @@ class AccountModel {
     this.creditLimit = 0.0,
     this.cardDueDate = '',
     required this.colorHex,
+    this.cardLast4 = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +41,7 @@ class AccountModel {
       'credit_limit': creditLimit,
       'card_due_date': cardDueDate,
       'color_hex': colorHex,
+      'card_last4': cardLast4,
     };
   }
 
@@ -47,6 +54,7 @@ class AccountModel {
       creditLimit: (map['credit_limit'] as num?)?.toDouble() ?? 0.0,
       cardDueDate: map['card_due_date'] ?? '',
       colorHex: map['color_hex'] ?? '#1E1E1E',
+      cardLast4: map['card_last4'] ?? '',
     );
   }
 
@@ -59,6 +67,7 @@ class AccountModel {
       creditLimit: row.creditLimit,
       cardDueDate: row.cardDueDate ?? '',
       colorHex: row.colorHex,
+      cardLast4: row.cardLast4 ?? '',
     );
   }
 
@@ -71,6 +80,7 @@ class AccountModel {
       creditLimit: Value(creditLimit),
       cardDueDate: Value(cardDueDate.isEmpty ? null : cardDueDate),
       colorHex: Value(colorHex),
+      cardLast4: Value(cardLast4.isEmpty ? null : cardLast4),
       updatedAt: Value(DateTime.now()),
     );
   }

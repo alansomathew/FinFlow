@@ -41,18 +41,27 @@ class SmsDuplicateDetector {
     return false;
   }
 
-  /// Resolves a parsed SMS's account-last-4 digits to a concrete account,
-  /// using the same heuristic transaction creation itself uses (match by
-  /// name/id containing the digits, falling back to the first account) so
-  /// duplicate checks are consistent with what actually gets created.
+  /// Best-effort match of a parsed SMS's account-last-4 digits to a
+  /// concrete account -- an exact match against the account's own stored
+  /// [AccountModel.cardLast4] first (set explicitly by the user when
+  /// creating the account, so this is the only genuinely reliable check),
+  /// falling back to a fuzzy "digits appear in the account name" heuristic
+  /// for accounts that haven't set it. Returns null rather than guessing
+  /// [accounts.first] when nothing matches -- a wrong guess silently
+  /// misattributes real spending to the wrong account (most visibly, a
+  /// credit card's spend landing on an unrelated bank account), so callers
+  /// must ask the user to pick instead of trusting a blind default.
   static AccountModel? resolveAccount(
     List<AccountModel> accounts,
     String last4,
   ) {
-    if (accounts.isEmpty) return null;
+    if (accounts.isEmpty || last4.isEmpty) return null;
+    for (final a in accounts) {
+      if (a.cardLast4.isNotEmpty && a.cardLast4 == last4) return a;
+    }
     for (final a in accounts) {
       if (a.name.contains(last4) || a.id.contains(last4)) return a;
     }
-    return accounts.first;
+    return null;
   }
 }

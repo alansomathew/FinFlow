@@ -82,21 +82,13 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
     await _refresh();
   }
 
-  Future<bool> _addSingle(
+  Future<void> _addSingle(
     SmsInboxData sms,
     ParsedSms parsed, {
     required TransactionCategory category,
+    required AccountModel account,
   }) async {
     final smsRepo = ref.read(smsRepositoryProvider);
-    if (!await smsRepo.canParseMoreThisMonth()) return false;
-
-    final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
-    final account = SmsDuplicateDetector.resolveAccount(
-      accounts,
-      parsed.accountLast4,
-    );
-    if (account == null) return false;
-
     final tx = TransactionModel(
       id: const Uuid().v4(),
       amount: parsed.amount,
@@ -110,18 +102,25 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
     );
     await ref.read(transactionListProvider.notifier).add(tx);
     await smsRepo.markParsed(sms.id);
-    return true;
   }
 
-  /// Asks the user to confirm (or change) which category this parsed SMS
-  /// should be filed under before it's added, defaulting to a guess derived
-  /// from the merchant/payee name -- that guess is often wrong for income
-  /// (a salary credit's "payee" is an employer name, which never matches a
-  /// category preset), so this is the point where the user actually gets a
-  /// say instead of a mis-guessed category silently landing on the ledger.
-  Future<TransactionCategory?> _pickCategory(
+  /// Asks the user to confirm (or change) both the category and the
+  /// account this parsed SMS should be filed under before it's added.
+  /// Category defaults to a guess derived from the merchant/payee name --
+  /// often wrong for income (a salary credit's "payee" is an employer
+  /// name, which never matches a category preset). Account defaults to
+  /// [SmsDuplicateDetector.resolveAccount]'s best guess, which is only
+  /// ever a *guess* (exact last-4 match if the account has one set,
+  /// otherwise a fuzzy name/id check) -- for a card SMS with no confident
+  /// match at all, [bestGuessAccount] is null and the dropdown just falls
+  /// back to the first account, same as everywhere else in the app,
+  /// rather than silently skipping the SMS entirely.
+  Future<({TransactionCategory category, AccountModel account})?>
+  _pickCategoryAndAccount(
     TransactionCategory defaultCategory,
     ParsedSms parsed,
+    List<AccountModel> accounts,
+    AccountModel? bestGuessAccount,
   ) async {
     final isIncome = parsed.type == 'credit';
     final options = TransactionCategory.presets
@@ -131,11 +130,12 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
               : c.bucket != BudgetBucket.income,
         )
         .toList();
-    TransactionCategory selected = options.contains(defaultCategory)
+    TransactionCategory selectedCategory = options.contains(defaultCategory)
         ? defaultCategory
         : options.first;
+    AccountModel selectedAccount = bestGuessAccount ?? accounts.first;
 
-    return showDialog<TransactionCategory>(
+    return showDialog<({TransactionCategory category, AccountModel account})>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -147,7 +147,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               ),
               title: Text(
-                'Confirm Category',
+                'Confirm Transaction',
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.bold,
@@ -163,7 +163,7 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                   ),
                   AppSizes.h12,
                   DropdownButtonFormField<TransactionCategory>(
-                    initialValue: selected,
+                    initialValue: selectedCategory,
                     dropdownColor: colors.surface,
                     style: TextStyle(color: colors.textPrimary),
                     decoration: InputDecoration(
@@ -177,7 +177,35 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                       );
                     }).toList(),
                     onChanged: (val) {
-                      if (val != null) setStateDialog(() => selected = val);
+                      if (val != null) {
+                        setStateDialog(() => selectedCategory = val);
+                      }
+                    },
+                  ),
+                  AppSizes.h12,
+                  DropdownButtonFormField<AccountModel>(
+                    initialValue: selectedAccount,
+                    dropdownColor: colors.surface,
+                    style: TextStyle(color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Account',
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      helperText: bestGuessAccount == null
+                          ? "Couldn't auto-match this SMS to an account -- "
+                                'pick the right one'
+                          : null,
+                      helperStyle: TextStyle(
+                        color: colors.warning,
+                        fontSize: 11,
+                      ),
+                    ),
+                    items: accounts.map((a) {
+                      return DropdownMenuItem(value: a, child: Text(a.name));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setStateDialog(() => selectedAccount = val);
+                      }
                     },
                   ),
                 ],
@@ -191,7 +219,10 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context, selected),
+                  onPressed: () => Navigator.pop(context, (
+                    category: selectedCategory,
+                    account: selectedAccount,
+                  )),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.primary,
                   ),
@@ -216,15 +247,9 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
       return;
     }
 
-    final defaultCategory = TransactionCategory.getByName(parsed.payee);
-    final category = await _pickCategory(defaultCategory, parsed);
-    if (!mounted || category == null) return;
-
-    final added = await _addSingle(sms, parsed, category: category);
-    await ref.read(accountListProvider.notifier).refresh();
-    if (!mounted) return;
-
-    if (!added) {
+    final smsRepo = ref.read(smsRepositoryProvider);
+    if (!await smsRepo.canParseMoreThisMonth()) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -233,7 +258,41 @@ class _SmsReviewSheetState extends ConsumerState<SmsReviewSheet> {
           backgroundColor: context.colors.warning,
         ),
       );
+      return;
     }
+
+    final accounts = await ref.read(accountsRepositoryProvider).getAccounts();
+    if (!mounted) return;
+    if (accounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add an account first to log this transaction.'),
+        ),
+      );
+      return;
+    }
+
+    final bestGuessAccount = SmsDuplicateDetector.resolveAccount(
+      accounts,
+      parsed.accountLast4,
+    );
+    final defaultCategory = TransactionCategory.getByName(parsed.payee);
+    final choice = await _pickCategoryAndAccount(
+      defaultCategory,
+      parsed,
+      accounts,
+      bestGuessAccount,
+    );
+    if (!mounted || choice == null) return;
+
+    await _addSingle(
+      sms,
+      parsed,
+      category: choice.category,
+      account: choice.account,
+    );
+    await ref.read(accountListProvider.notifier).refresh();
+    if (!mounted) return;
     await _refresh();
   }
 

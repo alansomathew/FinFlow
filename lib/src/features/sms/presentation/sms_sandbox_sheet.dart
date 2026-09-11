@@ -87,15 +87,21 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
     });
   }
 
-  /// Asks the user to confirm (or change) which category this parsed SMS
-  /// should be filed under before it's added -- mirrors the same step in
-  /// the real device-driven SmsReviewSheet, since the auto-guess derived
-  /// from the merchant/payee name is often wrong for income (a salary
-  /// credit's "payee" is an employer name, which never matches a category
-  /// preset).
-  Future<TransactionCategory?> _pickCategory(
+  /// Asks the user to confirm (or change) both the category and the
+  /// account this parsed SMS should be filed under before it's added --
+  /// mirrors the same step in the real device-driven SmsReviewSheet.
+  /// Category defaults to a guess derived from the merchant/payee name --
+  /// often wrong for income (a salary credit's "payee" is an employer
+  /// name, which never matches a category preset). Account defaults to
+  /// [SmsDuplicateDetector.resolveAccount]'s best guess; when that's null
+  /// (no confident match) the dropdown falls back to the first account
+  /// instead of silently refusing to add the transaction at all.
+  Future<({TransactionCategory category, AccountModel account})?>
+  _pickCategoryAndAccount(
     TransactionCategory defaultCategory,
     ParsedSms parsed,
+    List<AccountModel> accounts,
+    AccountModel? bestGuessAccount,
   ) async {
     final isIncome = parsed.type == 'credit';
     final options = TransactionCategory.presets
@@ -105,11 +111,12 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
               : c.bucket != BudgetBucket.income,
         )
         .toList();
-    TransactionCategory selected = options.contains(defaultCategory)
+    TransactionCategory selectedCategory = options.contains(defaultCategory)
         ? defaultCategory
         : options.first;
+    AccountModel selectedAccount = bestGuessAccount ?? accounts.first;
 
-    return showDialog<TransactionCategory>(
+    return showDialog<({TransactionCategory category, AccountModel account})>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
@@ -121,7 +128,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               ),
               title: Text(
-                'Confirm Category',
+                'Confirm Transaction',
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontWeight: FontWeight.bold,
@@ -137,7 +144,7 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                   ),
                   AppSizes.h12,
                   DropdownButtonFormField<TransactionCategory>(
-                    initialValue: selected,
+                    initialValue: selectedCategory,
                     dropdownColor: colors.surface,
                     style: TextStyle(color: colors.textPrimary),
                     decoration: InputDecoration(
@@ -151,7 +158,35 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                       );
                     }).toList(),
                     onChanged: (val) {
-                      if (val != null) setStateDialog(() => selected = val);
+                      if (val != null) {
+                        setStateDialog(() => selectedCategory = val);
+                      }
+                    },
+                  ),
+                  AppSizes.h12,
+                  DropdownButtonFormField<AccountModel>(
+                    initialValue: selectedAccount,
+                    dropdownColor: colors.surface,
+                    style: TextStyle(color: colors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Account',
+                      labelStyle: TextStyle(color: colors.textSecondary),
+                      helperText: bestGuessAccount == null
+                          ? "Couldn't auto-match this SMS to an account -- "
+                                'pick the right one'
+                          : null,
+                      helperStyle: TextStyle(
+                        color: colors.warning,
+                        fontSize: 11,
+                      ),
+                    ),
+                    items: accounts.map((a) {
+                      return DropdownMenuItem(value: a, child: Text(a.name));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setStateDialog(() => selectedAccount = val);
+                      }
                     },
                   ),
                 ],
@@ -165,7 +200,10 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(context, selected),
+                  onPressed: () => Navigator.pop(context, (
+                    category: selectedCategory,
+                    account: selectedAccount,
+                  )),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colors.primary,
                   ),
@@ -206,14 +244,20 @@ class _SmsSandboxSheetState extends ConsumerState<SmsSandboxSheet> {
       return;
     }
 
-    final defaultCategory = TransactionCategory.getByName(parsed.payee);
-    final category = await _pickCategory(defaultCategory, parsed);
-    if (!mounted || category == null) return;
-
-    final matchingAccount = SmsDuplicateDetector.resolveAccount(
+    final bestGuessAccount = SmsDuplicateDetector.resolveAccount(
       accounts,
       parsed.accountLast4,
-    )!;
+    );
+    final defaultCategory = TransactionCategory.getByName(parsed.payee);
+    final choice = await _pickCategoryAndAccount(
+      defaultCategory,
+      parsed,
+      accounts,
+      bestGuessAccount,
+    );
+    if (!mounted || choice == null) return;
+    final category = choice.category;
+    final matchingAccount = choice.account;
 
     final tx = TransactionModel(
       id: const Uuid().v4(),
