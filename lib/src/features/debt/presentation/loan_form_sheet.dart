@@ -10,10 +10,13 @@ import '../domain/amortization_engine.dart';
 
 /// Add/edit form for a single loan. Pass [existing] to edit it in place;
 /// omit it to add a new one. New loans are subject to the free-tier cap
-/// ([kFreeLoanLimit]); editing an existing one never is.
+/// ([kFreeLoanLimit]); editing an existing one never is. Pass
+/// [presetCardAccount] (from a credit card's Account Detail screen) to open
+/// pre-configured as a Card EMI against that specific card.
 class LoanFormSheet extends ConsumerStatefulWidget {
   final LoanModel? existing;
-  const LoanFormSheet({super.key, this.existing});
+  final AccountModel? presetCardAccount;
+  const LoanFormSheet({super.key, this.existing, this.presetCardAccount});
 
   @override
   ConsumerState<LoanFormSheet> createState() => _LoanFormSheetState();
@@ -31,6 +34,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
   late DateTime _startDate;
   bool _emiManuallyEdited = false;
   bool _saving = false;
+  late bool _isCardEmi;
 
   bool get _isEditing => widget.existing != null;
 
@@ -55,6 +59,10 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
     _startDate = existing != null
         ? (DateTime.tryParse(existing.startDate) ?? DateTime.now())
         : DateTime.now();
+    _isCardEmi = existing?.isCardEmi ?? (widget.presetCardAccount != null);
+    if (widget.presetCardAccount != null) {
+      _selectedAccount = widget.presetCardAccount;
+    }
 
     for (final c in [
       _principalController,
@@ -155,6 +163,7 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
       startDate: DateFormat('yyyy-MM-dd').format(_startDate),
       emiAmount: double.parse(_emiController.text),
       debitAccountId: _selectedAccount!.id,
+      isCardEmi: _isCardEmi,
     );
 
     await ref.read(loanListProvider.notifier).add(loan);
@@ -352,27 +361,93 @@ class _LoanFormSheetState extends ConsumerState<LoanFormSheet> {
                           style: TextStyle(color: colors.error),
                         );
                       }
-                      _selectedAccount ??= _isEditing
-                          ? accounts.firstWhere(
-                              (a) => a.id == widget.existing!.debitAccountId,
-                              orElse: () => accounts.first,
-                            )
-                          : accounts.first;
 
-                      return DropdownButtonFormField<AccountModel>(
-                        initialValue: _selectedAccount,
-                        dropdownColor: colors.surface,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: _decoration('Debit Account'),
-                        items: accounts.map((acc) {
-                          return DropdownMenuItem<AccountModel>(
-                            value: acc,
-                            child: Text(acc.name),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          setState(() => _selectedAccount = val);
-                        },
+                      final eligible = _isCardEmi
+                          ? accounts
+                                .where((a) => a.type == 'credit_card')
+                                .toList()
+                          : accounts;
+
+                      if (_selectedAccount == null ||
+                          !eligible.any((a) => a.id == _selectedAccount!.id)) {
+                        _selectedAccount = _isEditing && !_isCardEmi
+                            ? accounts.firstWhere(
+                                (a) => a.id == widget.existing!.debitAccountId,
+                                orElse: () => eligible.firstOrNull ?? accounts.first,
+                              )
+                            : eligible.firstOrNull;
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Material(
+                            color: colors.cardBg,
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusMd,
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: SwitchListTile(
+                              value: _isCardEmi,
+                              onChanged: (val) {
+                                setState(() {
+                                  _isCardEmi = val;
+                                  final newEligible = val
+                                      ? accounts
+                                            .where(
+                                              (a) => a.type == 'credit_card',
+                                            )
+                                            .toList()
+                                      : accounts;
+                                  if (_selectedAccount == null ||
+                                      !newEligible.any(
+                                        (a) => a.id == _selectedAccount!.id,
+                                      )) {
+                                    _selectedAccount =
+                                        newEligible.firstOrNull;
+                                  }
+                                });
+                              },
+                              activeThumbColor: colors.primary,
+                              title: Text(
+                                'This is a Credit Card EMI',
+                                style: TextStyle(color: colors.textPrimary),
+                              ),
+                              subtitle: Text(
+                                'Bills as an installment on a credit card, '
+                                'not debited from a bank account',
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ),
+                          ),
+                          AppSizes.h16,
+                          if (_isCardEmi && eligible.isEmpty)
+                            Text(
+                              'Add a credit card account first to track a card EMI.',
+                              style: TextStyle(color: colors.error),
+                            )
+                          else
+                            DropdownButtonFormField<AccountModel>(
+                              initialValue: _selectedAccount,
+                              dropdownColor: colors.surface,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: _decoration(
+                                _isCardEmi ? 'Credit Card' : 'Debit Account',
+                              ),
+                              items: eligible.map((acc) {
+                                return DropdownMenuItem<AccountModel>(
+                                  value: acc,
+                                  child: Text(acc.name),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                setState(() => _selectedAccount = val);
+                              },
+                            ),
+                        ],
                       );
                     },
                     loading: () =>

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_sizes.dart';
 import '../../../constants/app_theme.dart';
+import '../../debt/data/debt_repository.dart';
+import '../../debt/domain/amortization_engine.dart';
 import '../data/accounts_repository.dart';
 import 'account_detail_screen.dart';
 import 'account_form_sheet.dart';
@@ -49,6 +51,7 @@ class AccountsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
     final accountsAsync = ref.watch(accountListProvider);
+    final loansAsync = ref.watch(loanListProvider);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -109,6 +112,37 @@ class AccountsListScreen extends ConsumerWidget {
               final utilization = isCreditCard && a.creditLimit > 0
                   ? (a.balance.abs() / a.creditLimit).clamp(0.0, 1.0)
                   : 0.0;
+              // Same live-derived math as the Account Detail screen and
+              // Debt Planner, kept consistent with it (regularCardDue there
+              // is also balance minus total outstanding EMI principal, not
+              // minus the monthly installment total).
+              final activeCardEmis = isCreditCard
+                  ? (loansAsync.valueOrNull ?? [])
+                        .where((l) => l.isCardEmi && l.debitAccountId == a.id)
+                        .map((l) {
+                          final outstanding =
+                              AmortizationEngine.outstandingBalance(
+                                principal: l.loanAmount,
+                                annualRate: l.interestRate,
+                                tenureMonths: l.tenureMonths,
+                                emiAmount: l.emiAmount,
+                                startDate:
+                                    DateTime.tryParse(l.startDate) ??
+                                    DateTime.now(),
+                              );
+                          return (loan: l, outstanding: outstanding);
+                        })
+                        .where((s) => s.outstanding > 0.01)
+                        .toList()
+                  : const <({LoanModel loan, double outstanding})>[];
+              final emiDueThisMonth = activeCardEmis.fold(
+                0.0,
+                (sum, s) => sum + s.loan.emiAmount,
+              );
+              final totalEmiOutstanding = activeCardEmis.fold(
+                0.0,
+                (sum, s) => sum + s.outstanding,
+              );
 
               return Card(
                 color: colors.cardBg,
@@ -201,6 +235,19 @@ class AccountsListScreen extends ConsumerWidget {
                               fontSize: 10,
                             ),
                           ),
+                          if (activeCardEmis.isNotEmpty) ...[
+                            AppSizes.h4,
+                            Text(
+                              'EMI: ${_formatCurrency(emiDueThisMonth)}/mo '
+                              '(${activeCardEmis.length} active) • Regular: '
+                              '${_formatCurrency((a.balance.abs() - totalEmiOutstanding).clamp(0.0, double.infinity))}',
+                              style: TextStyle(
+                                color: colors.warning,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ],
                       ],
                     ),

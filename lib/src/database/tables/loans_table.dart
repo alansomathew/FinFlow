@@ -13,6 +13,12 @@ class Loans extends Table {
       text().references(Accounts, #id, onDelete: KeyAction.restrict)();
   TextColumn get currency => text().withDefault(const Constant('INR'))();
 
+  /// When true, this loan is a credit-card EMI (a purchase converted to
+  /// installments) rather than a standalone bank loan -- [debitAccountId]
+  /// is then the credit card account whose statement includes this EMI,
+  /// not a separate bank account being auto-debited.
+  BoolColumn get isCardEmi => boolean().withDefault(const Constant(false))();
+
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(() => DateTime.now())();
   DateTimeColumn get updatedAt =>

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_sizes.dart';
 import '../../../constants/app_theme.dart';
+import '../../debt/data/debt_repository.dart';
+import '../../debt/domain/amortization_engine.dart';
+import '../../debt/presentation/loan_form_sheet.dart';
 import '../../transactions/data/transaction_repository.dart';
 import '../../transactions/domain/transaction.dart';
 import '../../transactions/presentation/transaction_detail_screen.dart';
@@ -168,6 +171,37 @@ class AccountDetailScreen extends ConsumerWidget {
         ? colors.warning
         : colors.success;
 
+    // Every figure below is derived live from each loan's
+    // (principal, rate, tenure, start date) via AmortizationEngine, same as
+    // the Debt Planner -- nothing here is a stored running balance.
+    final loansAsync = ref.watch(loanListProvider);
+    final cardEmis = isCreditCard
+        ? (loansAsync.valueOrNull ?? [])
+              .where((l) => l.isCardEmi && l.debitAccountId == current.id)
+              .map((l) {
+                final outstanding = AmortizationEngine.outstandingBalance(
+                  principal: l.loanAmount,
+                  annualRate: l.interestRate,
+                  tenureMonths: l.tenureMonths,
+                  emiAmount: l.emiAmount,
+                  startDate: DateTime.tryParse(l.startDate) ?? DateTime.now(),
+                );
+                return (loan: l, outstanding: outstanding);
+              })
+              .where((s) => s.outstanding > 0.01)
+              .toList()
+        : const <({LoanModel loan, double outstanding})>[];
+    final emiDueThisMonth = cardEmis.fold(
+      0.0,
+      (sum, s) => sum + s.loan.emiAmount,
+    );
+    final totalEmiOutstanding = cardEmis.fold(
+      0.0,
+      (sum, s) => sum + s.outstanding,
+    );
+    final regularCardDue = (current.balance.abs() - totalEmiOutstanding)
+        .clamp(0.0, double.infinity);
+
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
@@ -259,6 +293,138 @@ class AccountDetailScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            if (isCreditCard) ...[
+              AppSizes.h24,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "This Month's Payment",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) =>
+                          LoanFormSheet(presetCardAccount: current),
+                    ),
+                    icon: Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 16,
+                      color: colors.primaryLight,
+                    ),
+                    label: Text(
+                      'Add EMI',
+                      style: TextStyle(
+                        color: colors.primaryLight,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              AppSizes.h8,
+              Container(
+                padding: const EdgeInsets.all(AppSizes.md),
+                decoration: BoxDecoration(
+                  color: colors.cardBg,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Regular Card Spend',
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          _formatCurrency(regularCardDue),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    AppSizes.h8,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          cardEmis.isEmpty
+                              ? 'EMI Installments'
+                              : 'EMI Installments (${cardEmis.length} active)',
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          _formatCurrency(emiDueThisMonth),
+                          style: TextStyle(
+                            color: cardEmis.isEmpty
+                                ? colors.textSecondary
+                                : colors.warning,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (cardEmis.isNotEmpty) ...[
+                      AppSizes.h12,
+                      Divider(color: colors.border, height: 1),
+                      AppSizes.h12,
+                      ...cardEmis.map((s) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.credit_score_rounded,
+                                color: colors.warning,
+                                size: 16,
+                              ),
+                              AppSizes.w8,
+                              Expanded(
+                                child: Text(
+                                  s.loan.lenderName,
+                                  style: TextStyle(
+                                    color: colors.textPrimary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${_formatCurrency(s.loan.emiAmount)}/mo '
+                                '(${_formatCurrency(s.outstanding)} left)',
+                                style: TextStyle(
+                                  color: colors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ],
+                ),
+              ),
+            ],
             AppSizes.h24,
             const Text(
               'Recent Transactions',

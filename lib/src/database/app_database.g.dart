@@ -2134,6 +2134,21 @@ class $LoansTable extends Loans with TableInfo<$LoansTable, Loan> {
     requiredDuringInsert: false,
     defaultValue: const Constant('INR'),
   );
+  static const VerificationMeta _isCardEmiMeta = const VerificationMeta(
+    'isCardEmi',
+  );
+  @override
+  late final GeneratedColumn<bool> isCardEmi = GeneratedColumn<bool>(
+    'is_card_emi',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_card_emi" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -2180,6 +2195,7 @@ class $LoansTable extends Loans with TableInfo<$LoansTable, Loan> {
     emiAmount,
     debitAccountId,
     currency,
+    isCardEmi,
     createdAt,
     updatedAt,
     deletedAt,
@@ -2272,6 +2288,12 @@ class $LoansTable extends Loans with TableInfo<$LoansTable, Loan> {
         currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
       );
     }
+    if (data.containsKey('is_card_emi')) {
+      context.handle(
+        _isCardEmiMeta,
+        isCardEmi.isAcceptableOrUnknown(data['is_card_emi']!, _isCardEmiMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -2335,6 +2357,10 @@ class $LoansTable extends Loans with TableInfo<$LoansTable, Loan> {
         DriftSqlType.string,
         data['${effectivePrefix}currency'],
       )!,
+      isCardEmi: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_card_emi'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2366,6 +2392,12 @@ class Loan extends DataClass implements Insertable<Loan> {
   final double emiAmount;
   final String debitAccountId;
   final String currency;
+
+  /// When true, this loan is a credit-card EMI (a purchase converted to
+  /// installments) rather than a standalone bank loan -- [debitAccountId]
+  /// is then the credit card account whose statement includes this EMI,
+  /// not a separate bank account being auto-debited.
+  final bool isCardEmi;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
@@ -2379,6 +2411,7 @@ class Loan extends DataClass implements Insertable<Loan> {
     required this.emiAmount,
     required this.debitAccountId,
     required this.currency,
+    required this.isCardEmi,
     required this.createdAt,
     required this.updatedAt,
     this.deletedAt,
@@ -2395,6 +2428,7 @@ class Loan extends DataClass implements Insertable<Loan> {
     map['emi_amount'] = Variable<double>(emiAmount);
     map['debit_account_id'] = Variable<String>(debitAccountId);
     map['currency'] = Variable<String>(currency);
+    map['is_card_emi'] = Variable<bool>(isCardEmi);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -2414,6 +2448,7 @@ class Loan extends DataClass implements Insertable<Loan> {
       emiAmount: Value(emiAmount),
       debitAccountId: Value(debitAccountId),
       currency: Value(currency),
+      isCardEmi: Value(isCardEmi),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
@@ -2437,6 +2472,7 @@ class Loan extends DataClass implements Insertable<Loan> {
       emiAmount: serializer.fromJson<double>(json['emiAmount']),
       debitAccountId: serializer.fromJson<String>(json['debitAccountId']),
       currency: serializer.fromJson<String>(json['currency']),
+      isCardEmi: serializer.fromJson<bool>(json['isCardEmi']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       deletedAt: serializer.fromJson<DateTime?>(json['deletedAt']),
@@ -2455,6 +2491,7 @@ class Loan extends DataClass implements Insertable<Loan> {
       'emiAmount': serializer.toJson<double>(emiAmount),
       'debitAccountId': serializer.toJson<String>(debitAccountId),
       'currency': serializer.toJson<String>(currency),
+      'isCardEmi': serializer.toJson<bool>(isCardEmi),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'deletedAt': serializer.toJson<DateTime?>(deletedAt),
@@ -2471,6 +2508,7 @@ class Loan extends DataClass implements Insertable<Loan> {
     double? emiAmount,
     String? debitAccountId,
     String? currency,
+    bool? isCardEmi,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> deletedAt = const Value.absent(),
@@ -2484,6 +2522,7 @@ class Loan extends DataClass implements Insertable<Loan> {
     emiAmount: emiAmount ?? this.emiAmount,
     debitAccountId: debitAccountId ?? this.debitAccountId,
     currency: currency ?? this.currency,
+    isCardEmi: isCardEmi ?? this.isCardEmi,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
@@ -2509,6 +2548,7 @@ class Loan extends DataClass implements Insertable<Loan> {
           ? data.debitAccountId.value
           : this.debitAccountId,
       currency: data.currency.present ? data.currency.value : this.currency,
+      isCardEmi: data.isCardEmi.present ? data.isCardEmi.value : this.isCardEmi,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
@@ -2527,6 +2567,7 @@ class Loan extends DataClass implements Insertable<Loan> {
           ..write('emiAmount: $emiAmount, ')
           ..write('debitAccountId: $debitAccountId, ')
           ..write('currency: $currency, ')
+          ..write('isCardEmi: $isCardEmi, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt')
@@ -2545,6 +2586,7 @@ class Loan extends DataClass implements Insertable<Loan> {
     emiAmount,
     debitAccountId,
     currency,
+    isCardEmi,
     createdAt,
     updatedAt,
     deletedAt,
@@ -2562,6 +2604,7 @@ class Loan extends DataClass implements Insertable<Loan> {
           other.emiAmount == this.emiAmount &&
           other.debitAccountId == this.debitAccountId &&
           other.currency == this.currency &&
+          other.isCardEmi == this.isCardEmi &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt);
@@ -2577,6 +2620,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
   final Value<double> emiAmount;
   final Value<String> debitAccountId;
   final Value<String> currency;
+  final Value<bool> isCardEmi;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> deletedAt;
@@ -2591,6 +2635,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
     this.emiAmount = const Value.absent(),
     this.debitAccountId = const Value.absent(),
     this.currency = const Value.absent(),
+    this.isCardEmi = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -2606,6 +2651,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
     required double emiAmount,
     required String debitAccountId,
     this.currency = const Value.absent(),
+    this.isCardEmi = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
@@ -2628,6 +2674,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
     Expression<double>? emiAmount,
     Expression<String>? debitAccountId,
     Expression<String>? currency,
+    Expression<bool>? isCardEmi,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? deletedAt,
@@ -2643,6 +2690,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
       if (emiAmount != null) 'emi_amount': emiAmount,
       if (debitAccountId != null) 'debit_account_id': debitAccountId,
       if (currency != null) 'currency': currency,
+      if (isCardEmi != null) 'is_card_emi': isCardEmi,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
@@ -2660,6 +2708,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
     Value<double>? emiAmount,
     Value<String>? debitAccountId,
     Value<String>? currency,
+    Value<bool>? isCardEmi,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? deletedAt,
@@ -2675,6 +2724,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
       emiAmount: emiAmount ?? this.emiAmount,
       debitAccountId: debitAccountId ?? this.debitAccountId,
       currency: currency ?? this.currency,
+      isCardEmi: isCardEmi ?? this.isCardEmi,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
@@ -2712,6 +2762,9 @@ class LoansCompanion extends UpdateCompanion<Loan> {
     if (currency.present) {
       map['currency'] = Variable<String>(currency.value);
     }
+    if (isCardEmi.present) {
+      map['is_card_emi'] = Variable<bool>(isCardEmi.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2739,6 +2792,7 @@ class LoansCompanion extends UpdateCompanion<Loan> {
           ..write('emiAmount: $emiAmount, ')
           ..write('debitAccountId: $debitAccountId, ')
           ..write('currency: $currency, ')
+          ..write('isCardEmi: $isCardEmi, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
@@ -8507,6 +8561,7 @@ typedef $$LoansTableCreateCompanionBuilder =
       required double emiAmount,
       required String debitAccountId,
       Value<String> currency,
+      Value<bool> isCardEmi,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -8523,6 +8578,7 @@ typedef $$LoansTableUpdateCompanionBuilder =
       Value<double> emiAmount,
       Value<String> debitAccountId,
       Value<String> currency,
+      Value<bool> isCardEmi,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> deletedAt,
@@ -8596,6 +8652,11 @@ class $$LoansTableFilterComposer extends Composer<_$AppDatabase, $LoansTable> {
 
   ColumnFilters<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCardEmi => $composableBuilder(
+    column: $table.isCardEmi,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8687,6 +8748,11 @@ class $$LoansTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isCardEmi => $composableBuilder(
+    column: $table.isCardEmi,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -8767,6 +8833,9 @@ class $$LoansTableAnnotationComposer
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
 
+  GeneratedColumn<bool> get isCardEmi =>
+      $composableBuilder(column: $table.isCardEmi, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -8837,6 +8906,7 @@ class $$LoansTableTableManager
                 Value<double> emiAmount = const Value.absent(),
                 Value<String> debitAccountId = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<bool> isCardEmi = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -8851,6 +8921,7 @@ class $$LoansTableTableManager
                 emiAmount: emiAmount,
                 debitAccountId: debitAccountId,
                 currency: currency,
+                isCardEmi: isCardEmi,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,
@@ -8867,6 +8938,7 @@ class $$LoansTableTableManager
                 required double emiAmount,
                 required String debitAccountId,
                 Value<String> currency = const Value.absent(),
+                Value<bool> isCardEmi = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> deletedAt = const Value.absent(),
@@ -8881,6 +8953,7 @@ class $$LoansTableTableManager
                 emiAmount: emiAmount,
                 debitAccountId: debitAccountId,
                 currency: currency,
+                isCardEmi: isCardEmi,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 deletedAt: deletedAt,

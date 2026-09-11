@@ -218,6 +218,55 @@ Now genuinely persisted (not a session-only hack):
 
 ---
 
+## Ad-hoc: Credit Card EMIs
+
+Per direct user request: accounts already modeled credit cards
+(`creditLimit`, `cardDueDate`, utilization bar), but had no way to track a
+purchase converted to EMI, and no monthly view separating "pay as regular
+card spend" from "pay as EMI installments."
+
+Reused the existing Loans/Debt feature (`LoanModel`,
+`AmortizationEngine`) rather than building a parallel EMI system, since a
+card EMI *is* a loan in every way that matters (principal, rate, tenure,
+amortization schedule) -- it's just billed on a credit card statement
+instead of debited from a bank account.
+
+- `LoanModel`/`Loans` table (schema v12) gained a `bool isCardEmi`
+  (default false). When true, the existing `debitAccountId` field is
+  reinterpreted as *the credit card account this EMI bills on* rather
+  than a bank account being auto-debited -- deliberately reusing that
+  column instead of adding a second nullable FK, since both cases are
+  really "the account this obligation is tied to," just with different
+  real-world mechanics.
+- `LoanFormSheet` gained a "This is a Credit Card EMI" switch; when on,
+  the account dropdown filters to `type == 'credit_card'` accounts only
+  and relabels to "Credit Card". Toggling it resets the selected account
+  if it falls outside the newly-eligible list (the same
+  DropdownButtonFormField-value-not-in-items class of bug fixed earlier
+  this session for `TransactionCategory`/`AccountModel`). A new
+  `presetCardAccount` constructor param lets a credit card's Account
+  Detail screen open this form pre-configured as a Card EMI against that
+  specific card.
+- **Account Detail screen** (credit cards only): a new "This Month's
+  Payment" card breaks the statement balance into two live-derived
+  figures -- `regularCardDue` (balance minus total outstanding EMI
+  principal across every active card-linked loan) and `emiDueThisMonth`
+  (sum of `emiAmount` for those same loans), plus a per-EMI list showing
+  each one's monthly installment and remaining balance. An "Add EMI"
+  button opens `LoanFormSheet` pre-linked to this card. A loan only
+  counts as "active" once `AmortizationEngine.outstandingBalance() > 0`,
+  so a fully paid-off EMI naturally drops out without needing a status
+  field.
+- **Accounts list screen**: each credit card row gets a compact one-line
+  summary ("EMI: ₹X/mo (N active) • Regular: ₹Y") using the identical
+  math as the detail screen, so the two never disagree.
+- Every card EMI also shows up in the existing Debt Planner
+  (`debt_planner_sheet.dart`) alongside regular bank loans, since it's
+  genuinely part of the user's total debt portfolio -- not hidden away
+  as a separate concept.
+
+---
+
 ## Context
 
 FinFlow is a Flutter personal-finance app with two detailed spec docs

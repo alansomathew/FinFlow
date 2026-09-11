@@ -17,6 +17,11 @@ class LoanModel {
   final double emiAmount;
   final String debitAccountId;
 
+  /// True for a credit-card EMI (a purchase converted to installments)
+  /// rather than a standalone bank loan -- [debitAccountId] is then the
+  /// credit card account whose statement includes this EMI.
+  final bool isCardEmi;
+
   LoanModel({
     required this.id,
     required this.lenderName,
@@ -26,6 +31,7 @@ class LoanModel {
     required this.startDate,
     required this.emiAmount,
     required this.debitAccountId,
+    this.isCardEmi = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +44,7 @@ class LoanModel {
       'start_date': startDate,
       'emi_amount': emiAmount,
       'debit_account_id': debitAccountId,
+      'is_card_emi': isCardEmi,
     };
   }
 
@@ -51,6 +58,7 @@ class LoanModel {
       startDate: map['start_date'] ?? '',
       emiAmount: (map['emi_amount'] as num?)?.toDouble() ?? 0.0,
       debitAccountId: map['debit_account_id'] ?? '',
+      isCardEmi: map['is_card_emi'] ?? false,
     );
   }
 
@@ -64,6 +72,7 @@ class LoanModel {
       startDate: row.startDate,
       emiAmount: row.emiAmount,
       debitAccountId: row.debitAccountId,
+      isCardEmi: row.isCardEmi,
     );
   }
 
@@ -77,6 +86,7 @@ class LoanModel {
       startDate: Value(startDate),
       emiAmount: Value(emiAmount),
       debitAccountId: Value(debitAccountId),
+      isCardEmi: Value(isCardEmi),
       updatedAt: Value(DateTime.now()),
     );
   }
