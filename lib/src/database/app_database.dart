@@ -9,6 +9,7 @@ import 'package:sqlite3_flutter_libs/sqlite3_flutter_libs.dart';
 import '../utils/month_key.dart';
 import 'tables/accounts_table.dart';
 import 'tables/budgets_table.dart';
+import 'tables/custom_categories_table.dart';
 import 'tables/goals_table.dart';
 import 'tables/investments_table.dart';
 import 'tables/loans_table.dart';
@@ -36,6 +37,7 @@ const _singletonSettingsId = 0;
     Goals,
     NetWorthSnapshots,
     MonthlyIncome,
+    CustomCategories,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -48,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   static AppDatabase get instance => _instance ??= AppDatabase();
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -102,6 +104,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 10) {
         await m.createTable(monthlyIncome);
+      }
+      if (from < 11) {
+        await m.createTable(customCategories);
       }
     },
     beforeOpen: (details) async {
@@ -187,6 +192,7 @@ class AppDatabase extends _$AppDatabase {
       await delete(goals).go();
       await delete(netWorthSnapshots).go();
       await delete(monthlyIncome).go();
+      await delete(customCategories).go();
       await delete(smsInbox).go();
       await delete(accounts).go();
     });

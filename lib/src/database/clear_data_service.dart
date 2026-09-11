@@ -18,6 +18,7 @@ const _syncedCollections = [
   'goals',
   'monthlyIncome',
   'sms_inbox',
+  'customCategories',
 ];
 
 class ClearDataService {

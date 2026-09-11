@@ -155,8 +155,66 @@ rather than genuinely failing loudly. Wired into the profile menu (next
 to Sign Out) behind a destructive-action confirmation dialog, and
 invalidates every list provider (`accountListProvider`,
 `transactionListProvider`, `budgetListProvider`, `investmentListProvider`,
-`goalListProvider`, `loanListProvider`) afterward so the now-empty state
-reflects immediately without requiring an app restart.
+`goalListProvider`, `loanListProvider`, `customCategoryListProvider`)
+afterward so the now-empty state reflects immediately without requiring
+an app restart.
+
+---
+
+## Ad-hoc: Salary-First Budget Setup + Custom Categories
+
+Per direct user request: when the Budget tab has no budgets yet, its
+empty state offered "Add Budget" (the one-category-at-a-time dialog) as
+the only path in. Changed the primary action to open the existing Salary
+Planner sheet instead (enter income, see the 50/30/20 split, allocate
+against it) -- a much better starting point than picking categories one
+at a time with no sense yet of how much should go where. The old
+one-category dialog is still reachable via a smaller "Or add a single
+category budget" text link below, not removed.
+
+**New: custom categories with their own icon and color.** Previously
+every category had to be one of `TransactionCategory.presets`, with color
+always inherited from its bucket (blue/amber/green/purple for
+needs/wants/savings/income) -- no way to add a category outside that
+fixed list, or to tell two categories in the same bucket apart by color.
+Now genuinely persisted (not a session-only hack):
+- New `custom_categories` table (schema v11) + `CustomCategoriesRepository`
+  (`lib/src/features/budget/data/custom_categories_repository.dart`),
+  same write-through Firestore-then-local pattern as every other per-user
+  list in the app, exposed via `customCategoryListProvider`.
+- `TransactionCategory` gained an optional `colorHex` (null for every
+  preset, set for custom ones) and a `displayColor` getter that falls
+  back to the bucket color when unset.
+- **The interesting part:** `TransactionCategory.getByName(name)` is
+  called by name alone from screens all over the app (budget cards,
+  transaction rows, SMS category pickers) with no Riverpod access at the
+  call site. Rather than rewiring every one of those, `getByName` now
+  also checks a small mutable static registry
+  (`TransactionCategory._customByName`) that `CustomCategoryListNotifier`
+  keeps in sync on every load/add. That makes a newly created custom
+  category resolve correctly (right icon, right color) everywhere in the
+  app for free, the moment `customCategoryListProvider` has been watched
+  once anywhere (done in `BudgetTab.build`, which runs essentially as
+  soon as Home mounts).
+- UI lives inside the Salary Planner sheet's "Add to [Bucket]" dialog: a
+  "Create Custom Category" button opens a name field + an icon grid (12
+  emoji choices) + a color grid (8 swatches), matching the exact
+  icon/color-picker pattern `GoalFormSheet` already established. The
+  newly created category is immediately selected and usable in that same
+  dialog. Category rows in the planner now also show a small color dot
+  so a custom color is actually visible somewhere, not just stored.
+- **Scoped down, not silently dropped:** custom-category creation UI
+  exists only inside the Salary Planner's add-category dialog, not the
+  Budget tab's standalone "Add Budget" dialog or the SMS category
+  pickers -- those still only offer presets to *pick*, though a custom
+  category created via the planner *will* still show up correctly
+  wherever it's later displayed (budget cards, transaction rows) thanks
+  to the registry. Wiring custom-category *creation* into those other
+  entry points too is reasonable follow-up work, not done here since it
+  wasn't asked for.
+- Added to `ClearDataService`'s synced-collection list and
+  `AppDatabase.clearAllData()` so "Clear All Data" wipes custom
+  categories along with everything else.
 
 ---
 

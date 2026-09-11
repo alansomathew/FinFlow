@@ -40,11 +40,25 @@ class TransactionCategory {
   final String icon;
   final BudgetBucket bucket;
 
+  /// Set only for user-created custom categories (see
+  /// `CustomCategoryModel.toTransactionCategory()`); null for every preset,
+  /// which fall back to [bucket]'s fixed color via [displayColor].
+  final String? colorHex;
+
   const TransactionCategory({
     required this.name,
     required this.icon,
     required this.bucket,
+    this.colorHex,
   });
+
+  /// The color to render this category with: its own custom color if it
+  /// has one, otherwise its bucket's fixed color.
+  Color get displayColor {
+    final hex = colorHex;
+    if (hex == null) return bucket.color;
+    return Color(int.parse(hex.substring(1), radix: 16) + 0xFF000000);
+  }
 
   static const List<TransactionCategory> presets = [
     // Needs
@@ -161,15 +175,26 @@ class TransactionCategory {
     ),
   ];
 
+  // User-created custom categories, kept in sync by CustomCategoryListNotifier
+  // whenever its data loads or changes. getByName is called by name alone
+  // from screens all over the app (budget cards, transaction rows, SMS
+  // pickers) with no Riverpod access at the call site, so rather than
+  // rewiring every one of those to read a provider, this small mutable
+  // cache lets all of them resolve a custom category correctly for free
+  // the moment one exists.
+  static Map<String, TransactionCategory> _customByName = {};
+
+  static void updateCustomRegistry(List<TransactionCategory> custom) {
+    _customByName = {for (final c in custom) c.name.toLowerCase(): c};
+  }
+
   static TransactionCategory getByName(String name) {
-    return presets.firstWhere(
-      (cat) => cat.name.toLowerCase() == name.toLowerCase(),
-      orElse: () => TransactionCategory(
-        name: name,
-        icon: '📝',
-        bucket: BudgetBucket.wants,
-      ),
-    );
+    for (final cat in presets) {
+      if (cat.name.toLowerCase() == name.toLowerCase()) return cat;
+    }
+    final custom = _customByName[name.toLowerCase()];
+    if (custom != null) return custom;
+    return TransactionCategory(name: name, icon: '📝', bucket: BudgetBucket.wants);
   }
 
   // Value equality by name, not the default identity equality -- a

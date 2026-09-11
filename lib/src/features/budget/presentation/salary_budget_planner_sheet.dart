@@ -1,17 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 import '../../../constants/app_sizes.dart';
 import '../../../constants/app_theme.dart';
 import '../../../utils/month_key.dart';
 import '../../transactions/domain/transaction.dart';
 import '../data/budget_repository.dart';
+import '../data/custom_categories_repository.dart';
 
 const _bucketPercentages = {
   BudgetBucket.needs: 0.5,
   BudgetBucket.wants: 0.3,
   BudgetBucket.savings: 0.2,
 };
+
+const _categoryIconChoices = [
+  '🛒',
+  '🍔',
+  '🎬',
+  '💡',
+  '🏠',
+  '🚗',
+  '💊',
+  '📚',
+  '🎁',
+  '🐾',
+  '⚡',
+  '🧾',
+];
+
+const _categoryColorChoices = [
+  '#6366F1',
+  '#059669',
+  '#7C3AED',
+  '#D97706',
+  '#DC2626',
+  '#0891B2',
+  '#DB2777',
+  '#4B5563',
+];
 
 /// Salary-driven budget planner: enter a monthly income figure, see the
 /// classic 50/30/20 pool each bucket should get, and allocate real category
@@ -104,22 +132,22 @@ class _SalaryBudgetPlannerSheetState
     double remaining,
   ) {
     final existingNames = existingInBucket.map((b) => b.category).toSet();
-    final available = TransactionCategory.presets
-        .where((c) => c.bucket == bucket && !existingNames.contains(c.name))
-        .toList();
+    final customCategories =
+        ref.read(customCategoryListProvider).valueOrNull ?? [];
+    final available = <TransactionCategory>[
+      ...TransactionCategory.presets.where(
+        (c) => c.bucket == bucket && !existingNames.contains(c.name),
+      ),
+      ...customCategories
+          .where(
+            (c) => c.bucket == bucket && !existingNames.contains(c.name),
+          )
+          .map((c) => c.toTransactionCategory()),
+    ];
 
-    if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Every ${bucket.displayName} category already has a budget this month.',
-          ),
-        ),
-      );
-      return;
-    }
-
-    TransactionCategory selected = available.first;
+    TransactionCategory? selected = available.isNotEmpty
+        ? available.first
+        : null;
     final limitController = TextEditingController(
       text: remaining > 0 ? remaining.toStringAsFixed(0) : '',
     );
@@ -146,23 +174,58 @@ class _SalaryBudgetPlannerSheetState
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  DropdownButtonFormField<TransactionCategory>(
-                    initialValue: selected,
-                    dropdownColor: colors.surface,
-                    style: TextStyle(color: colors.textPrimary),
-                    decoration: InputDecoration(
-                      labelText: 'Category',
-                      labelStyle: TextStyle(color: colors.textSecondary),
+                  if (available.isNotEmpty)
+                    DropdownButtonFormField<TransactionCategory>(
+                      initialValue: selected,
+                      dropdownColor: colors.surface,
+                      style: TextStyle(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Category',
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                      ),
+                      items: available.map((c) {
+                        return DropdownMenuItem(
+                          value: c,
+                          child: Text('${c.icon}  ${c.name}'),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) setStateDialog(() => selected = val);
+                      },
+                    )
+                  else
+                    Text(
+                      'Every preset ${bucket.displayName} category already '
+                      'has a budget this month -- create a custom one below.',
+                      style: TextStyle(color: colors.textSecondary, fontSize: 12),
                     ),
-                    items: available.map((c) {
-                      return DropdownMenuItem(
-                        value: c,
-                        child: Text('${c.icon}  ${c.name}'),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) setStateDialog(() => selected = val);
-                    },
+                  AppSizes.h8,
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () => _showCreateCustomCategoryDialog(bucket, (
+                        created,
+                      ) {
+                        setStateDialog(() {
+                          if (!available.any((c) => c.name == created.name)) {
+                            available.add(created);
+                          }
+                          selected = created;
+                        });
+                      }),
+                      icon: Icon(
+                        Icons.add_circle_outline_rounded,
+                        size: 16,
+                        color: colors.primaryLight,
+                      ),
+                      label: Text(
+                        'Create Custom Category',
+                        style: TextStyle(
+                          color: colors.primaryLight,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
                   ),
                   AppSizes.h12,
                   TextField(
@@ -194,6 +257,15 @@ class _SalaryBudgetPlannerSheetState
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    final current = selected;
+                    if (current == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Pick or create a category first'),
+                        ),
+                      );
+                      return;
+                    }
                     final limit = double.tryParse(limitController.text) ?? 0.0;
                     if (limit <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -203,7 +275,7 @@ class _SalaryBudgetPlannerSheetState
                     }
                     await ref
                         .read(budgetListProvider.notifier)
-                        .setLimit(selected.name, limit, _monthYear);
+                        .setLimit(current.name, limit, _monthYear);
                     if (context.mounted) Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
@@ -211,6 +283,185 @@ class _SalaryBudgetPlannerSheetState
                   ),
                   child: const Text(
                     'Add',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showCreateCustomCategoryDialog(
+    BudgetBucket bucket,
+    void Function(TransactionCategory created) onCreated,
+  ) async {
+    final nameController = TextEditingController();
+    String selectedIcon = _categoryIconChoices.first;
+    String selectedColorHex = _categoryColorChoices.first;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setStateDialog) {
+            final colors = dialogContext.colors;
+            return AlertDialog(
+              backgroundColor: colors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+              title: Text(
+                'New ${bucket.displayName} Category',
+                style: TextStyle(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      style: TextStyle(color: colors.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Category Name',
+                        labelStyle: TextStyle(color: colors.textSecondary),
+                        fillColor: colors.cardBg,
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSm,
+                          ),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    AppSizes.h12,
+                    Text(
+                      'Icon',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    AppSizes.h8,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _categoryIconChoices.map((icon) {
+                        final iconSelected = selectedIcon == icon;
+                        return GestureDetector(
+                          onTap: () =>
+                              setStateDialog(() => selectedIcon = icon),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: iconSelected
+                                  ? colors.primary.withValues(alpha: 0.25)
+                                  : colors.cardBg,
+                              shape: BoxShape.circle,
+                              border: iconSelected
+                                  ? Border.all(color: colors.primary, width: 2)
+                                  : null,
+                            ),
+                            child: Text(
+                              icon,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    AppSizes.h12,
+                    Text(
+                      'Color',
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    AppSizes.h8,
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _categoryColorChoices.map((hex) {
+                        final colorSelected = selectedColorHex == hex;
+                        final swatch = Color(
+                          int.parse(hex.substring(1), radix: 16) + 0xFF000000,
+                        );
+                        return GestureDetector(
+                          onTap: () =>
+                              setStateDialog(() => selectedColorHex = hex),
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: BoxDecoration(
+                              color: swatch,
+                              shape: BoxShape.circle,
+                              border: colorSelected
+                                  ? Border.all(color: Colors.white, width: 2)
+                                  : null,
+                            ),
+                            child: colorSelected
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  )
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: colors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(
+                          content: Text('Enter a category name'),
+                        ),
+                      );
+                      return;
+                    }
+                    final custom = CustomCategoryModel(
+                      id: const Uuid().v4(),
+                      name: name,
+                      icon: selectedIcon,
+                      colorHex: selectedColorHex,
+                      bucket: bucket,
+                    );
+                    await ref
+                        .read(customCategoryListProvider.notifier)
+                        .add(custom);
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                    onCreated(custom.toTransactionCategory());
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.primary,
+                  ),
+                  child: const Text(
+                    'Create',
                     style: TextStyle(color: Colors.white),
                   ),
                 ),
@@ -232,6 +483,11 @@ class _SalaryBudgetPlannerSheetState
   Widget build(BuildContext context) {
     final colors = context.colors;
     final budgetsAsync = ref.watch(budgetListProvider);
+    // Watched here (not just read where used) so the custom-category
+    // registry TransactionCategory.getByName relies on is populated as
+    // soon as this sheet opens, and so newly created categories show up
+    // immediately without needing to reopen the sheet.
+    ref.watch(customCategoryListProvider);
 
     return Material(
       color: colors.surface,
@@ -469,6 +725,15 @@ class _SalaryBudgetPlannerSheetState
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: cat.displayColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    AppSizes.w8,
                     Text(cat.icon, style: const TextStyle(fontSize: 14)),
                     AppSizes.w8,
                     Expanded(

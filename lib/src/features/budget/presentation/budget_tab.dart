@@ -649,27 +649,65 @@ class _BudgetTabState extends ConsumerState<BudgetTab> {
       body: budgetsAsync.when(
         data: (budgets) {
           if (budgets.isEmpty) {
+            // Empty state leads with the salary planner (enter income, get
+            // a suggested 50/30/20 split to allocate against) rather than
+            // the bare per-category dialog -- a much better starting point
+            // than picking categories one at a time with no sense yet of
+            // how much should go to each.
             return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'No budgets defined.',
-                    style: TextStyle(color: colors.textSecondary),
-                  ),
-                  AppSizes.h12,
-                  ElevatedButton.icon(
-                    onPressed: () => _showAddBudgetDialog(context, budgets),
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                    label: const Text(
-                      'Add Budget',
-                      style: TextStyle(color: Colors.white),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSizes.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calculate_outlined,
+                      color: colors.textSecondary,
+                      size: 40,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
+                    AppSizes.h12,
+                    Text(
+                      'No budgets defined yet.',
+                      style: TextStyle(color: colors.textSecondary),
                     ),
-                  ),
-                ],
+                    AppSizes.h4,
+                    Text(
+                      'Enter your monthly salary to get a suggested '
+                      '50/30/20 split, then allocate it across categories.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                    AppSizes.h16,
+                    ElevatedButton.icon(
+                      onPressed: () => _showSalaryPlannerSheet(context),
+                      icon: const Icon(
+                        Icons.calculate_outlined,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Plan with My Salary',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.primary,
+                      ),
+                    ),
+                    AppSizes.h8,
+                    TextButton(
+                      onPressed: () => _showAddBudgetDialog(context, budgets),
+                      child: Text(
+                        'Or add a single category budget',
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }

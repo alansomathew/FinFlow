@@ -9,6 +9,7 @@ import '../../accounts/data/accounts_repository.dart';
 import '../../accounts/presentation/accounts_list_screen.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../budget/data/budget_repository.dart';
+import '../../budget/data/custom_categories_repository.dart';
 import '../../debt/data/debt_repository.dart';
 import '../../goals/data/goals_repository.dart';
 import '../../goals/presentation/goals_list_screen.dart';
@@ -174,6 +175,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ref.invalidate(investmentListProvider);
     ref.invalidate(goalListProvider);
     ref.invalidate(loanListProvider);
+    ref.invalidate(customCategoryListProvider);
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
