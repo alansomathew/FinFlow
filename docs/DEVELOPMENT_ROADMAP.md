@@ -208,16 +208,28 @@ auto-adjust on insert/delete, offline-first writes.
 - Found while touching this code: swipe-to-delete in the ledger never
   refreshed `accountListProvider`, leaving the account balance stale
   elsewhere in the app until something else happened to refresh it.
-- Found later, while investigating a live crash report: editing any
-  transaction whose stored category name didn't match one of the curated
-  presets (e.g. an older SMS-imported transaction, from before category
-  confirmation was added in Phase 3) crashed the edit form outright --
-  `TransactionCategory.getByName()` always succeeds via a synthetic
-  fallback for an unrecognized name, but the category dropdown's item
-  list only ever offered the curated presets, so the selected value
-  didn't appear in its own items list at all. Fixed by including that
-  fallback category as an extra dropdown item when it isn't already one
-  of the presets.
+- Found later, while investigating two live crash reports on the same
+  underlying root cause: neither `AccountModel`, `BudgetModel`, nor
+  `TransactionCategory` overrode `==`/`hashCode`, so every
+  `DropdownButtonFormField` using one as its value type relied on default
+  *identity* equality. That broke two different ways:
+  - Editing a transaction whose stored category name didn't match any
+    curated preset (e.g. an older SMS-imported transaction, from before
+    category confirmation was added in Phase 3) crashed outright, since
+    `TransactionCategory.getByName()`'s fallback path returns a brand-new
+    instance for an unrecognized name that was never in the presets-only
+    items list to begin with.
+  - The account picker crashed the same way for a completely different
+    reason: `accountListProvider.refresh()` builds brand-new `AccountModel`
+    instances on every call (even representing the exact same underlying
+    accounts), so a dropdown's already-selected value could stop matching
+    anything in its own items list the moment the provider refreshed
+    while the sheet was still open.
+  Fixed at the root by adding real value equality to all three classes
+  (`AccountModel` by `id`, `BudgetModel` by its `(category, monthYear)`
+  composite key, `TransactionCategory` by `name`), so a dropdown's
+  selected value keeps matching a freshly-rebuilt items list regardless
+  of which specific object instance represents it.
 
 **Net-new (all done):**
 1. `updateTransaction` (repository + UI): reverses the old transaction's

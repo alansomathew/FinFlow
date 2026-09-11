@@ -84,6 +84,23 @@ class BudgetModel {
       rolloverEnabled: rolloverEnabled ?? this.rolloverEnabled,
     );
   }
+
+  // Value equality by (category, monthYear) -- its composite primary key --
+  // not the default identity equality. getBudgets() builds brand-new
+  // BudgetModel instances on every call (spentAmount is always recomputed),
+  // and the envelope-transfer dropdown holds a selected BudgetModel that
+  // must stay "==" to something in a possibly-rebuilt items list, or
+  // Flutter throws "There should be exactly one item with [DropdownButton]'s
+  // value".
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BudgetModel &&
+          other.category == category &&
+          other.monthYear == monthYear);
+
+  @override
+  int get hashCode => Object.hash(category, monthYear);
 }
 
 class BudgetRepository {

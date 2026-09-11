@@ -171,6 +171,21 @@ class TransactionCategory {
       ),
     );
   }
+
+  // Value equality by name, not the default identity equality -- a
+  // dropdown holding a TransactionCategory as its selected value must find
+  // an "==" match in its items list, and getByName()'s fallback path
+  // creates a brand-new instance every call for an unrecognized name, so
+  // relying on identity would only work by the accident of the presets
+  // list happening to be a stable singleton (which it is, but only for
+  // known names).
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TransactionCategory && other.name == name);
+
+  @override
+  int get hashCode => name.hashCode;
 }
 
 class TransactionModel {

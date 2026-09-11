@@ -74,6 +74,21 @@ class AccountModel {
       updatedAt: Value(DateTime.now()),
     );
   }
+
+  // Value equality by id, not the default identity equality: every list
+  // refresh (accountListProvider.refresh()) builds brand-new AccountModel
+  // instances for the same underlying accounts, and several screens hold
+  // a DropdownButtonFormField<AccountModel> whose selected value must
+  // stay "==" to something in the (possibly rebuilt) items list or Flutter
+  // throws "There should be exactly one item with [DropdownButton]'s
+  // value" -- identity equality broke that the moment the provider
+  // refreshed out from under an open dropdown.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) || (other is AccountModel && other.id == id);
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class AccountsRepository {
